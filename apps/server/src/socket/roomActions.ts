@@ -1,6 +1,14 @@
 import type { Server } from "socket.io";
 import { now } from "../utils/time";
+import { logger } from "../utils/logger";
+import { normalizeRoomCode } from "../utils/roomCode";
 import { rooms, removePlayerFromRoom } from "../state/rooms";
+import { ROOM_EVENTS } from "../constants/socketEvents";
+import {
+  GAME_PHASES,
+  GAME_WINNERS,
+  INFILTRATION_ROLES,
+} from "../constants/roles";
 
 const phaseTimers = new Map<string, NodeJS.Timeout>();
 
@@ -11,23 +19,31 @@ function clearPhaseTimer(roomCode: string) {
 }
 
 export function emitRoomState(io: Server, roomCode: string) {
-  const code = roomCode.trim().toUpperCase();
+  const code = normalizeRoomCode(roomCode);
   const room = rooms.get(code);
   if (!room) return;
 
   room.updatedAt = now();
 
-  // Prepare public room state; expose roles only during results phase
+  // Prepare public room state; expose roles only during reveal and results phases
   const publicRoom = JSON.parse(JSON.stringify(room));
   if (publicRoom.game) {
-    if (publicRoom.game.phase === "results") {
-      // expose the private roles map and unused roles for disclosure in results
-      publicRoom.game.roles = room.game._roles || {};
+    if (
+      publicRoom.game.phase === GAME_PHASES.REVEAL ||
+      publicRoom.game.phase === GAME_PHASES.RESULTS
+    ) {
+      // expose the roles from each player for disclosure in reveal/results
+      publicRoom.game.roles = room.players.reduce(
+        (acc: Record<string, any>, p) => {
+          if (p.role) acc[p.socketId] = p.role;
+          return acc;
+        },
+        {}
+      );
       publicRoom.game.unusedRoles = room.game.unusedRoles || [];
     }
-    delete publicRoom.game._roles;
   }
-  io.to(code).emit("room:state", publicRoom);
+  io.to(code).emit(ROOM_EVENTS.STATE, publicRoom);
 }
 
 export function kickPlayer(
@@ -36,13 +52,13 @@ export function kickPlayer(
   targetSocketId: string,
   reason = "kicked"
 ) {
-  const code = roomCode.trim().toUpperCase();
+  const code = normalizeRoomCode(roomCode);
   const room = rooms.get(code);
   if (!room) return;
 
   removePlayerFromRoom(room, targetSocketId);
 
-  io.to(targetSocketId).emit("room:kicked", { roomCode: code, reason });
+  io.to(targetSocketId).emit(ROOM_EVENTS.KICKED, { roomCode: code, reason });
 
   const targetSocket = io.sockets.sockets.get(targetSocketId);
   if (targetSocket) targetSocket.leave(code);
@@ -57,7 +73,7 @@ export function startPhaseTimer(
   durationMs: number,
   onExpire: (roomCode: string) => void
 ) {
-  const code = roomCode.trim().toUpperCase();
+  const code = normalizeRoomCode(roomCode);
   clearPhaseTimer(code);
 
   const t = setTimeout(() => {
@@ -71,7 +87,7 @@ export function startPhaseTimer(
 }
 
 export function endRound(io: Server, roomCode: string, reason: string) {
-  const code = roomCode.trim().toUpperCase();
+  const code = normalizeRoomCode(roomCode);
   const room = rooms.get(code);
   if (!room) return;
 
@@ -80,8 +96,10 @@ export function endRound(io: Server, roomCode: string, reason: string) {
   // Determine winner for infiltration
   if (room.settings.gameKey === "infiltration") {
     const counts: Record<string, number> = {};
-    for (const sub of Object.values(room.game.submissions ?? {})) {
-      counts[sub.value] = (counts[sub.value] || 0) + 1;
+    for (const p of room.players) {
+      if (p.submission) {
+        counts[p.submission.value] = (counts[p.submission.value] || 0) + 1;
+      }
     }
 
     // find top-voted option
@@ -98,22 +116,25 @@ export function endRound(io: Server, roomCode: string, reason: string) {
       room.game.winner = "none";
     } else if (topId === "none") {
       // crew failed to identify an infiltrator
-      room.game.winner = "infiltrators";
+      room.game.winner = GAME_WINNERS.INFILTRATORS;
     } else {
-      const isInfil = room.game._roles?.[topId] === "infiltrator";
-      room.game.winner = isInfil ? "crew" : "infiltrators";
+      const topPlayer = room.players.find((p) => p.socketId === topId);
+      const isInfil = topPlayer?.role === INFILTRATION_ROLES.INFILTRATOR;
+      room.game.winner = isInfil
+        ? GAME_WINNERS.CREW
+        : GAME_WINNERS.INFILTRATORS;
     }
   }
 
   room.game.phase = "results";
   room.game.endsAt = null;
 
-  console.log(`Round ended for ${code}: ${reason}`);
+  logger.roundEnded(code, reason);
   emitRoomState(io, code);
 }
 
 export function closeRoom(io: Server, roomCode: string, reason: string) {
-  const code = roomCode.trim().toUpperCase();
+  const code = normalizeRoomCode(roomCode);
   const room = rooms.get(code);
   if (!room) return;
 
@@ -123,7 +144,7 @@ export function closeRoom(io: Server, roomCode: string, reason: string) {
   const memberIds = Array.from(io.sockets.adapter.rooms.get(code) ?? []);
 
   for (const sid of memberIds) {
-    io.to(sid).emit("room:closed", { roomCode: code, reason });
+    io.to(sid).emit(ROOM_EVENTS.CLOSED, { roomCode: code, reason });
   }
 
   for (const sid of memberIds) {
@@ -132,5 +153,5 @@ export function closeRoom(io: Server, roomCode: string, reason: string) {
   }
 
   rooms.delete(code);
-  console.log(`Closed room ${code} (${reason})`);
+  logger.roomClosed(code, reason);
 }

@@ -1,257 +1,153 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../state/useAppStore";
 import { socket } from "../lib/socket";
+import {
+  copyRoomCodeToClipboard,
+  pasteRoomCodeFromClipboard,
+} from "../utils/shared/roomCodeClipboard";
+import {
+  joinRoomAction,
+  leaveRoomAction,
+  togglePlayerReadyAction,
+} from "../utils/player/roomActions";
+import {
+  submitVoteAction,
+  acknowledgeRoleAction,
+  acknowledgeMayhemAction,
+  sendPowerAction,
+} from "../utils/player/gameActions";
 import type { RoomState } from "../types/room";
+import { VotingPanel, ResultsPanel } from "../components/PlayerPage";
 
-const now = () => Date.now();
+// PlayerPage: UI for players to join a room and participate in rounds.
+//
+// High-level responsibilities:
+// - Connect the client socket and subscribe to room/player events
+// - Allow entering a name and room code before joining
+// - After joining, show a condensed view with name and room code + copy
+// - Display game panels depending on `roomState.game.phase` (reveal, mayhem, voting, results)
 
 export default function PlayerPage() {
-  const roomCode = useAppStore((s) => s.roomCode);
-  const setRoomCode = useAppStore((s) => s.setRoomCode);
+  // Retrieve persisted player data from local store
+  const storedRoomCode = useAppStore((s) => s.roomCode);
+  const storedPlayerName = useAppStore((s) => s.playerName);
 
-  const playerName = useAppStore((s) => s.playerName);
-  const setPlayerName = useAppStore((s) => s.setPlayerName);
-
-  const [selectedVote, setSelectedVote] = useState<string>("none");
-
+  // Connection and room state management
   const [connected, setConnected] = useState(socket.connected);
-  const [status, setStatus] = useState<string>("");
   const [roomState, setRoomState] = useState<RoomState | null>(null);
-  const [mySocketId, setMySocketId] = useState<string | null>(
-    socket.id ?? null
+  const [playerName, setPlayerName] = useState<string>(storedPlayerName || "");
+  const [roomCode, setRoomCode] = useState<string>(storedRoomCode || "");
+  const [status, setStatus] = useState<string>("");
+
+  // Derived state from current room - find this player's socket ID, player object, and assigned role
+  const mySocketId = socket.id;
+  const myPlayer =
+    roomState?.players.find((p) => p.socketId === mySocketId) ?? null;
+  const myRole = myPlayer?.role ?? null;
+
+  // Game timer countdown - updates every 500ms during mayhem/voting phases
+  const [secondsLeft, setSecondsLeft] = useState<number>(0);
+
+  // Special power UI feedback
+  const [learnedInfo, setLearnedInfo] = useState<string | null>(null);
+  type PowerPrompt = {
+    type: string;
+    prompt: string;
+    targets: Array<{ id: string; label: string }>;
+  };
+  const [powerPrompt, setPowerPrompt] = useState<PowerPrompt | null>(null);
+  const [powerNotifications, setPowerNotifications] = useState<string | null>(
+    null
   );
 
-  // Local view of the player's role (private, sent by server via `player:role`)
-  const [myRole, setMyRole] = useState<"infiltrator" | "civilian" | null>(null);
-
-  const voteGroups = useMemo(() => {
-    if (!roomState) return [];
-
-    const byId = new Map(roomState.players.map((p) => [p.socketId, p.name]));
-    const groups = new Map<
-      string,
-      { targetId: string; label: string; voters: string[] }
-    >();
-
-    // buckets: each player + "none"
-    for (const p of roomState.players) {
-      groups.set(p.socketId, {
-        targetId: p.socketId,
-        label: p.name,
-        voters: [],
-      });
-    }
-    groups.set("none", {
-      targetId: "none",
-      label: "No Infiltrator",
-      voters: [],
-    });
-
-    // fill voters
-    for (const [voterId, sub] of Object.entries(
-      roomState.game.submissions ?? {}
-    )) {
-      const voterName = byId.get(voterId);
-      if (!voterName) continue;
-
-      const g = groups.get(sub.value);
-      if (!g) continue;
-      g.voters.push(voterName);
-    }
-
-    // sort by most votes, then name
-    return Array.from(groups.values()).sort((a, b) => {
-      const d = b.voters.length - a.voters.length;
-      if (d !== 0) return d;
-      return a.label.localeCompare(b.label);
-    });
+  // Voting phase state - voteOptions includes all players plus "No Infiltrator" option
+  const voteOptions = useMemo(() => {
+    if (!roomState) return [] as { id: string; label: string }[];
+    const playerOptions = roomState.players.map((p) => ({
+      id: p.socketId,
+      label: p.name,
+    }));
+    return [...playerOptions, { id: "none", label: "No Infiltrator" }];
   }, [roomState]);
 
-  const canJoin = useMemo(() => {
-    return roomCode.trim().length >= 3 && playerName.trim().length >= 1;
-  }, [roomCode, playerName]);
+  // Vote grouping for results display - shows who voted for each player/option
+  const voteGroups = useMemo(() => {
+    if (!roomState)
+      return [] as { targetId: string; label: string; voters: string[] }[];
+    const groups = roomState.players.map((p) => ({
+      targetId: p.socketId,
+      label: p.name,
+      voters: [] as string[],
+    }));
+    groups.push({ targetId: "none", label: "No Infiltrator", voters: [] });
+    return groups;
+  }, [roomState]);
 
-  const [timeNow, setTimeNow] = useState(now());
+  // Player's vote selection and submission state
+  type Submission = { value: string };
+  const [selectedVote, setSelectedVote] = useState<string | null>(null);
+  const [mySubmission, setMySubmission] = useState<Submission | null>(null);
 
-  const voteOptions = roomState
-    ? [
-        ...roomState.players.map((p) => ({ id: p.socketId, label: p.name })),
-        { id: "none", label: "No Infiltrator" },
-      ]
-    : [{ id: "none", label: "No Infiltrator" }];
+  // UI state for copy button feedback
+  const [copiedRoomCode, setCopiedRoomCode] = useState(false);
+
+  // Determine if join button should be enabled (both name and room code required)
+  const canJoin = playerName.trim().length > 0 && roomCode.trim().length > 0;
 
   useEffect(() => {
-    socket.connect();
-
-    const onConnect = () => {
-      setConnected(true);
-      setMySocketId(socket.id ?? null);
-    };
-
+    const onConnect = () => setConnected(true);
     const onDisconnect = () => setConnected(false);
-
-    const onJoined = (payload: { roomCode: string; socketId: string }) => {
-      setStatus(`Joined room ${payload.roomCode} (socket ${payload.socketId})`);
-      setMySocketId(payload.socketId);
+    const onState = (s: RoomState) => {
+      setRoomState(s);
+      // Update status when player successfully joins
+      if (s && s.players.some((p) => p.socketId === socket.id)) {
+        setStatus(`Successfully joined room ${s.roomCode}`);
+      }
     };
-
-    const onPlayerJoined = (payload: {
-      roomCode: string;
-      playerName: string;
+    const onPowerResult = (payload: {
+      type: string;
+      [key: string]: unknown;
     }) => {
-      setStatus(`${payload.playerName} joined ${payload.roomCode}`);
+      // server-side power results may include learned info or notes
+      if (typeof payload.learned === "string") setLearnedInfo(payload.learned);
+      if (typeof payload.note === "string") setPowerNotifications(payload.note);
     };
 
-    const t = setInterval(() => setTimeNow(now()), 250);
+    const onPowerPrompt = (p: PowerPrompt) => setPowerPrompt(p);
 
-    const onState = (state: RoomState) => setRoomState(state);
-
-    const onPlayerRole = (p: { role: "infiltrator" | "civilian" }) => {
-      setMyRole(p.role);
-    };
-
-    const onKicked = (payload: { roomCode: string; reason: string }) => {
-      setStatus(
-        `You were removed from ${payload.roomCode} (${payload.reason})`
-      );
-      setRoomState(null);
-    };
-
-    const onJoinDenied = (payload: { roomCode: string; reason: string }) => {
-      setStatus(`Join denied for ${payload.roomCode}: ${payload.reason}`);
-    };
-
-    const onClosed = (payload: { roomCode: string; reason: string }) => {
-      setStatus(`Room closed: ${payload.reason}`);
-      setRoomState(null);
-    };
-
-    const onLeft = (payload: { roomCode: string }) => {
-      setStatus(`Left room ${payload.roomCode}`);
-      setRoomState(null);
-      setMyRole(null);
-    };
-
+    socket.connect();
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
-    socket.on("room:joined", onJoined);
-    socket.on("room:playerJoined", onPlayerJoined);
     socket.on("room:state", onState);
-    socket.on("room:kicked", onKicked);
-    socket.on("room:joinDenied", onJoinDenied);
-    socket.on("room:closed", onClosed);
-    socket.on("room:left", onLeft);
-    socket.on("player:role", onPlayerRole);
+    socket.on("power:result", onPowerResult);
+    socket.on("power:prompt", onPowerPrompt);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
-      socket.off("room:joined", onJoined);
-      socket.off("room:playerJoined", onPlayerJoined);
       socket.off("room:state", onState);
-      socket.off("room:kicked", onKicked);
-      socket.off("room:joinDenied", onJoinDenied);
-      socket.off("room:closed", onClosed);
-      socket.off("room:left", onLeft);
-      socket.off("player:role", onPlayerRole);
+      socket.off("power:result", onPowerResult);
+      socket.off("power:prompt", onPowerPrompt);
       socket.disconnect();
-      clearInterval(t);
     };
   }, []);
 
-  // Clear private role when leaving reveal phase
   useEffect(() => {
-    if (roomState?.game.phase !== "reveal") {
-      const id = setTimeout(() => setMyRole(null), 0);
-      return () => clearTimeout(id);
+    if (!roomState) return;
+    if (roomState.game.endsAt) {
+      const update = () => {
+        const s = Math.max(
+          0,
+          Math.ceil((roomState.game.endsAt! - Date.now()) / 1000)
+        );
+        setSecondsLeft(s);
+      };
+      update();
+      const t = setInterval(update, 500);
+      return () => clearInterval(t);
     }
     return;
-  }, [roomState?.game.phase]);
-
-  function joinRoom() {
-    setStatus("Joining...");
-    socket.emit("room:join", {
-      roomCode: roomCode.trim().toUpperCase(),
-      playerName: playerName.trim(),
-    });
-  }
-
-  function leaveRoom() {
-    if (!roomState || !myPlayer) return;
-    socket.emit("room:leave", { roomCode: roomState.roomCode });
-    setStatus(`Left room ${roomState.roomCode}`);
-    setRoomState(null);
-    setMyRole(null);
-  }
-
-  function submitVote() {
-    if (!roomState?.game.roundId) return;
-
-    socket.emit("game:submit", {
-      roomCode: roomState.roomCode,
-      roundId: roomState.game.roundId,
-      value: selectedVote,
-    });
-  }
-
-  function copyRoomCode() {
-    const code = (roomState?.roomCode ?? roomCode).trim().toUpperCase();
-    if (!code) return;
-
-    const done = () => {
-      setStatus(`Copied ${code} to clipboard`);
-      setTimeout(() => setStatus(""), 2500);
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard
-        .writeText(code)
-        .then(done)
-        .catch(() => {
-          const el = document.createElement("textarea");
-          el.value = code;
-          document.body.appendChild(el);
-          el.select();
-          document.execCommand("copy");
-          document.body.removeChild(el);
-          done();
-        });
-    } else {
-      const el = document.createElement("textarea");
-      el.value = code;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-      done();
-    }
-  }
-
-  async function pasteRoomCode() {
-    try {
-      const text = await navigator.clipboard.readText();
-      setRoomCode(text.trim().toUpperCase());
-      setStatus("Pasted from clipboard");
-      setTimeout(() => setStatus(""), 2500);
-    } catch {
-      setStatus("Failed to paste from clipboard");
-      setTimeout(() => setStatus(""), 2500);
-    }
-  }
-
-  const secondsLeft = roomState?.game.endsAt
-    ? Math.max(0, Math.ceil((roomState.game.endsAt - timeNow) / 1000))
-    : null;
-
-  const mySubmission =
-    roomState && mySocketId
-      ? roomState.game.submissions[mySocketId]
-      : undefined;
-
-  const myPlayer =
-    roomState && mySocketId
-      ? roomState.players.find((p) => p.socketId === mySocketId)
-      : undefined;
+  }, [roomState]);
 
   return (
     <div style={{ padding: 16 }}>
@@ -262,106 +158,120 @@ export default function PlayerPage() {
           alignItems: "center",
         }}
       >
-        <h1>Player</h1>
+        <h1>{roomState?.game.started ? myPlayer?.name : "Player"}</h1>
         {myPlayer && (
-          <button onClick={() => leaveRoom()} style={{ marginLeft: 12 }}>
+          <button
+            onClick={() =>
+              leaveRoomAction(socket, roomState, setStatus, setRoomState)
+            }
+            style={{ marginLeft: 12 }}
+          >
             Leave Room
           </button>
         )}
       </div>
 
-      <p>
-        Socket:{" "}
-        <strong>{connected ? "connected ✅" : "disconnected ❌"}</strong>
-      </p>
-
-      {/* Game panel */}
-      {roomState?.game.started && (
+      {!connected && (
         <div
           style={{
-            marginBottom: 12,
             padding: 12,
-            border: "1px solid #ccc",
+            background: "#f8d7da",
+            border: "1px solid #f5c6cb",
             borderRadius: 8,
+            color: "#721c24",
+            marginBottom: 12,
           }}
         >
-          <div>
-            <strong>Phase:</strong> {roomState.game.phase}
-          </div>
-          <div>
-            <strong>Prompt:</strong> {roomState.game.prompt ?? "(none)"}
-          </div>
-
-          {(roomState.game.phase === "mayhem" ||
-            roomState.game.phase === "voting") && (
-            <div>
-              <strong>Time left:</strong> {secondsLeft}s
-            </div>
-          )}
-
-          {roomState.game.phase === "results" && (
-            <div style={{ marginTop: 8 }}>
-              <strong>Round ended.</strong> Results below 👇
-            </div>
-          )}
+          ⚠️ Disconnected from server
         </div>
       )}
 
-      <div style={{ display: "grid", gap: 12, maxWidth: 360 }}>
-        {/* Join inputs */}
-        <label>
-          Name:
-          <input
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            style={{ width: "100%" }}
-          />
-        </label>
+      <div style={{ display: "grid", gap: 12, maxWidth: 640 }}>
+        {!myPlayer && !roomState?.game.started ? (
+          <>
+            <label>
+              Name:
+              <input
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                style={{ width: "100%" }}
+              />
+            </label>
 
-        <label>
-          Room Code:
-          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-            <input
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-              style={{ flex: 1 }}
-            />
-            <button onClick={pasteRoomCode} style={{ padding: "6px 10px" }}>
-              Paste
+            <label>
+              Room Code:
+              <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                <input
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  onClick={() =>
+                    pasteRoomCodeFromClipboard((code) => setRoomCode(code))
+                  }
+                  style={{ padding: "6px 10px" }}
+                >
+                  Paste
+                </button>
+              </div>
+            </label>
+
+            <button
+              onClick={() =>
+                joinRoomAction(socket, roomCode, playerName, setStatus)
+              }
+              disabled={!canJoin}
+            >
+              Join Room
             </button>
-            {myPlayer && (
+          </>
+        ) : myPlayer && !roomState?.game.started ? (
+          <div style={{ padding: 8 }}>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>Name</div>
+            <div style={{ fontSize: 18, marginBottom: 8 }}>
+              {myPlayer?.name}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div
+                style={{
+                  background: "#fff",
+                  color: "#000",
+                  padding: "6px 10px",
+                  borderRadius: 6,
+                  fontSize: 18,
+                  letterSpacing: 4,
+                  fontWeight: 700,
+                }}
+              >
+                {(roomState?.roomCode ?? roomCode).toUpperCase()}
+              </div>
               <button
-                onClick={copyRoomCode}
-                disabled={!roomState?.roomCode}
+                onClick={() => {
+                  const code = (roomState?.roomCode ?? roomCode)
+                    .trim()
+                    .toUpperCase();
+                  copyRoomCodeToClipboard(code, () => {
+                    setCopiedRoomCode(true);
+                    setTimeout(() => setCopiedRoomCode(false), 2000);
+                  });
+                }}
+                disabled={!(roomState?.roomCode || roomCode)}
                 style={{ padding: "6px 10px" }}
               >
-                Copy
+                {copiedRoomCode ? "Copied" : "Copy"}
               </button>
-            )}
+            </div>
           </div>
-        </label>
+        ) : null}
 
-        {!myPlayer && (
-          <button onClick={joinRoom} disabled={!canJoin}>
-            Join Room
-          </button>
-        )}
-
-        {/* Ready toggle moved here */}
         {myPlayer && (
           <div style={{ marginTop: 8 }}>
             <button
               onClick={() => {
                 if (!roomState || !myPlayer) return;
-                socket.emit("player:setReady", {
-                  roomCode: roomState.roomCode,
-                  ready: !myPlayer.ready,
-                });
-                setStatus(
-                  `${myPlayer.name} is now ${
-                    !myPlayer.ready ? "ready" : "not ready"
-                  }`
-                );
+                togglePlayerReadyAction(socket, roomState, myPlayer, setStatus);
               }}
             >
               {myPlayer.ready ? "Unready" : "Ready"}
@@ -369,12 +279,7 @@ export default function PlayerPage() {
           </div>
         )}
 
-        <div>
-          <strong>Status:</strong> {status || "(none)"}
-        </div>
-
-        {/* ROLE REVEAL */}
-        {roomState?.game.phase === "reveal" && (
+        {roomState && myPlayer && roomState?.game.phase === "reveal" && (
           <div
             style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}
           >
@@ -386,199 +291,241 @@ export default function PlayerPage() {
                 {myRole ? myRole.toUpperCase() : "Waiting for role..."}
               </strong>
             </div>
-
             <div style={{ marginBottom: 8 }}>
               <button
-                onClick={() => {
-                  if (!roomState || !myRole) return;
-                  socket.emit("player:ackRole", {
-                    roomCode: roomState.roomCode,
-                    seen: true,
-                  });
-                  setStatus("Acknowledged role");
-                }}
-                disabled={
-                  !myRole || !!roomState?.game.rolesAck?.[mySocketId ?? ""]
+                onClick={() =>
+                  acknowledgeRoleAction(socket, roomState, myRole, setStatus)
                 }
+                disabled={!myRole || !!myPlayer?.roleAcknowledged}
               >
                 I have seen my role
               </button>
             </div>
-
             <div style={{ opacity: 0.8 }}>
               Acknowledged:{" "}
-              {
-                Object.values(roomState?.game.rolesAck ?? {}).filter(Boolean)
-                  .length
-              }
-              /{roomState?.players.length}
+              {roomState?.players.filter((p) => p.roleAcknowledged).length}/
+              {roomState?.players.length}
             </div>
           </div>
         )}
 
-        {/* MAYHEM */}
-        {roomState?.game.phase === "mayhem" && (
+        {roomState && myPlayer && roomState?.game.phase === "mayhem" && (
           <div
             style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}
           >
             <strong>Mayhem Round</strong>
             <div style={{ marginTop: 6, opacity: 0.8 }}>
-              Actions are happening... voting starts soon.
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <strong>Time left:</strong> {secondsLeft}s
-            </div>
-          </div>
-        )}
-
-        {/* VOTING (multiple choice) */}
-        {roomState?.game.phase === "voting" && (
-          <div
-            style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}
-          >
-            <div style={{ marginBottom: 8 }}>
-              <strong>Vote</strong>
-              {mySubmission && (
-                <span style={{ marginLeft: 8, opacity: 0.7 }}>
-                  submitted ✅
-                </span>
-              )}
+              Use your special powers if you have them, then acknowledge when
+              ready.
             </div>
 
-            <div style={{ display: "grid", gap: 6 }}>
-              {voteOptions.map((opt) => (
-                <label
-                  key={opt.id}
-                  style={{ display: "flex", gap: 8, alignItems: "center" }}
-                >
-                  <input
-                    type="radio"
-                    name="vote"
-                    value={opt.id}
-                    checked={selectedVote === opt.id}
-                    disabled={!!mySubmission}
-                    onChange={() => setSelectedVote(opt.id)}
-                  />
-                  <span>{opt.label}</span>
-                </label>
-              ))}
-            </div>
-
-            <button
-              onClick={submitVote}
-              disabled={!roomState.game.roundId || !!mySubmission}
-              style={{ marginTop: 10 }}
-            >
-              Submit Vote
-            </button>
-          </div>
-        )}
-
-        {/* RESULTS (tally + breakdown) */}
-        {roomState?.game.phase === "results" && (
-          <div
-            style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}
-          >
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Results</div>
-
-            {roomState.game.winner && (
-              <div style={{ marginBottom: 8, fontWeight: 700 }}>
-                Winner:{" "}
-                {roomState.game.winner === "crew"
-                  ? "Crew (Players)"
-                  : roomState.game.winner === "infiltrators"
-                  ? "Infiltrators"
-                  : "No winner"}
-              </div>
-            )}
-
-            {/* Totals */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Vote totals
-              </div>
-              <ol style={{ paddingLeft: 18, margin: 0 }}>
-                {voteGroups
-                  .filter((g) => g.voters.length > 0)
-                  .map((g) => (
-                    <li key={g.targetId}>
-                      {g.label}: <strong>{g.voters.length}</strong>
-                    </li>
-                  ))}
-              </ol>
-            </div>
-
-            {/* Grouped breakdown */}
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Who voted for who
-              </div>
-              <div style={{ display: "grid", gap: 10 }}>
-                {voteGroups
-                  .filter((g) => g.voters.length > 0)
-                  .map((g) => (
-                    <div
-                      key={g.targetId}
-                      style={{
-                        padding: 10,
-                        border: "1px solid #eee",
-                        borderRadius: 8,
-                      }}
-                    >
-                      <div style={{ fontWeight: 600 }}>
-                        {g.label} ({g.voters.length})
-                      </div>
-                      <div style={{ opacity: 0.9 }}>{g.voters.join(", ")}</div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            {roomState.game.roles && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 600, marginBottom: 6 }}>Roles</div>
-                <ul style={{ paddingLeft: 18, margin: 0 }}>
-                  {roomState.players.map((p) => (
-                    <li key={p.socketId}>
-                      {p.name}:{" "}
-                      <strong
-                        style={{
-                          color:
-                            roomState.game.roles?.[p.socketId] === "infiltrator"
-                              ? "#a00"
-                              : "#060",
+            {myRole &&
+              ["thief", "engineer", "hacker"].includes(myRole) &&
+              !myPlayer?.usedPower && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                    Special Power ({myRole.toUpperCase()})
+                  </div>
+                  {myRole === "thief" && roomState.game.unusedRoles && (
+                    <div>
+                      <select id="thief-target" style={{ marginRight: 8 }}>
+                        {roomState.game.unusedRoles.map((_, idx) => (
+                          <option key={idx} value={idx.toString()}>
+                            Unused Role {idx + 1}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => {
+                          const select = document.getElementById(
+                            "thief-target"
+                          ) as HTMLSelectElement;
+                          sendPowerAction(
+                            socket,
+                            roomState,
+                            "viewUnused",
+                            select.value
+                          );
                         }}
                       >
-                        {(
-                          roomState.game.roles?.[p.socketId] || "unknown"
-                        ).toUpperCase()}
-                      </strong>
-                    </li>
-                  ))}
-                </ul>
-
-                {roomState.game.unusedRoles &&
-                  roomState.game.unusedRoles.length > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                        Unused roles
-                      </div>
-                      <div style={{ opacity: 0.9 }}>
-                        {roomState.game.unusedRoles.map((r, idx) => (
-                          <span key={idx} style={{ marginRight: 8 }}>
-                            {r.toUpperCase()}
-                          </span>
-                        ))}
-                      </div>
+                        Last Look
+                      </button>
                     </div>
                   )}
+
+                  {(myRole === "engineer" || myRole === "hacker") && (
+                    <div>
+                      <select
+                        id={`${myRole}-target`}
+                        style={{ marginRight: 8 }}
+                      >
+                        {roomState.players
+                          .filter((p) => p.socketId !== mySocketId)
+                          .map((p) => (
+                            <option key={p.socketId} value={p.socketId}>
+                              {p.name}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        onClick={() => {
+                          const select = document.getElementById(
+                            `${myRole}-target`
+                          ) as HTMLSelectElement;
+                          sendPowerAction(
+                            socket,
+                            roomState,
+                            myRole === "engineer"
+                              ? "viewPlayerRole"
+                              : "viewPlayerTeam",
+                            select.value
+                          );
+                        }}
+                      >
+                        {myRole === "engineer"
+                          ? "Role Peek"
+                          : "Allegiance Check"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            {learnedInfo && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  background: "#fff3cd",
+                  border: "1px solid #ffeeba",
+                  borderRadius: 6,
+                  color: "#856404",
+                }}
+              >
+                <strong>Learned:</strong> {learnedInfo}
+              </div>
+            )}
+
+            {powerPrompt && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  background: "#fff3cd",
+                  border: "1px solid #ffeeba",
+                  borderRadius: 6,
+                  color: "#856404",
+                }}
+              >
+                <div style={{ fontWeight: 700 }}>{powerPrompt.prompt}</div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    marginTop: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {powerPrompt.targets.map(
+                    (t: { id: string; label: string }) => (
+                      <button
+                        key={t.id}
+                        onClick={() => {
+                          sendPowerAction(
+                            socket,
+                            roomState,
+                            powerPrompt.type,
+                            t.id
+                          );
+                          setPowerPrompt(null);
+                        }}
+                      >
+                        {t.label}
+                      </button>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!myPlayer?.mayhemAcknowledged && (
+              <div style={{ marginTop: 12 }}>
+                <button
+                  onClick={() => acknowledgeMayhemAction(socket, roomState)}
+                  style={{
+                    padding: "8px 16px",
+                    background: "#007bff",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                  }}
+                >
+                  I'm Ready for Voting
+                </button>
+              </div>
+            )}
+
+            {myPlayer?.mayhemAcknowledged && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 8,
+                  background: "#d4edda",
+                  borderRadius: 4,
+                  color: "#155724",
+                }}
+              >
+                ✅ Ready for voting - waiting for other players...
+              </div>
+            )}
+
+            {powerNotifications && (
+              <div
+                style={{
+                  marginTop: 8,
+                  padding: 10,
+                  background: "#d1ecf1",
+                  border: "1px solid #bee5eb",
+                  borderRadius: 6,
+                  color: "#0c5460",
+                }}
+              >
+                {powerNotifications}
               </div>
             )}
           </div>
         )}
 
-        {/* Room State */}
-        {roomState && (
+        {roomState && myPlayer && roomState?.game.phase === "voting" && (
+          <VotingPanel
+            voteOptions={voteOptions}
+            selectedVote={selectedVote}
+            mySubmission={
+              mySubmission
+                ? { value: mySubmission.value, submittedAt: 0 }
+                : null
+            }
+            roundId={roomState.game.roundId}
+            secondsLeft={secondsLeft}
+            onSelectVote={setSelectedVote}
+            onSubmit={() =>
+              submitVoteAction(
+                socket,
+                roomState,
+                selectedVote,
+                setStatus,
+                setMySubmission
+              )
+            }
+          />
+        )}
+
+        {roomState && myPlayer && roomState?.game.phase === "results" && (
+          <ResultsPanel roomState={roomState} voteGroups={voteGroups} />
+        )}
+
+        {roomState && myPlayer && roomState.game.phase === "lobby" && (
           <div
             style={{
               marginTop: 12,
@@ -587,33 +534,40 @@ export default function PlayerPage() {
               borderRadius: 8,
             }}
           >
-            <strong>Room State</strong>
-            <div>Room: {roomState.roomCode}</div>
-
-            <div style={{ marginTop: 6 }}>
-              {roomState.game.started ? "Players in game" : "Players"}:{" "}
-              <strong>
-                {roomState.game.started
-                  ? roomState.players.length
-                  : `${roomState.players.length} of ${roomState.settings.maxPlayers}`}
-              </strong>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>
+              Players ({roomState.players.length} of{" "}
+              {roomState.settings.maxPlayers})
             </div>
-
-            <div style={{ marginTop: 6 }}>
-              <div style={{ fontWeight: 600 }}>Players</div>
-              <ul style={{ paddingLeft: 18, margin: 6 }}>
-                {roomState.players.map((p) => (
-                  <li key={p.socketId} style={{ marginBottom: 4 }}>
-                    {p.name}{" "}
-                    <span style={{ opacity: 0.75 }}>
-                      ({p.ready ? "ready" : "not ready"})
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <ul style={{ paddingLeft: 18, margin: 0 }}>
+              {roomState.players.map((p) => (
+                <li key={p.socketId} style={{ marginBottom: 4 }}>
+                  {p.name}{" "}
+                  <span style={{ opacity: 0.75 }}>
+                    ({p.ready ? "ready" : "not ready"})
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {roomState.game.powerSummary &&
+              roomState.game.powerSummary.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ fontWeight: 600 }}>Recent actions</div>
+                  <ul style={{ paddingLeft: 18, margin: 6 }}>
+                    {roomState.game.powerSummary.slice(-5).map((s, idx) => (
+                      <li key={idx} style={{ marginBottom: 4 }}>
+                        {new Date(s.at).toLocaleTimeString()}: {s.actorName}{" "}
+                        used {s.type}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
           </div>
         )}
+
+        <div style={{ marginTop: 16 }}>
+          <strong>Status:</strong> {status || "(none)"}
+        </div>
       </div>
     </div>
   );

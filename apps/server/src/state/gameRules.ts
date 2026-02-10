@@ -5,7 +5,7 @@ export const GAME_RULES: Record<
   { minPlayers: number; maxPlayersCap: number }
 > = {
   infiltration: { minPlayers: 3, maxPlayersCap: 8 },
-  odd_one_out: { minPlayers: 2, maxPlayersCap: 6 },
+  odd_one_out: { minPlayers: 3, maxPlayersCap: 10 },
 };
 
 export const DEFAULT_SETTINGS_FOR_GAME = (
@@ -17,8 +17,14 @@ export const DEFAULT_SETTINGS_FOR_GAME = (
     gameKey,
     maxPlayers: cap,
     gameOptions: {
-      infiltration: { allowNoInfiltrator: true, revealVotes: true },
-      odd_one_out: { revealVotes: true },
+      infiltration: {
+        allowNoInfiltrator: false,
+        revealVotes: true,
+        numInfiltrators: 2,
+        // default to enabling all special roles
+        enabledRoleIds: [0, 1, 2],
+      },
+      odd_one_out: { revealVotes: true, numOddOnes: 2 },
     },
   };
 };

@@ -1,5 +1,6 @@
 import { now } from "../utils/time";
 import { GAME_RULES } from "./gameRules";
+import { normalizeRoomCode } from "../utils/roomCode";
 import type { GameKey, RoomState } from "./types";
 
 export const rooms = new Map<string, RoomState>();
@@ -9,7 +10,7 @@ export function createRoomHosted(
   hostSocketId: string,
   gameKey: GameKey
 ): RoomState {
-  const code = roomCode.trim().toUpperCase();
+  const code = normalizeRoomCode(roomCode);
   const existing = rooms.get(code);
   if (existing) return existing;
 
@@ -26,13 +27,10 @@ export function createRoomHosted(
     game: {
       started: false,
       phase: "lobby",
-      prompt: null,
+
       endsAt: null,
       roundId: null,
-      submissions: {},
-      _roles: {},
       unusedRoles: [],
-      rolesAck: {},
       winner: undefined,
     },
 
@@ -48,11 +46,16 @@ export function createRoomHosted(
       requireApprovalToJoin: false,
       uniqueNames: true,
       allowRenameInLobby: true,
-      requireAllReady: false,
+      requireAllReady: true,
 
       gameOptions: {
-        infiltration: { allowNoInfiltrator: true, revealVotes: true },
-        odd_one_out: { revealVotes: true },
+        infiltration: {
+          allowNoInfiltrator: true,
+          revealVotes: true,
+          numInfiltrators: 2,
+          enabledRoleIds: [0, 1, 2], // All roles: thief, hacker, engineer
+        },
+        odd_one_out: { revealVotes: true, numOddOnes: 2 },
       },
     },
 
@@ -64,7 +67,7 @@ export function createRoomHosted(
 }
 
 export function getRoom(roomCode: string): RoomState | undefined {
-  return rooms.get(roomCode.trim().toUpperCase());
+  return rooms.get(normalizeRoomCode(roomCode));
 }
 
 export function removePlayerFromRoom(room: RoomState, socketId: string) {

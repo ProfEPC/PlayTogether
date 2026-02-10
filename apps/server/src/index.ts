@@ -3,6 +3,7 @@ import http from "http";
 import cors from "cors";
 import { Server } from "socket.io";
 import { registerSocketHandlers } from "./socket/registerHandlers";
+import { logger } from "./utils/logger";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
@@ -24,5 +25,5 @@ const io = new Server(httpServer, {
 registerSocketHandlers(io);
 
 httpServer.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+  logger.serverStarted(PORT);
 });

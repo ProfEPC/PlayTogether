@@ -1,3 +1,5 @@
+import CharacterCreation from "./CharacterCreation";
+
 export default function AdminPage() {
-  return <h1>Admin</h1>;
+  return <CharacterCreation />;
 }

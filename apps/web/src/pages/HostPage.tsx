@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useAppStore } from "../state/useAppStore";
 import { socket } from "../lib/socket";
 import { useNow } from "../hooks/useNow";
-import type { RoomState, GameKey } from "../types/room";
-
-function makeRoomCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // avoid O/0, I/1
-  let out = "";
-  for (let i = 0; i < 4; i++)
-    out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
+import { makeRoomCode, closeRoomAction } from "../utils/host/roomActions";
+import { copyRoomCodeToClipboard } from "../utils/shared/roomCodeClipboard";
+import type { RoomState, GameKey, RoleConfig } from "../types/room";
+import infiltrationRoles from "../config/infiltrationRoles.json";
+import {
+  InfiltrationOptionsPanel,
+  LobbySettingsPanel,
+  HostPlayersPanel,
+  GameControlsPanel,
+  HostGameDisplayPanel,
+  HostResultsPanel,
+  GameSelectionScreen,
+} from "../components/HostPage";
 
 export default function HostPage() {
   const roomCode = useAppStore((s) => s.roomCode);
@@ -18,11 +22,22 @@ export default function HostPage() {
   const setRole = useAppStore((s) => s.setRole);
 
   const [connected, setConnected] = useState(socket.connected);
-  const [hosted, setHosted] = useState(false);
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [status, setStatus] = useState("");
 
   const timeNow = useNow(250);
+  useEffect(() => {
+    const prev = prevPlayerCountRef.current || 0;
+    if (!roomState) {
+      prevPlayerCountRef.current = 0;
+      return;
+    }
+    const cur = roomState.players.length;
+    if (cur > prev) {
+      // previously tracked last joined name here; no longer needed
+    }
+    prevPlayerCountRef.current = cur;
+  }, [roomState]);
   const playersLabel = roomState
     ? roomState.game.started
       ? `${roomState.players.length}`
@@ -35,12 +50,15 @@ export default function HostPage() {
 
   const [roundSeconds, setRoundSeconds] = useState(30);
   const submittedCount = roomState
-    ? Object.keys(roomState.game.submissions).length
+    ? roomState.players.filter((p) => p.submission !== undefined).length
     : 0;
   const totalPlayers = roomState ? roomState.players.length : 0;
 
   const [gameKey, setGameKey] = useState<GameKey>("infiltration");
   const [maxPlayers, setMaxPlayers] = useState(8);
+
+  // Infiltration options
+  const [numInfiltrators, setNumInfiltrators] = useState<0 | 1 | 2>(2);
 
   const [selectedGameKey, setSelectedGameKey] = useState<GameKey | "">("");
   // Host flow state: whether we're selecting the game or in setup
@@ -48,10 +66,20 @@ export default function HostPage() {
     selectedGameKey === "" ? "selectGame" : "setup"
   );
 
+  const [playersCollapsed, setPlayersCollapsed] = useState(false);
+  const prevPlayerCountRef = useRef<number>(
+    roomState ? roomState.players.length : 0
+  );
+
+  const roles = infiltrationRoles as RoleConfig[];
+
+  const [enabledRoleIds, setEnabledRoleIds] = useState<Set<number>>(
+    () => new Set([0, 1, 2, 100, 101]) // All roles: thief, hacker, engineer, + both infiltrators
+  );
+
   const voteGroups = useMemo(() => {
     if (!roomState) return [];
 
-    const byId = new Map(roomState.players.map((p) => [p.socketId, p]));
     const groups = new Map<
       string,
       { targetId: string; label: string; voters: string[] }
@@ -72,13 +100,10 @@ export default function HostPage() {
     });
 
     // Fill voters
-    for (const [voterId, sub] of Object.entries(
-      roomState.game.submissions ?? {}
-    )) {
-      const voter = byId.get(voterId);
-      if (!voter) continue;
+    for (const voter of roomState?.players || []) {
+      if (!voter.submission) continue;
 
-      const targetId = sub.value;
+      const targetId = voter.submission.value;
       const g = groups.get(targetId);
       if (!g) continue; // should not happen if server validates
       g.voters.push(voter.name);
@@ -91,7 +116,6 @@ export default function HostPage() {
       return a.label.localeCompare(b.label);
     });
   }, [roomState]);
-
   useEffect(() => {
     setRole("host");
     if (!roomCode) setRoomCode(makeRoomCode());
@@ -101,20 +125,19 @@ export default function HostPage() {
     const onConnect = () => setConnected(true);
     const onDisconnect = () => {
       setConnected(false);
-      setHosted(false);
       setStatus("Disconnected");
     };
 
     const onHosted = (payload: { roomCode: string; socketId: string }) => {
-      setHosted(true);
       setStatus(`Hosting room ${payload.roomCode}`);
     };
 
     const onState = (state: RoomState) => setRoomState(state);
 
     const onClosed = (payload: { roomCode: string; reason: string }) => {
-      setHosted(false);
       setRoomState(null);
+      setSelectedGameKey("");
+      setHostStep("selectGame");
       setStatus(`Room closed: ${payload.reason}`);
     };
 
@@ -138,350 +161,226 @@ export default function HostPage() {
 
   useEffect(() => {
     if (!roomState) return;
+
     setGameKey(roomState.settings.gameKey);
     setRoundSeconds(Math.round(roomState.settings.roundDurationMs / 1000));
     setMaxPlayers(roomState.settings.maxPlayers);
+
+    if (roomState.settings.gameKey === "infiltration") {
+      const opts = roomState.settings.gameOptions?.infiltration;
+
+      const numInfs = opts?.numInfiltrators ?? 2;
+      setNumInfiltrators(numInfs as 0 | 1 | 2);
+
+      // Reconstruct enabled role IDs: include the base roles + infiltrator slots
+      const baseIds = opts?.enabledRoleIds ?? [0, 1, 2];
+      const infiltratorSlots =
+        numInfs === 2 ? [100, 101] : numInfs === 1 ? [100] : [];
+      const allIds = [...baseIds, ...infiltratorSlots];
+      setEnabledRoleIds(new Set(allIds));
+    }
   }, [roomState]);
 
-  function hostRoom() {
-    const code = roomCode.trim().toUpperCase();
-    setRoomCode(code);
-    setStatus("Starting host...");
-    const gameToHost = (selectedGameKey || gameKey) as GameKey;
-    socket.emit("room:host", { roomCode: code, gameKey: gameToHost });
-  }
+  useEffect(() => {
+    if (!roomState) return;
 
-  function copyRoomCode() {
-    const code = (roomState?.roomCode ?? roomCode).trim().toUpperCase();
-    if (!code) return;
+    const minPlayers = roomState.settings.gameKey === "infiltration" ? 3 : 3;
+    const hasEnoughPlayers = roomState.players.length >= minPlayers;
+    const allReady =
+      hasEnoughPlayers && roomState.players.every((p) => p.ready);
 
-    const done = () => {
-      setStatus(`Copied ${code} to clipboard`);
-      setTimeout(() => setStatus(""), 2500);
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard
-        .writeText(code)
-        .then(done)
-        .catch(() => {
-          const el = document.createElement("textarea");
-          el.value = code;
-          document.body.appendChild(el);
-          el.select();
-          document.execCommand("copy");
-          document.body.removeChild(el);
-          done();
-        });
+    if (roomState.game.started) {
+      setStatus("Game in progress");
+    } else if (allReady) {
+      setStatus("All players ready - start game");
+    } else if (hasEnoughPlayers) {
+      const readyCount = roomState.players.filter((p) => p.ready).length;
+      setStatus(
+        `Waiting for players to be ready (${readyCount}/${roomState.players.length})`
+      );
     } else {
-      const el = document.createElement("textarea");
-      el.value = code;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-      done();
+      setStatus("Waiting for players");
     }
-  }
+  }, [roomState]);
+
   const effectiveRoomCode = roomState?.roomCode ?? roomCode;
+  const hosted = roomState?.hostSocketId === socket.id;
   const lobbyLocked = !roomState || roomState.game.started; // disable lobby settings after game starts
 
-  // When selecting a game we only show a minimal selection UI (no other setup controls).
   if (hostStep === "selectGame" || selectedGameKey === "") {
     return (
-      <div style={{ padding: 16 }}>
-        <h1>Host</h1>
-
-        <p>
-          Socket:{" "}
-          <strong>{connected ? "connected ✅" : "disconnected ❌"}</strong>
-        </p>
-
-        <div style={{ display: "grid", gap: 12, maxWidth: 440 }}>
-          <div
-            style={{
-              padding: 24,
-              border: "1px solid #ccc",
-              borderRadius: 8,
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 12 }}>
-              Select a game to host
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                justifyContent: "center",
-                marginBottom: 12,
-              }}
-            >
-              <button
-                onClick={() => setSelectedGameKey("infiltration")}
-                style={{
-                  padding: "12px 18px",
-                  minWidth: 160,
-                  fontSize: 16,
-                  background:
-                    selectedGameKey === "infiltration" ? "#036" : "#eee",
-                  color: selectedGameKey === "infiltration" ? "#fff" : "#000",
-                  border: "none",
-                  borderRadius: 6,
-                }}
-              >
-                Infiltration
-              </button>
-
-              <button
-                onClick={() => setSelectedGameKey("odd_one_out")}
-                style={{
-                  padding: "12px 18px",
-                  minWidth: 160,
-                  fontSize: 16,
-                  background:
-                    selectedGameKey === "odd_one_out" ? "#036" : "#eee",
-                  color: selectedGameKey === "odd_one_out" ? "#fff" : "#000",
-                  border: "none",
-                  borderRadius: 6,
-                }}
-              >
-                Odd One Out
-              </button>
-            </div>
-
-            <button
-              onClick={() => setHostStep("setup")}
-              disabled={selectedGameKey === ""}
-              style={{ width: "100%", padding: 10, fontWeight: 700 }}
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      </div>
+      <GameSelectionScreen
+        connected={connected}
+        selectedGameKey={selectedGameKey}
+        roomCode={roomCode}
+        socket={socket}
+        onSelectGame={setSelectedGameKey}
+        onSetup={() => setHostStep("setup")}
+        onStatusUpdate={setStatus}
+        onRoomCodeUpdate={setRoomCode}
+      />
     );
   }
 
   return (
     <div style={{ padding: 16 }}>
-      <h1>Host</h1>
-
-      <p>
-        Socket:{" "}
-        <strong>{connected ? "connected ✅" : "disconnected ❌"}</strong>
-      </p>
-
-      <div style={{ display: "grid", gap: 12, maxWidth: 440 }}>
-        {/* Room Code + Host button */}
-        <div style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}>
-          <label style={{ display: "block", marginBottom: 8 }}>
-            Room Code:
-            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-              <input
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                style={{ flex: 1, fontSize: 18, letterSpacing: 2 }}
-              />
-              <button
-                onClick={copyRoomCode}
-                disabled={!(roomState?.roomCode ?? roomCode)}
-                style={{ padding: "6px 10px" }}
-              >
-                Copy
-              </button>
-            </div>
-          </label>
-
+      {/* Header row: spacer (left) + centered title + room code (right) */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: 12,
+        }}
+      >
+        {/* Left: Close button */}
+        {roomState && hosted && (
           <button
-            onClick={hostRoom}
-            disabled={!connected || hosted}
-            title={hosted ? "Room is already hosted. Use Close Room to end hosting." : undefined}
-            style={{ width: "100%" }}
+            onClick={() =>
+              closeRoomAction(socket, effectiveRoomCode, setStatus)
+            }
+            style={{
+              padding: "8px 12px",
+              backgroundColor: "#ff6b6b",
+              color: "#fff",
+              border: "none",
+              borderRadius: 4,
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+            title="Close room"
+            aria-label="Close room"
           >
-            Host Room
+            CLOSE
           </button>
+        )}
+
+        {/* Left spacer to keep the title truly centered */}
+        <div style={{ width: 60 }} />
+
+        {/* Center title */}
+        <div
+          style={{
+            flex: 1,
+            textAlign: "center",
+            fontSize: 34,
+            fontWeight: 900,
+            lineHeight: 1.1,
+          }}
+        >
+          {selectedGameKey === "infiltration"
+            ? "Infiltration"
+            : selectedGameKey === "odd_one_out"
+            ? "Odd One Out"
+            : gameKey === "infiltration"
+            ? "Infiltration"
+            : "Odd One Out"}
         </div>
 
-        {/* Game (read-only since hostStep is setup) */}
-        <div style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}>
-          <div style={{ fontWeight: 700, marginBottom: 8 }}>Game</div>
-
-          <div style={{ marginBottom: 8 }}>
-            Game:{" "}
-            <strong>
-              {selectedGameKey === "infiltration"
-                ? "Infiltration"
-                : selectedGameKey === "odd_one_out"
-                ? "Odd One Out"
-                : gameKey === "infiltration"
-                ? "Infiltration"
-                : "Odd One Out"}
-            </strong>
-            <button
-              onClick={() => {
-                setHostStep("selectGame");
-                setSelectedGameKey("");
-                setRoomState(null);
-                setHosted(false);
-              }}
-              style={{ marginLeft: 12 }}
-            >
-              Change Game
-            </button>
+        {/* Right: Room code block (two lines) */}
+        <div
+          style={{
+            width: 160,
+            padding: 10,
+            border: "1px solid #ccc",
+            borderRadius: 8,
+          }}
+        >
+          <div
+            style={{ fontWeight: 700, marginBottom: 6, textAlign: "center" }}
+          >
+            Room Code
           </div>
 
-          {!roomState && (
-            <div style={{ marginTop: 8, opacity: 0.7 }}>
-              Host a room to enable game settings.
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              justifyContent: "flex-end",
+              alignItems: "center",
+            }}
+          >
+            <div
+              title="Room code"
+              style={{
+                width: 120, // shrink the code display
+                fontSize: 20,
+                letterSpacing: 5,
+                border: "1px solid #ccc",
+                borderRadius: 6,
+                padding: "6px 8px",
+                fontWeight: 800,
+                textAlign: "center",
+                background: "#ffffff",
+                color: "#000000",
+                userSelect: "text", // lets people highlight it
+              }}
+            >
+              {roomState?.roomCode ?? roomCode ?? "----"}
             </div>
+
+            <button
+              onClick={() => {
+                copyRoomCodeToClipboard(effectiveRoomCode, () => {
+                  setStatus(`Copied ${effectiveRoomCode} to clipboard`);
+                  setTimeout(() => setStatus(""), 2500);
+                });
+              }}
+              disabled={!effectiveRoomCode}
+              style={{ padding: "6px 10px" }}
+              title="Copy room code"
+              aria-label="Copy room code"
+            >
+              COPY
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        {/* Big game title */}
+        <div style={{ padding: 12 }}>
+          {(selectedGameKey === "infiltration" ||
+            roomState?.settings.gameKey === "infiltration") && (
+            <InfiltrationOptionsPanel
+              enabledRoleIds={enabledRoleIds}
+              setEnabledRoleIds={setEnabledRoleIds}
+              numInfiltrators={numInfiltrators}
+              setNumInfiltrators={setNumInfiltrators}
+              roles={roles}
+              lobbyLocked={lobbyLocked}
+              roomCode={effectiveRoomCode}
+              socket={socket}
+            />
           )}
         </div>
 
         {/* Core controls */}
-        {roomState ? (
-          <div style={{ display: "grid", gap: 8 }}>
-            <button
-              onClick={() =>
-                socket.emit("room:setLocked", {
-                  roomCode: effectiveRoomCode,
-                  locked: !(roomState?.locked ?? false),
-                })
-              }
-            >
-              {roomState?.locked ? "Unlock Room" : "Lock Room"}
-            </button>
-
-            <button
-              onClick={() =>
-                socket.emit("game:start", { roomCode: effectiveRoomCode })
-              }
-              disabled={
-                !roomState ||
-                roomState.players.length === 0 ||
-                roomState.game.started
-              }
-            >
-              Start Game
-            </button>
-
-            <button
-              onClick={() =>
-                socket.emit("game:reset", { roomCode: effectiveRoomCode })
-              }
-            >
-              Reset Game (Back to Lobby)
-            </button>
-
-            <button
-              onClick={() =>
-                socket.emit("room:close", { roomCode: effectiveRoomCode })
-              }
-            >
-              Close Room
-            </button>
-          </div>
-        ) : null}
-
-        {/* Status */}
-        <div>
-          <strong>Status:</strong> {status || "(none)"}
-        </div>
+        {roomState && (
+          <GameControlsPanel
+            roomState={roomState}
+            roomCode={effectiveRoomCode}
+            socket={socket}
+          />
+        )}
 
         {/* Game panel */}
         {roomState?.game.started && (
-          <div
-            style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}
-          >
-            <div>
-              <strong>Phase:</strong> {roomState.game.phase}
-            </div>
-            <div>
-              <strong>Prompt:</strong> {roomState.game.prompt ?? "(none)"}
-            </div>
+          <HostGameDisplayPanel
+            roomState={roomState}
+            secondsLeft={secondsLeft}
+            submittedCount={submittedCount}
+            totalPlayers={totalPlayers}
+          />
+        )}
 
-            {(roomState.game.phase === "mayhem" ||
-              roomState.game.phase === "voting") && (
-              <div>
-                <strong>Time left:</strong> {secondsLeft}s
-              </div>
-            )}
-
-            {roomState.game.phase === "voting" && (
-              <div>
-                <strong>Votes:</strong> {submittedCount}/{totalPlayers}
-              </div>
-            )}
-
-            {roomState.game.phase === "results" && (
-              <div style={{ marginTop: 8, opacity: 0.85 }}>
-                Round ended. Results below.
-              </div>
-            )}
-
-            {/* Results block (tally + breakdown) */}
-            {roomState.game.phase === "results" && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>Results</div>
-
-                {/* Totals */}
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                    Vote totals
-                  </div>
-                  <ol style={{ paddingLeft: 18, margin: 0 }}>
-                    {voteGroups
-                      .filter((g) => g.voters.length > 0)
-                      .map((g) => (
-                        <li key={g.targetId}>
-                          {g.label}: <strong>{g.voters.length}</strong>
-                        </li>
-                      ))}
-                  </ol>
-                </div>
-
-                {/* Grouped breakdown */}
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                    Who voted for who
-                  </div>
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {voteGroups
-                      .filter((g) => g.voters.length > 0)
-                      .map((g) => (
-                        <div
-                          key={g.targetId}
-                          style={{
-                            padding: 10,
-                            border: "1px solid #eee",
-                            borderRadius: 8,
-                          }}
-                        >
-                          <div style={{ fontWeight: 600 }}>
-                            {g.label} ({g.voters.length})
-                          </div>
-                          <div style={{ opacity: 0.9 }}>
-                            {g.voters.join(", ")}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() =>
-                    socket.emit("game:nextRound", {
-                      roomCode: roomState.roomCode,
-                    })
-                  }
-                  style={{ marginTop: 12, width: "100%" }}
-                >
-                  Next Round
-                </button>
-              </div>
-            )}
-          </div>
+        {/* Results panel */}
+        {roomState?.game.phase === "results" && (
+          <HostResultsPanel
+            roomState={roomState}
+            voteGroups={voteGroups}
+            socket={socket}
+          />
         )}
 
         {/* Room State panel */}
@@ -489,111 +388,36 @@ export default function HostPage() {
           <div
             style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}
           >
-            <h2 style={{ marginTop: 0 }}>Room State</h2>
-
-            <div>
-              Room: <strong>{roomState.roomCode}</strong>
-            </div>
-            {/* Displays Number of Players in Game */}
-            <div>
-              {roomState.game.started ? "Players in game" : "Players"}:{" "}
-              <strong>{playersLabel}</strong>
-            </div>
             {/* Lobby settings now live in room state */}
             {!roomState.game.started && (
-              <div style={{ marginTop: 8 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6 }}>
-                  Lobby Settings
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <label>
-                    Round seconds:
-                    <input
-                      type="number"
-                      min={5}
-                      max={300}
-                      value={roundSeconds}
-                      disabled={lobbyLocked}
-                      onChange={(e) => {
-                        const n = Number(e.target.value);
-                        if (!Number.isFinite(n)) return;
-                        setRoundSeconds(n);
-                        socket.emit("game:setDuration", {
-                          roomCode: roomState.roomCode,
-                          seconds: n,
-                        });
-                      }}
-                      style={{ width: 120, marginLeft: 8 }}
-                    />
-                  </label>
-
-                  <label>
-                    Max players:
-                    <input
-                      type="number"
-                      min={2}
-                      max={8}
-                      value={maxPlayers}
-                      disabled={lobbyLocked}
-                      onChange={(e) => {
-                        const n = Number(e.target.value);
-                        if (!Number.isFinite(n)) return;
-                        setMaxPlayers(n);
-                        socket.emit("room:setMaxPlayers", {
-                          roomCode: roomState.roomCode,
-                          maxPlayers: n,
-                        });
-                      }}
-                      style={{ width: 90, marginLeft: 8 }}
-                    />
-                  </label>
-                </div>
-              </div>
+              <LobbySettingsPanel
+                roundSeconds={roundSeconds}
+                setRoundSeconds={setRoundSeconds}
+                maxPlayers={maxPlayers}
+                setMaxPlayers={setMaxPlayers}
+                lobbyLocked={lobbyLocked}
+                roomCode={roomState.roomCode}
+                socket={socket}
+              />
             )}
-            <div style={{ marginTop: 10, fontWeight: 600 }}>Players</div>
-            <ul style={{ paddingLeft: 18, margin: 0 }}>
-              {roomState.players.map((p) => (
-                <li
-                  key={p.socketId}
-                  style={{ display: "flex", gap: 8, alignItems: "center" }}
-                >
-                  <span>
-                    {p.name}{" "}
-                    <span style={{ opacity: 0.6 }}>
-                      ({p.socketId.slice(0, 6)})
-                    </span>
-                    <span style={{ marginLeft: 8, opacity: 0.8 }}>
-                      {p.ready ? (
-                        <strong style={{ color: "green" }}>ready</strong>
-                      ) : (
-                        <span style={{ color: "#666" }}>not ready</span>
-                      )}
-                    </span>
-                  </span>
 
-                  <button
-                    onClick={() =>
-                      socket.emit("room:kick", {
-                        roomCode: roomState.roomCode,
-                        targetSocketId: p.socketId,
-                      })
-                    }
-                    style={{ marginLeft: "auto" }}
-                  >
-                    Kick
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {/* Infiltration options moved to top-level panel under game title */}
           </div>
         )}
+        {/* Players panel (separate and collapsible) */}
+        {roomState && (
+          <HostPlayersPanel
+            roomState={roomState}
+            playersLabel={playersLabel}
+            playersCollapsed={playersCollapsed}
+            setPlayersCollapsed={setPlayersCollapsed}
+            socket={socket}
+          />
+        )}
+
+        <div style={{ marginTop: 16 }}>
+          <strong>Status:</strong> {status || "(none)"}
+        </div>
       </div>
     </div>
   );

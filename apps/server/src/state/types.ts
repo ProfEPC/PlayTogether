@@ -1,5 +1,27 @@
 export type GameKey = "infiltration" | "odd_one_out";
-export type GamePhase = "lobby" | "reveal" | "mayhem" | "voting" | "results";
+
+export type InfiltrationGamePhase =
+  | "lobby"
+  | "reveal"
+  | "mayhem"
+  | "voting"
+  | "results";
+export type OddOneOutGamePhase =
+  | "lobby"
+  | "question"
+  | "debate"
+  | "vote"
+  | "results";
+
+export type GamePhase = InfiltrationGamePhase | OddOneOutGamePhase;
+
+//TO DO: Change the structure of this to
+export type InfiltrationRole =
+  | "infiltrator"
+  | "civilian"
+  | "thief"
+  | "hacker"
+  | "engineer";
 
 export type Submission = { value: string; submittedAt: number };
 
@@ -9,21 +31,32 @@ export type Player = {
   ready: boolean;
   connectedAt: number;
   lastSeenAt: number;
-};
 
-export type PendingJoin = {
-  socketId: string;
-  name: string;
-  requestedAt: number;
+  // Per-player game state
+  role?: InfiltrationRole; // Player's assigned role (server-side)
+  submission?: Submission; // Player's vote submission
+  roleAcknowledged?: boolean; // Has player acknowledged their role?
+  mayhemAcknowledged?: boolean; // Has player acknowledged completing mayhem actions?
+  usedPower?: boolean; // Has player used their special power this round?
+
+  // NEW: Power state and effects (game phase specific)
+  roleRevealed?: boolean; // Has this player's role been publicly revealed?
+  protected?: boolean; // Is this player currently protected/shielded from actions?
+  actedThisRound?: boolean; // Has this player's role already acted in mayhem phase?
 };
 
 export type GameOptionsByKey = {
   infiltration: {
     allowNoInfiltrator: boolean;
     revealVotes: boolean;
+    numInfiltrators: 0 | 1 | 2;
+    // IDs for enabled special roles. Role IDs map to the UI config
+    // e.g. 0 = thief, 1 = hacker, 2 = engineer
+    enabledRoleIds: number[];
   };
   odd_one_out: {
     revealVotes: boolean;
+    numOddOnes: number;
   };
 };
 
@@ -47,22 +80,42 @@ export type RoomSettings = {
 export type GameState = {
   started: boolean;
   phase: GamePhase;
-  prompt: string | null;
   endsAt: number | null;
   roundId: string | null;
-  submissions: Record<string, Submission>;
+  prompt?: string; // Current phase prompt/instruction for players
 
-  // Private server-side role assignments (not emitted to clients)
-  _roles?: Record<string, "infiltrator" | "civilian">;
+  // The roles that were not dealt to players
+  unusedRoles?: Array<InfiltrationRole>;
 
-  // The roles that were not dealt to players (length = 3)
-  unusedRoles?: Array<"infiltrator" | "civilian">;
+  // Role assignments during game (server-side only)
+  _roles?: Record<string, InfiltrationRole>;
 
-  // Track which players have acknowledged seeing their role
-  rolesAck?: Record<string, boolean>;
+  // Player submissions during voting phase
+  submissions?: Record<string, { value: string; submittedAt: number }>;
+
+  // Mayhem acknowledgments
+  mayhemAck?: Record<string, boolean>;
+
+  // Track which players have used powers this round
+  usedPowers?: Record<string, boolean>;
+
+  // Redacted summaries of power usage for display in-room (no sensitive details)
+  powerSummary?: Array<{
+    actorSocketId: string;
+    actorName: string;
+    type: string;
+    target: string;
+    at: number;
+  }>;
 
   // Winner for the round (infiltration: 'crew' | 'infiltrators' | 'none')
   winner?: "crew" | "infiltrators" | "none";
+};
+
+export type PendingJoin = {
+  socketId: string;
+  name: string;
+  requestedAt: number;
 };
 
 export type RoomState = {
@@ -77,4 +130,11 @@ export type RoomState = {
   settings: RoomSettings;
 
   updatedAt: number;
+};
+
+export type RoleConfig = {
+  id: number;
+  key: string;
+  title: string;
+  description?: string;
 };
