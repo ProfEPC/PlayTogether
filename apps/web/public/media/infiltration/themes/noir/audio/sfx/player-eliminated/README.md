@@ -4,7 +4,7 @@ Sound effect triggered when a player is eliminated from the game.
 
 ## Usage
 
-- Plays when a player is voted out or removed
+- Plays when a player is voted out
 - Should convey loss/elimination
 - Dramatic or impactful tone
 
