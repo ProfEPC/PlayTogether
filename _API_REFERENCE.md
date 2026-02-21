@@ -1040,3 +1040,97 @@ type PowerType = "spy" | "engineer" | "hacker" | "thief";
 ---
 
 For implementation examples, see handler files in [apps/server/src/socket/handlers/](apps/server/src/socket/handlers/).
+
+---
+
+## Character Creation Data Structures
+
+The Character Creation admin screen uses these TypeScript interfaces to define infiltration game characters with powers and abilities.
+
+### CharacterInCreation
+
+Main character data structure used during character design phase.
+
+```typescript
+interface CharacterInCreation {
+  name: string; // Character display name (e.g., "Agent Smith")
+  description: string; // Character background / flavor text
+  team: "villager" | "infiltrator" | null; // Team assignment (null if power has unique win condition)
+  powerSlots: PowerSlot[]; // Array of 1+ power slots
+}
+```
+
+### PowerSlot
+
+Represents a single power slot within a character's power array.
+
+```typescript
+interface PowerSlot {
+  type: string | null; // Power category: "Learn", "Reveal", "Action", etc.
+  item: string | null; // Power name: "See", "Protect", "Disable", etc.
+  where: string | null; // Targeting location: "Any", "Me", "Not Me", etc.
+  powerIndex: number | null; // Index reference to INFILTRATION_POWERS array
+  toggles: Record<string, boolean>; // Power modifiers:
+  // - vault: Power operates in vault mode
+  // - infected: Power operates in infected mode
+  // - lookPostAction: See vote results before acting
+  // - doPower: Alternative power execution mode
+  amount: string; // Quantity: numeric string or "ALL"
+  timing: "SAME_PHASE" | "NEXT_PHASE" | null; // When power resolves (for Learn/Reveal only)
+}
+```
+
+### InfiltrationPower
+
+Definition of an infiltration power (from constants/infiltrationPowers.ts).
+
+```typescript
+interface InfiltrationPower {
+  index: number; // Unique identifier (0-45)
+  type: string; // Power category
+  item: string; // Power name
+  where: string; // Targeting location
+  min: number; // Minimum amount
+  max: number; // Maximum amount
+  allowRandom: boolean; // If true, player can choose random during mayhem phase
+  description: string; // Power effect description
+  winCondition?: boolean; // If true, this power defines team assignment
+  toggle?: {
+    vault?: boolean;
+    infected?: boolean;
+    lookPostAction?: boolean;
+    doPower?: boolean;
+  };
+}
+```
+
+### Validation Rules
+
+The character creation system enforces 8 validation rules:
+
+1. **No Action Restriction:** "No Action" power only allowed in Slot 1
+2. **Roll Rolecall Conflict:** "Roll Rolecall" cannot coexist with certain powers
+3. **Timing Compatibility:** Learn/Reveal powers require timing selection
+4. **Murderer Rules:** Murderer role has specific power constraints
+5. **Predicter Rules:** Predicter role has specific power constraints
+6. **Toggle Applicability:** Toggles only shown if power supports them
+7. **Amount Validation:** Amount must be within power's min/max range
+8. **Win Condition Detection:** Powers with `winCondition: true` prevent team selection
+
+### Game Rule: allowRandom
+
+**Definition:** Global game rule determining whether players can make random selections during the mayhem phase.
+
+**Behavior:**
+
+- If `allowRandom: true` (game rule enabled):
+  - Powers with `allowRandom: true` property show random selection prompt during mayhem
+  - Players can choose "Specific selection" or "Random selection"
+- If `allowRandom: false` (game rule disabled):
+  - Players must make specific selections only
+  - Random option is not presented
+
+**Key Distinction from Modifiers:**
+
+- `allowRandom` is a **game rule** (set globally for all characters)
+- Power modifiers like `vault`, `infected`, `lookPostAction`, `doPower` are **character-specific**

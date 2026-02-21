@@ -77,6 +77,21 @@ Each special role can use their power **once per round** on any player:
 
 Powers are resolved simultaneously during mayhem phase.
 
+#### Power Modifiers vs Game Rules
+
+**Power Modifiers** (applied per power slot):
+
+- `vault` - Power operates in vault mode
+- `infected` - Power operates in infected mode
+- `lookPostAction` - Player sees vote results before acting
+- `doPower` - Alternative power execution mode
+
+**Game Rules** (apply to all powers globally):
+
+- `allowRandom` - Whether players can make random selections during mayhem phase. If a power has this option and the rule is enabled, players will be prompted to choose between specific selection or random selection during mayhem phase when using that power.
+
+**Key Distinction:** Modifiers are character-specific power options set during character creation. Game rules are global settings that affect gameplay behavior.
+
 ### 2. Odd One Out (Puzzle)
 
 A pattern-matching game where players identify which item doesn't fit the pattern.

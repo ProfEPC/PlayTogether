@@ -3,7 +3,7 @@ import type {
   PowerSlot,
 } from "../../../types/characterCreation";
 import { INFILTRATION_POWERS } from "../../../constants/infiltrationPowers";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getAvailableTypes,
   getAvailableItems,
@@ -34,16 +34,26 @@ export function PowerSlotEditor({
   blockers: BlockerMessage[];
   onChange: (updates: Record<string, unknown>) => void;
   onRemove: () => void;
+  hasCharacterModifiers: boolean;
 }) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const selectedPower = getSelectedPower(slot);
   const isLearnOrReveal =
-    selectedPower && ["Learn", "Reveal"].includes(selectedPower.type);
+    selectedPower &&
+    ["Learn", "Reveal"].includes(selectedPower.type) &&
+    !selectedPower.fixedInitiative;
   const minAmount = selectedPower?.min ?? 0;
   const maxAmount = selectedPower?.max ?? 0;
   const allowRandom = selectedPower?.allowRandom ?? false;
 
   const availableTypes = getAvailableTypes({
-    character: { name: "", description: "", powerSlots: [] },
+    character: {
+      name: "",
+      description: "",
+      team: null,
+      powerSlots: [],
+      infectedUponSight: false,
+    },
     currentSlotNumber: slotNumber,
     powers: INFILTRATION_POWERS,
   });
@@ -52,42 +62,60 @@ export function PowerSlotEditor({
       slot.type
         ? getAvailableItems(
             {
-              character: { name: "", description: "", powerSlots: [] },
+              character: {
+                name: "",
+                description: "",
+                team: null,
+                powerSlots: [],
+                infectedUponSight: false,
+              },
               currentSlotNumber: slotNumber,
               powers: INFILTRATION_POWERS,
             },
-            slot.type
+            slot.type,
           )
         : [],
-    [slot.type, slotNumber]
+    [slot.type, slotNumber],
   );
   const availableWhere = useMemo(
     () =>
       slot.type && slot.item
         ? getAvailableWhere(
             {
-              character: { name: "", description: "", powerSlots: [] },
+              character: {
+                name: "",
+                description: "",
+                team: null,
+                powerSlots: [],
+                infectedUponSight: false,
+              },
               currentSlotNumber: slotNumber,
               powers: INFILTRATION_POWERS,
             },
             slot.type,
-            slot.item
+            slot.item,
           )
         : [],
-    [slot.type, slot.item, slotNumber]
+    [slot.type, slot.item, slotNumber],
   );
   const availablePowers = useMemo(() => {
     let powers =
       slot.type && slot.item && slot.where
         ? getAvailablePowers(
             {
-              character: { name: "", description: "", powerSlots: [] },
+              character: {
+                name: "",
+                description: "",
+                team: null,
+                powerSlots: [],
+                infectedUponSight: false,
+              },
               currentSlotNumber: slotNumber,
               powers: INFILTRATION_POWERS,
             },
             slot.type,
             slot.item,
-            slot.where
+            slot.where,
           )
         : [];
 
@@ -154,112 +182,139 @@ export function PowerSlotEditor({
       onChange({ where: availableWhere[0], powerIndex: null, toggles: {} });
     }
   }, [availableWhere, slot.where, slot.type, slot.item, onChange]);
+
+  // Clear timing if power changes to non-Learn/Reveal or has fixed initiative
+  useEffect(() => {
+    if (selectedPower && slot.timing && !isLearnOrReveal) {
+      onChange({ timing: null });
+    }
+  }, [selectedPower, isLearnOrReveal, slot.timing, onChange]);
+
   return (
     <div className={`power-slot ${hasBlockers ? "has-blockers" : ""}`}>
-      <div className="slot-header">
-        <h3>Slot {slotNumber}</h3>
-        {slotNumber > 1 && (
-          <button className="remove-button" onClick={onRemove}>
-            Remove
-          </button>
-        )}
-      </div>
-
       {/* Power Display Section (at top when Type+Item+Where complete) */}
       {isTypeItemWhereComplete && selectedPower && (
-        <PowerDisplay
-          selectedPower={selectedPower}
-          hasDuplicates={hasDuplicates}
-          onChangeClick={() =>
-            onChange({
-              powerIndex: null,
-            })
-          }
-        />
+        <div className="power-display-wrapper">
+          <PowerDisplay
+            selectedPower={selectedPower}
+            hasDuplicates={hasDuplicates}
+            amount={slot.amount}
+            timing={slot.timing}
+            toggles={slot.toggles}
+            isExpanded={isExpanded}
+            onExpandToggle={() => setIsExpanded(!isExpanded)}
+          />
+        </div>
       )}
 
-      {/* Cascading Dropdowns */}
-      <CascadingSelectors
-        selectedType={slot.type}
-        selectedItem={slot.item}
-        selectedWhere={slot.where}
-        availableTypes={availableTypes}
-        availableItems={availableItems}
-        availableWhere={availableWhere}
-        onTypeChange={(type) =>
-          onChange({
-            type,
-            item: null,
-            where: null,
-            powerIndex: null,
-            toggles: {},
-          })
-        }
-        onItemChange={(item) =>
-          onChange({
-            item,
-            where: null,
-            powerIndex: null,
-            toggles: {},
-          })
-        }
-        onWhereChange={(where) =>
-          onChange({
-            where,
-            powerIndex: null,
-            toggles: {},
-          })
-        }
-      />
-
-      {/* Disambiguation Selector */}
-      {isTypeItemWhereComplete &&
-        !selectedPower &&
-        availablePowers.length > 1 && (
-          <DisambiguationSelector
-            availablePowers={availablePowers}
-            slotItem={slot.item!}
-            onSelect={(powerIndex) =>
+      {/* Expanded Details - only show when expanded or no power selected */}
+      {isExpanded && (
+        <>
+          {/* Cascading Dropdowns */}
+          <CascadingSelectors
+            selectedType={slot.type}
+            selectedItem={slot.item}
+            selectedWhere={slot.where}
+            availableTypes={availableTypes}
+            availableItems={availableItems}
+            availableWhere={availableWhere}
+            onTypeChange={(type) =>
               onChange({
-                powerIndex,
+                type,
+                item: null,
+                where: null,
+                powerIndex: null,
+                timing: null,
+                toggles: {},
+              })
+            }
+            onItemChange={(item) =>
+              onChange({
+                item,
+                where: null,
+                powerIndex: null,
+                timing: null,
+                toggles: {},
+              })
+            }
+            onWhereChange={(where) =>
+              onChange({
+                where,
+                powerIndex: null,
+                timing: null,
                 toggles: {},
               })
             }
           />
-        )}
 
-      {/* Amount Selector */}
-      {selectedPower && minAmount !== maxAmount && (
-        <AmountSelector
-          minAmount={minAmount}
-          maxAmount={maxAmount}
-          allowRandom={allowRandom}
-          amount={slot.amount}
-          error={amountError}
-          onAmountChange={(amount) => onChange({ amount })}
-          onAllClick={() => onChange({ amount: "ALL" })}
-        />
-      )}
+          {/* Disambiguation Selector */}
+          {isTypeItemWhereComplete &&
+            availablePowers.length > 1 && (
+              <DisambiguationSelector
+                availablePowers={availablePowers}
+                slotItem={slot.item!}
+                selectedPowerIndex={slot.powerIndex}
+                onSelect={(powerIndex) =>
+                  onChange({
+                    powerIndex,
+                    toggles: {},
+                  })
+                }
+              />
+            )}
 
-      {/* Timing Selector */}
-      {isLearnOrReveal && (
-        <TimingSelector
-          timing={slot.timing}
-          onTimingChange={(timing) => onChange({ timing })}
-        />
-      )}
+          {/* Amount Selector */}
+          {selectedPower && minAmount !== maxAmount && (
+            <AmountSelector
+              minAmount={minAmount}
+              maxAmount={maxAmount}
+              allowRandom={allowRandom}
+              amount={slot.amount}
+              error={amountError}
+              onAmountChange={(amount) => onChange({ amount })}
+              onAllClick={() => onChange({ amount: "ALL" })}
+              isSettings={selectedPower.type === "Settings"}
+              unit={
+                selectedPower.type === "Settings" &&
+                selectedPower.item === "Time"
+                  ? "seconds"
+                  : ""
+              }
+            />
+          )}
 
-      {/* Modifiers Section */}
-      {selectedPower && (
-        <ModifiersSection
-          selectedPower={selectedPower}
-          toggles={slot.toggles}
-          onToggleChange={(toggleName, checked) =>
-            onChange({
-              toggles: { ...slot.toggles, [toggleName]: checked },
-            })
-          }
-        />
+          {/* Timing Selector */}
+          {isLearnOrReveal && (
+            <TimingSelector
+              timing={slot.timing}
+              onTimingChange={(timing) => onChange({ timing })}
+            />
+          )}
+
+          {/* Modifiers Section */}
+          {selectedPower && (
+            <ModifiersSection
+              selectedPower={selectedPower}
+              toggles={slot.toggles}
+              onToggleChange={(toggleName, checked) =>
+                onChange({
+                  toggles: { ...slot.toggles, [toggleName]: checked },
+                })
+              }
+            />
+          )}
+
+          {/* Remove Button - only show when expanded */}
+          {/* Show for slot 1 only if power is selected, show for slots 2+ always */}
+          {(slotNumber > 1 || selectedPower) && (
+            <button
+              className="remove-button remove-button-bottom"
+              onClick={onRemove}
+            >
+              Remove Slot
+            </button>
+          )}
+        </>
       )}
     </div>
   );

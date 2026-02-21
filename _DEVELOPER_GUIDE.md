@@ -58,7 +58,6 @@ This should start both server and web simultaneously (if workspace scripts are c
 ### Adding a New Socket Event Handler
 
 1. **Define the handler in the appropriate file:**
-
    - Room operations → `apps/server/src/socket/handlers/roomHandlers.ts`
    - Game operations → `apps/server/src/socket/handlers/gameHandlers.ts`
    - Lifecycle → `apps/server/src/socket/handlers/lifecycleHandlers.ts`
@@ -100,6 +99,79 @@ This should start both server and web simultaneously (if workspace scripts are c
 3. **Create feature folder:** `apps/web/src/features/newGame/`
 4. **Add UI components** for the game
 5. **Wire up routing** in main App component
+
+### Character Creation Admin Screen (Infiltration)
+
+The character creation admin screen allows hosts to design custom infiltration game characters with powers and special abilities.
+
+**File Structure:**
+
+- [apps/web/src/features/infiltration/CharacterCreation/index.tsx](apps/web/src/features/infiltration/CharacterCreation/index.tsx) - Main component
+- [apps/web/src/features/infiltration/CharacterCreation/PowerSlot.tsx](apps/web/src/features/infiltration/CharacterCreation/PowerSlot.tsx) - Individual power slot editor
+- [apps/web/src/utils/characterCreation/](apps/web/src/utils/characterCreation/) - Utilities (filters, validators, helpers)
+  - `filters.ts` - Cascading dropdown population (Type → Item → Where → Power)
+  - `validators.ts` - Validation rules and blocker detection (8 rules)
+  - `helpers.ts` - Utility functions (slot management)
+
+**Character Data Structure:**
+
+```typescript
+interface CharacterInCreation {
+  name: string;
+  description: string;
+  team: "villager" | "infiltrator" | null; // Null when power has unique win condition
+  powerSlots: PowerSlot[];
+}
+
+interface PowerSlot {
+  type: string | null; // Power category (Learn, Reveal, etc.)
+  item: string | null; // Power name
+  where: string | null; // Targeting location (Any, Me, Not Me)
+  powerIndex: number | null; // Reference to INFILTRATION_POWERS array
+  toggles: Record<string, boolean>; // Modifiers (vault, infected, lookPostAction, doPower)
+  amount: string; // Quantity (number or "ALL")
+  timing: "SAME_PHASE" | "NEXT_PHASE" | null;
+}
+```
+
+**Key Features:**
+
+- **Team Selector:** Buttons to choose Villager or Infiltrator team (hidden when power has unique win condition)
+- **Cascading Dropdowns:** Type → Item → Where with auto-select for single options
+- **Power Display:** Shows selected power with option to change
+- **Collapse/Uncollapse:** Toggle button to hide/show detailed form sections when power is selected
+- **Modifiers Section:** Toggles for vault, infected, lookPostAction, doPower (context-specific)
+- **Validation:** Real-time blocker detection with 8 rules:
+  1. "No Action" only in Slot 1
+  2. "Roll Rolecall" conflicts detection
+  3. Timing compatibility checks
+  4. Murderer/Predicter role-specific rules
+  5. Toggle applicability validation
+  6. Amount range validation
+  7. Disambiguation when multiple powers match
+  8. Win condition power detection
+- **Order Preservation:** Options display in CSV file order (not alphabetical)
+
+**UI Layout:**
+
+```
+Slot Header: [Slot #] [Collapse/Expand Button]
+Power Display (when selected): Power name box
+Cascading Selectors (when expanded): Type → Item → Where
+Disambiguation (if needed): Choose specific power variant
+Amount Selector (if applicable): Min/Max with "ALL" option
+Timing Selector (for Learn/Reveal): Same Phase / Next Phase
+Modifiers Section (if applicable): Toggle buttons
+Separator Line
+Remove Button (bottom, full-width)
+```
+
+**Development Workflow:**
+
+1. Add new powers to [apps/web/src/constants/infiltrationPowers.ts](apps/web/src/constants/infiltrationPowers.ts)
+2. Powers populate automatically in cascading dropdowns
+3. Add validation rules to [apps/web/src/utils/characterCreation/validators.ts](apps/web/src/utils/characterCreation/validators.ts) if needed
+4. Update [apps/web/public/media/infiltration/](apps/web/public/media/infiltration/) with power display images
 
 ### Testing Locally
 
