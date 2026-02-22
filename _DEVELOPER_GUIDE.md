@@ -152,6 +152,17 @@ interface PowerSlot {
   8. Win condition power detection
 - **Order Preservation:** Options display in CSV file order (not alphabetical)
 
+**Power-to-Power Compatibility:**
+
+When a character has multiple powers (slots 1-3), the system must validate that powers can coexist. See [data/power_compatibility_rules.md](data/power_compatibility_rules.md) for:
+
+- **Compatibility Flags:** `silencer`, `murderer`, `predicter`, `suicidal`, `twoXVote` define which powers can mesh together
+- **Non-Constraints:** `infected`, `vault`, and modifiers are game mechanics or toggles, not meshing restrictions
+- **Validation Logic:** Use `canMeshPowers(power1, power2)` to check compatibility before saving
+- **Client & Server:** Validate on both client (UX) and server (security) to prevent invalid characters
+
+Currently implemented: Character save/load and power sorting. Pending: Client-side UI validation for power compatibility during selection.
+
 **UI Layout:**
 
 ```

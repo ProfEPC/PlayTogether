@@ -8,6 +8,7 @@
 import type { InfiltrationPower } from "./types";
 
 export const REVEAL_POWERS: InfiltrationPower[] = [
+  /** [17] Expose Role - Reveal # Player Role | Item: Role, Where: Player, Min: 1, Max: 3, Infected, AllowRandom, Complexity: 3 */
   {
     index: 17,
     initiative: "5 95",
@@ -21,18 +22,13 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     fixedAction: false,
     fixedInitiative: false,
     infected: true,
-    suicidal: true,
-    murderer: true,
-    predicter: true,
-    silencer: false,
-    twoXVote: false,
     lookPostAction: false,
     doPower: false,
-    selfDestruct: false,
     allowRandom: true,
     vault: false,
     complexity: 3,
   },
+  /** [18] Open Vault - Reveal # Center Role | Item: Role, Where: Center, Min: 1, Max: 3, Infected, AllowRandom, Complexity: 3 */
   {
     index: 18,
     initiative: "5 95",
@@ -46,18 +42,13 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     fixedAction: false,
     fixedInitiative: false,
     infected: true,
-    suicidal: true,
-    murderer: true,
-    predicter: true,
-    silencer: false,
-    twoXVote: false,
     lookPostAction: false,
     doPower: false,
-    selfDestruct: false,
     allowRandom: true,
     vault: false,
     complexity: 3,
   },
+  /** [19] Face Reveal - Reveal self | Item: Role, Where: Self, Qty: 1, FixedAction, Infected, Complexity: 1 */
   {
     index: 19,
     initiative: "5 95",
@@ -71,18 +62,13 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     fixedAction: true,
     fixedInitiative: false,
     infected: true,
-    suicidal: true,
-    murderer: true,
-    predicter: true,
-    silencer: false,
-    twoXVote: false,
     lookPostAction: false,
     doPower: false,
-    selfDestruct: false,
     allowRandom: false,
     vault: false,
     complexity: 1,
   },
+  /** [20] Role Spotlight - Reveal # player of role | Item: Role, Where: Role, Min: 1, Max: 5, FixedAction, Infected, Complexity: 3 */
   {
     index: 20,
     initiative: "5 95",
@@ -96,14 +82,8 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     fixedAction: true,
     fixedInitiative: false,
     infected: true,
-    suicidal: true,
-    murderer: true,
-    predicter: true,
-    silencer: false,
-    twoXVote: false,
     lookPostAction: false,
     doPower: false,
-    selfDestruct: false,
     allowRandom: false,
     vault: false,
     complexity: 3,

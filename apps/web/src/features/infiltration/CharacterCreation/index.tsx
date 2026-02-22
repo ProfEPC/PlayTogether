@@ -30,15 +30,24 @@ export default function CharacterCreation() {
   // ============ Helper Functions ============
 
   /**
+   * Get the win condition power details if one exists, null otherwise.
+   * Single pass through powerSlots for efficiency.
+   */
+  const winConditionPower = (() => {
+    for (const slot of character.powerSlots) {
+      if (slot.powerIndex === null) continue;
+      const power = INFILTRATION_POWERS[slot.powerIndex - 1];
+      if (power && power.type === "Condition" && power.item === "Win") {
+        return power;
+      }
+    }
+    return null;
+  })();
+
+  /**
    * Check if any power slot has a unique win condition (Deathwish or Oracle)
    */
-  const hasWinCondition = (): boolean => {
-    return character.powerSlots.some((slot) => {
-      if (slot.powerIndex === null) return false;
-      const power = INFILTRATION_POWERS[slot.powerIndex - 1];
-      return power && power.type === "Condition" && power.item === "Win";
-    });
-  };
+  const hasWinCondition = (): boolean => !!winConditionPower;
 
   /**
    * Get the win condition power if one exists
@@ -46,19 +55,13 @@ export default function CharacterCreation() {
   const getWinConditionPower = (): {
     powerName: string;
     description: string;
-  } | null => {
-    for (const slot of character.powerSlots) {
-      if (slot.powerIndex === null) continue;
-      const power = INFILTRATION_POWERS[slot.powerIndex - 1];
-      if (power && power.type === "Condition" && power.item === "Win") {
-        return {
-          powerName: power.powerName,
-          description: power.description,
-        };
-      }
-    }
-    return null;
-  };
+  } | null =>
+    winConditionPower
+      ? {
+          powerName: winConditionPower.powerName,
+          description: winConditionPower.description,
+        }
+      : null;
 
   // ============ Handlers ============
 
@@ -275,6 +278,9 @@ export default function CharacterCreation() {
               }
               onRemove={() => handleRemoveSlot(index)}
               hasCharacterModifiers={hasCharacterModifiers}
+              otherPowerSlots={character.powerSlots.filter(
+                (_, i) => i !== index,
+              )}
             />
           ))}
 

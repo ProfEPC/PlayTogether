@@ -1,0 +1,50 @@
+[
+  {
+    "id": "1771697671676",
+    "name": "Villager",
+    "data": {
+      "name": "Villager",
+      "description": "Kinda boring",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 46,
+          "type": "None",
+          "item": "NoAction",
+          "where": "None",
+          "amount": null,
+          "toggles": {},
+          "timing": null
+        }
+      ]
+    },
+    "createdAt": "2026-02-21T18:14:31.676Z",
+    "updatedAt": "2026-02-21T18:14:31.676Z"
+  },
+  {
+    "id": "1771697737643",
+    "name": "Robber",
+    "data": {
+      "name": "Robber",
+      "description": "sneaky sneaky",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 22,
+          "type": "Swap",
+          "item": "Role",
+          "where": "Player",
+          "amount": null,
+          "toggles": {
+            "lookPostAction": true
+          },
+          "timing": null
+        }
+      ]
+    },
+    "createdAt": "2026-02-21T18:15:37.643Z",
+    "updatedAt": "2026-02-21T18:15:37.643Z"
+  }
+]

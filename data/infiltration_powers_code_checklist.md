@@ -2,6 +2,14 @@
 
 This document describes behaviors and validations that **must be enforced in code** since they are not captured purely by boolean flags in the CSV.
 
+## Power-to-Power Compatibility
+
+- [ ] **Validate on character creation**: When a player adds a power to their character, check compatibility with all existing powers using the rules defined in [power_compatibility_rules.md](power_compatibility_rules.md).
+- [ ] **Meshing validation on save**: When a character is saved, verify that all power combinations in the character's power slots conform to compatibility flags (silencer, murderer, predicter, suicidal, twoXVote).
+- [ ] **Client-side UX feedback**: Show an error or warning in the Character Creation UI when the user attempts to select an incompatible power.
+- [ ] **Server-side enforcement**: On character save and load, reject any character that violates power compatibility rules (defense against client-side bypass).
+- [ ] **Error message clarity**: When rejecting an incompatible power combination, explain which existing power is incompatible and why (e.g., "You already selected a non-silencer power; silencer powers can only mix with other silencer powers").
+
 ## Target Selection & Visibility Rules
 
 - [ ] **Cannot select revealed targets**: If a target player's role card has been revealed to ALL players, the acting player cannot select them as a target for any power.

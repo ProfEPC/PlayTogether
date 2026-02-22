@@ -8,6 +8,7 @@
 import type { InfiltrationPower } from "./types";
 
 export const CONDITION_POWERS: InfiltrationPower[] = [
+  /** [28] Deathwish - Wins If Voted Out | Item: Win, Where: Self, FixedInit, Complexity: 1 */
   {
     index: 28,
     initiative: "0",
@@ -21,18 +22,13 @@ export const CONDITION_POWERS: InfiltrationPower[] = [
     fixedAction: false,
     fixedInitiative: true,
     infected: false,
-    suicidal: false,
-    murderer: false,
-    predicter: false,
-    silencer: false,
-    twoXVote: false,
     lookPostAction: false,
     doPower: false,
-    selfDestruct: false,
     allowRandom: false,
     vault: false,
     complexity: 1,
   },
+  /** [29] Oracle - Wins If Vote Is Infiltrator | Item: Win, Where: Vote, FixedInit, Complexity: 1 */
   {
     index: 29,
     initiative: "0",
@@ -46,14 +42,8 @@ export const CONDITION_POWERS: InfiltrationPower[] = [
     fixedAction: false,
     fixedInitiative: true,
     infected: false,
-    suicidal: false,
-    murderer: false,
-    predicter: false,
-    silencer: false,
-    twoXVote: false,
     lookPostAction: false,
     doPower: false,
-    selfDestruct: false,
     allowRandom: false,
     vault: false,
     complexity: 1,

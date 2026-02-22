@@ -16,14 +16,8 @@ export type InfiltrationPower = {
   fixedAction: boolean;
   fixedInitiative: boolean;
   infected: boolean;
-  suicidal: boolean;
-  murderer: boolean;
-  predicter: boolean;
-  silencer: boolean;
-  twoXVote: boolean;
   lookPostAction: boolean;
   doPower: boolean;
-  selfDestruct: boolean;
   allowRandom: boolean;
   vault: boolean;
   vaultName?: string;

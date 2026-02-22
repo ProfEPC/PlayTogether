@@ -8,6 +8,7 @@
 import type { InfiltrationPower } from "./types";
 
 export const SETTINGS_NONE_POWERS: InfiltrationPower[] = [
+  /** [45] Time Warp - Shorten or Lengthen Discussion Times | Item: Time, Where: Room, Min: 0, Max: 300, FixedAction, FixedInit, Complexity: 2 */
   {
     index: 45,
     initiative: "0",
@@ -21,18 +22,13 @@ export const SETTINGS_NONE_POWERS: InfiltrationPower[] = [
     fixedAction: true,
     fixedInitiative: true,
     infected: false,
-    suicidal: false,
-    murderer: false,
-    predicter: false,
-    silencer: false,
-    twoXVote: false,
     lookPostAction: false,
     doPower: false,
-    selfDestruct: false,
     allowRandom: false,
     vault: false,
     complexity: 2,
   },
+  /** [46] No Action - Has no power, can be modified | Item: NoAction, Where: None, FixedAction, FixedInit, Complexity: 1 */
   {
     index: 46,
     initiative: "0",
@@ -46,14 +42,8 @@ export const SETTINGS_NONE_POWERS: InfiltrationPower[] = [
     fixedAction: true,
     fixedInitiative: true,
     infected: false,
-    suicidal: false,
-    murderer: false,
-    predicter: false,
-    silencer: false,
-    twoXVote: false,
     lookPostAction: false,
     doPower: false,
-    selfDestruct: false,
     allowRandom: false,
     vault: false,
     complexity: 1,

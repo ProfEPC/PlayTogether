@@ -12,12 +12,25 @@ import {
   getSelectedPower,
   getAmountError,
 } from "../../../utils/characterCreation";
+import { getPowerCompatibilityError } from "../../../utils/characterCreation/powerCompatibility";
 import { PowerDisplay } from "./components/PowerDisplay";
 import { CascadingSelectors } from "./components/CascadingSelectors";
 import { DisambiguationSelector } from "./components/DisambiguationSelector";
 import { AmountSelector } from "./components/AmountSelector";
 import { TimingSelector } from "./components/TimingSelector";
 import { ModifiersSection } from "./components/ModifiersSection";
+
+/**
+ * Empty character context used for cascading filter dropdown calculations.
+ * Uses isolated character state to avoid affecting the actual character being edited.
+ */
+const EMPTY_CHARACTER_CONTEXT = {
+  name: "",
+  description: "",
+  team: null,
+  powerSlots: [],
+  infectedUponSight: false,
+};
 
 /**
  * Single Power Slot Editor Component
@@ -28,6 +41,7 @@ export function PowerSlotEditor({
   blockers,
   onChange,
   onRemove,
+  otherPowerSlots,
 }: {
   slotNumber: number;
   slot: PowerSlot;
@@ -35,6 +49,7 @@ export function PowerSlotEditor({
   onChange: (updates: Record<string, unknown>) => void;
   onRemove: () => void;
   hasCharacterModifiers: boolean;
+  otherPowerSlots: PowerSlot[];
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const selectedPower = getSelectedPower(slot);
@@ -46,14 +61,31 @@ export function PowerSlotEditor({
   const maxAmount = selectedPower?.max ?? 0;
   const allowRandom = selectedPower?.allowRandom ?? false;
 
+  // Get compatibility errors with other powers in the character
+  const compatibilityErrors = useMemo(() => {
+    if (!selectedPower) return [];
+    const errors: string[] = [];
+
+    // Check this power against all other powers in the character
+    for (const otherSlot of otherPowerSlots) {
+      if (otherSlot.powerIndex === null) continue;
+      const otherPower = INFILTRATION_POWERS[otherSlot.powerIndex - 1];
+      if (!otherPower) continue;
+
+      const error = getPowerCompatibilityError(
+        selectedPower,
+        otherPower,
+        otherSlot.timing,
+      );
+      if (error && !errors.includes(error)) {
+        errors.push(error);
+      }
+    }
+    return errors;
+  }, [selectedPower, otherPowerSlots]);
+
   const availableTypes = getAvailableTypes({
-    character: {
-      name: "",
-      description: "",
-      team: null,
-      powerSlots: [],
-      infectedUponSight: false,
-    },
+    character: EMPTY_CHARACTER_CONTEXT,
     currentSlotNumber: slotNumber,
     powers: INFILTRATION_POWERS,
   });
@@ -62,13 +94,7 @@ export function PowerSlotEditor({
       slot.type
         ? getAvailableItems(
             {
-              character: {
-                name: "",
-                description: "",
-                team: null,
-                powerSlots: [],
-                infectedUponSight: false,
-              },
+              character: EMPTY_CHARACTER_CONTEXT,
               currentSlotNumber: slotNumber,
               powers: INFILTRATION_POWERS,
             },
@@ -82,13 +108,7 @@ export function PowerSlotEditor({
       slot.type && slot.item
         ? getAvailableWhere(
             {
-              character: {
-                name: "",
-                description: "",
-                team: null,
-                powerSlots: [],
-                infectedUponSight: false,
-              },
+              character: EMPTY_CHARACTER_CONTEXT,
               currentSlotNumber: slotNumber,
               powers: INFILTRATION_POWERS,
             },
@@ -103,13 +123,7 @@ export function PowerSlotEditor({
       slot.type && slot.item && slot.where
         ? getAvailablePowers(
             {
-              character: {
-                name: "",
-                description: "",
-                team: null,
-                powerSlots: [],
-                infectedUponSight: false,
-              },
+              character: EMPTY_CHARACTER_CONTEXT,
               currentSlotNumber: slotNumber,
               powers: INFILTRATION_POWERS,
             },
@@ -204,6 +218,17 @@ export function PowerSlotEditor({
             isExpanded={isExpanded}
             onExpandToggle={() => setIsExpanded(!isExpanded)}
           />
+
+          {/* Compatibility Errors */}
+          {compatibilityErrors.length > 0 && (
+            <div className="compatibility-errors">
+              {compatibilityErrors.map((error, idx) => (
+                <div key={idx} className="error-message">
+                  ⚠️ {error}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -248,20 +273,19 @@ export function PowerSlotEditor({
           />
 
           {/* Disambiguation Selector */}
-          {isTypeItemWhereComplete &&
-            availablePowers.length > 1 && (
-              <DisambiguationSelector
-                availablePowers={availablePowers}
-                slotItem={slot.item!}
-                selectedPowerIndex={slot.powerIndex}
-                onSelect={(powerIndex) =>
-                  onChange({
-                    powerIndex,
-                    toggles: {},
-                  })
-                }
-              />
-            )}
+          {isTypeItemWhereComplete && availablePowers.length > 1 && (
+            <DisambiguationSelector
+              availablePowers={availablePowers}
+              slotItem={slot.item!}
+              selectedPowerIndex={slot.powerIndex}
+              onSelect={(powerIndex) =>
+                onChange({
+                  powerIndex,
+                  toggles: {},
+                })
+              }
+            />
+          )}
 
           {/* Amount Selector */}
           {selectedPower && minAmount !== maxAmount && (

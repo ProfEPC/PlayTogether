@@ -8,6 +8,18 @@ import {
 } from "../../constants/infiltrationPowers";
 
 /**
+ * Get a power by its 1-based index.
+ * Returns null if index is invalid or out of bounds.
+ */
+export function getPowerByIndex(
+  index: number | null,
+  powers: InfiltrationPower[] = INFILTRATION_POWERS,
+): InfiltrationPower | null {
+  if (index === null || index < 1 || index > powers.length) return null;
+  return powers[index - 1];
+}
+
+/**
  * Check if a slot can be removed (not Slot 1)
  */
 export function canRemoveSlot(slotNumber: number): boolean {
@@ -24,10 +36,10 @@ export function canAddSlot(
   // Can't add if already have 3 slots
   if (character.powerSlots.length >= 3) return false;
 
-  // Can't add if Slot 1 is "No Action"
+  // Can't add if Slot 1 is "No Action" (Rule 1 from validators)
   const slot1 = character.powerSlots[0];
   if (slot1 && slot1.powerIndex !== null) {
-    const slot1Power = powers.find((p) => p.index === slot1.powerIndex);
+    const slot1Power = getPowerByIndex(slot1.powerIndex, powers);
     if (slot1Power?.powerName === "No Action") return false;
   }
 

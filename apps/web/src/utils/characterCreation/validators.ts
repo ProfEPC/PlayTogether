@@ -75,50 +75,6 @@ export function getBlockers(
       }
     }
 
-    // Rule 5: Murderer compatibility with timing
-    if (
-      slot.powerIndex !== null &&
-      slot.timing &&
-      character.powerSlots.some(
-        (other) =>
-          other.powerIndex !== null &&
-          powers.find((p) => p.index === other.powerIndex)?.powerName ===
-            "Murderer",
-      )
-    ) {
-      const power = powers.find((p) => p.index === slot.powerIndex);
-      if (["Learn", "Reveal"].includes(power?.type || "")) {
-        blockers.push({
-          slotNumber,
-          field: "timing",
-          reason:
-            "Cannot use timing selector when Murderer is in another slot. Remove Murderer or clear timing.",
-        });
-      }
-    }
-
-    // Rule 6: Predicter compatibility with timing
-    if (
-      slot.powerIndex !== null &&
-      slot.timing &&
-      character.powerSlots.some(
-        (other) =>
-          other.powerIndex !== null &&
-          powers.find((p) => p.index === other.powerIndex)?.powerName ===
-            "Predicter",
-      )
-    ) {
-      const power = powers.find((p) => p.index === slot.powerIndex);
-      if (["Learn", "Reveal"].includes(power?.type || "")) {
-        blockers.push({
-          slotNumber,
-          field: "timing",
-          reason:
-            "Cannot use timing selector when Predicter is in another slot. Remove Predicter or clear timing.",
-        });
-      }
-    }
-
     // Rule 7: LookPostAction toggle only when applicable
     if (slot.powerIndex !== null && slot.toggles.lookPostAction) {
       const power = powers.find((p) => p.index === slot.powerIndex);

@@ -3,7 +3,8 @@
 ## Schema Assumptions
 
 - **Initiative format**: Stored as string (e.g., `"10, 90"`) to allow comma-separated multiple timings within a single phase.
-- **Infected column**: TRUE if power allows seeing roles (Learn/Reveal), which can trigger infiltrator infection; FALSE for action/voting/condition powers. Exception: "Learn Players With Role" (census) is FALSE to prevent force-infection.
+- **Infected column**: TRUE if power allows seeing roles (Learn/Reveal), which can trigger infiltrator infection; FALSE for action/voting/condition powers. Exception: "Learn Players With Role" (census) is FALSE to prevent force-infection. **NOTE**: This is a game mechanic flag, not a power-to-power meshing constraint. See [power_compatibility_rules.md](power_compatibility_rules.md#non-compatibility-flags).
+- **Silencer, Murderer, Predicter, Suicidal, TwoXVote columns**: Compatibility flags for power-to-power meshing rules. See [power_compatibility_rules.md](power_compatibility_rules.md#compatibility-flags) for detailed definitions and coexistence rules.
 - **LookPostAction column**: TRUE only if the acting player can change their OWN role as a result of the power (e.g., Swap involving Self). Enables post-action "new role means new actions" logic.
 - **DoPower column**: TRUE only if player can execute the role's action after LookPostAction reveals their new role. Typically mirrors LookPostAction.
 - **AllowRandom column**: TRUE only if target selection is meaningful and random choice is valid. FALSE for history-based, count-based, role-filter-fixed, and global settings powers.
