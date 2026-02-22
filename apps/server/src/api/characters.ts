@@ -49,7 +49,11 @@ function loadCharactersFromFile(): StoredCharacter[] {
  */
 function saveCharactersToFile(characters: StoredCharacter[]): void {
   try {
-    fs.writeFileSync(CHARACTERS_FILE, JSON.stringify(characters, null, 2), "utf-8");
+    fs.writeFileSync(
+      CHARACTERS_FILE,
+      JSON.stringify(characters, null, 2),
+      "utf-8",
+    );
   } catch (error) {
     console.error("Error writing characters file:", error);
   }
@@ -115,7 +119,7 @@ router.put("/:id", (req, res) => {
 
     const characters = loadCharactersFromFile();
     const existingIndex = characters.findIndex((c) => c.id === id);
-    
+
     if (existingIndex === -1) {
       return res.status(404).json({ error: "Character not found" });
     }
@@ -130,7 +134,7 @@ router.put("/:id", (req, res) => {
 
     characters[existingIndex] = updated;
     saveCharactersToFile(characters);
-    
+
     return res.json(updated);
   } catch (error) {
     console.error("Error updating character:", error);
@@ -153,7 +157,7 @@ router.delete("/:id", (req, res) => {
 
     characters.splice(index, 1);
     saveCharactersToFile(characters);
-    
+
     return res.status(204).send();
   } catch (error) {
     console.error("Error deleting character:", error);
