@@ -25,12 +25,32 @@ export type InfiltrationRole =
 
 export type Submission = { value: string; submittedAt: number };
 
+export type PowerSlot = {
+  powerIndex: number | null;
+  type?: string;
+  item?: string;
+  where?: string;
+  quantity?: number;
+};
+
+export type CharacterPowers = {
+  slots: PowerSlot[];
+};
+
 export type Player = {
   socketId: string;
   name: string;
   ready: boolean;
   connectedAt: number;
   lastSeenAt: number;
+
+  // Character assignment
+  character?: {
+    name: string;
+    description: string;
+    team?: "villager" | "infiltrator";
+    powers: PowerSlot[];
+  };
 
   // Per-player game state
   role?: InfiltrationRole; // Player's assigned role (server-side)
@@ -43,6 +63,20 @@ export type Player = {
   roleRevealed?: boolean; // Has this player's role been publicly revealed?
   protected?: boolean; // Is this player currently protected/shielded from actions?
   actedThisRound?: boolean; // Has this player's role already acted in mayhem phase?
+
+  // NEW: Power usage tracking
+  powerUsed?: boolean; // Has this player already used a power once per game?
+  learnsThisGame?: Array<{
+    powerName: string;
+    targetPlayer?: string;
+    targetPlayerName?: string;
+    targetCenter?: number; // 1, 2, or 3
+    targetRole?: InfiltrationRole;
+    learned: string; // Role or other revealed info
+    learnedAt: number;
+    item: string;
+    where: string;
+  }>;
 };
 
 export type GameOptionsByKey = {
@@ -53,6 +87,8 @@ export type GameOptionsByKey = {
     // IDs for enabled special roles. Role IDs map to the UI config
     // e.g. 0 = thief, 1 = hacker, 2 = engineer
     enabledRoleIds: number[];
+    // Character/role names for the enabled roles
+    enabledRoles?: string[];
   };
   odd_one_out: {
     revealVotes: boolean;
@@ -86,6 +122,9 @@ export type GameState = {
 
   // The roles that were not dealt to players
   unusedRoles?: Array<InfiltrationRole>;
+
+  // Center roles assigned at game start
+  centerRoles?: [InfiltrationRole, InfiltrationRole, InfiltrationRole]; // Center 1, 2, 3
 
   // Role assignments during game (server-side only)
   _roles?: Record<string, InfiltrationRole>;

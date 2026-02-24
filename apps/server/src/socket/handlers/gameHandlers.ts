@@ -15,8 +15,10 @@ import {
   POWER_EVENTS,
 } from "../../constants/socketEvents";
 import { GAME_WINNERS } from "../../constants/roles";
+import { getCharacterByName } from "../../api/characters";
 import {
   executePower,
+  executeCharacterPower,
   recordPowerUsage,
   resetPlayerPowers,
   hasPowerAbility,
@@ -58,6 +60,38 @@ export function registerGameHandlers(io: Server, socket: Socket) {
         message: "Not all players are ready.",
       });
       return;
+    }
+
+    // For infiltration, validate character selection
+    if (room.settings.gameKey === "infiltration") {
+      const enabledRoles =
+        room.settings.gameOptions.infiltration?.enabledRoles || [];
+      const numInfiltrators =
+        room.settings.gameOptions.infiltration?.numInfiltrators || 0;
+      const requiredCharacters = room.players.length + 3; // 3 center roles
+
+      if (enabledRoles.length !== requiredCharacters) {
+        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
+          message: `Need exactly ${requiredCharacters} characters selected (${room.players.length} players + 3 center). You have ${enabledRoles.length}.`,
+        });
+        return;
+      }
+
+      // Validate that numInfiltrators is valid
+      if (numInfiltrators === 0) {
+        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
+          message:
+            "At least one infiltrator is required. Select at least one infiltrator team character.",
+        });
+        return;
+      }
+
+      if (numInfiltrators >= room.players.length) {
+        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
+          message: `Number of infiltrators (${numInfiltrators}) must be less than number of players (${room.players.length}).`,
+        });
+        return;
+      }
     }
 
     // For infiltration, start with role reveal
@@ -116,11 +150,11 @@ export function registerGameHandlers(io: Server, socket: Socket) {
       const { maxPlayersCap } = GAME_RULES[gameKey];
       room.settings.maxPlayers = Math.min(
         room.settings.maxPlayers,
-        maxPlayersCap
+        maxPlayersCap,
       );
 
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Host sets round duration
@@ -149,7 +183,7 @@ export function registerGameHandlers(io: Server, socket: Socket) {
 
       room.settings.roundDurationMs = s * 1000;
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Host sets max players
@@ -180,7 +214,7 @@ export function registerGameHandlers(io: Server, socket: Socket) {
       room.settings.maxPlayers = clamped;
 
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Host sets infiltration game options
@@ -190,10 +224,12 @@ export function registerGameHandlers(io: Server, socket: Socket) {
       roomCode,
       numInfiltrators,
       enabledRoleIds,
+      enabledRoles,
     }: {
       roomCode: string;
       numInfiltrators: 0 | 1 | 2;
       enabledRoleIds: number[];
+      enabledRoles?: string[];
     }) => {
       const room = validateRoom(roomCode);
       if (!room) return;
@@ -201,20 +237,21 @@ export function registerGameHandlers(io: Server, socket: Socket) {
       // Update host socket id in case of reconnect
       room.hostSocketId = socket.id;
 
-      // Store enabled role ids directly (server no longer uses include* flags)
+      // Store enabled role ids and role names
       room.settings.gameOptions.infiltration = {
         ...room.settings.gameOptions.infiltration,
         numInfiltrators,
         enabledRoleIds: Array.isArray(enabledRoleIds) ? enabledRoleIds : [],
+        enabledRoles: Array.isArray(enabledRoles) ? enabledRoles : [],
       };
 
       logger.infiltrationOptions(
         room.roomCode,
         numInfiltrators,
-        enabledRoleIds
+        enabledRoleIds,
       );
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Host starts the next round
@@ -269,7 +306,7 @@ export function registerPlayerHandlers(io: Server, socket: Socket) {
       if (allAck) {
         beginMayhem(io, room.roomCode, room);
       }
-    }
+    },
   );
 
   // Player uses special power
@@ -336,7 +373,7 @@ export function registerPlayerHandlers(io: Server, socket: Socket) {
       });
 
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Player acknowledges completing mayhem actions
@@ -407,7 +444,7 @@ export function registerSubmissionHandlers(io: Server, socket: Socket) {
 
       // store / overwrite
       const playerToUpdate = room.players.find(
-        (p: any) => p.socketId === socket.id
+        (p: any) => p.socketId === socket.id,
       );
       if (playerToUpdate) {
         playerToUpdate.submission = {
@@ -419,13 +456,93 @@ export function registerSubmissionHandlers(io: Server, socket: Socket) {
 
       // If everyone has submitted, end early
       const submittedCount = room.players.filter(
-        (p: any) => p.submission !== undefined
+        (p: any) => p.submission !== undefined,
       ).length;
       const playerCount = room.players.length;
 
       if (playerCount > 0 && submittedCount >= playerCount) {
         endRound(io, room.roomCode, "all submitted");
       }
-    }
+    },
+  );
+
+  // Player submits power usage during mayhem
+  socket.on(
+    "game:submitPower",
+    ({
+      roomCode,
+      powerName,
+      targetPlayers,
+      targetCenter,
+    }: {
+      roomCode: string;
+      powerName: string;
+      targetPlayers?: string[];
+      targetCenter?: number[];
+    }) => {
+      const room = validateRoom(roomCode);
+      if (!room) return;
+
+      if (!validateGameStarted(socket, room)) return;
+      if (!validateGamePhase(socket, room, "mayhem")) return;
+
+      const player = room.players.find((p: any) => p.socketId === socket.id);
+      if (!player) {
+        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
+          message: "Player not found in room.",
+        });
+        return;
+      }
+
+      // Check if player has already used a power this game
+      if (player.powerUsed) {
+        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
+          message: "You can only use one power per game.",
+        });
+        return;
+      }
+
+      // Find power in player's character
+      if (!player.character) {
+        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
+          message: "You don't have a character assigned.",
+        });
+        return;
+      }
+
+      const powerSlot = player.character.powers.find(
+        (slot: any) => slot.powerIndex !== null,
+      );
+
+      if (!powerSlot || !powerSlot.powerIndex) {
+        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
+          message: "Power not found.",
+        });
+        return;
+      }
+
+      // Validate that the power slot has required fields
+      if (!powerSlot.where || !powerSlot.item) {
+        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
+          message: "Invalid power configuration.",
+        });
+        return;
+      }
+
+      // Execute the power (validation happens inside)
+      executeCharacterPower(
+        io,
+        room,
+        player,
+        powerName,
+        targetPlayers,
+        targetCenter,
+        powerSlot,
+      );
+
+      // Mark power as used
+      player.powerUsed = true;
+      emitRoomState(io, room.roomCode);
+    },
   );
 }

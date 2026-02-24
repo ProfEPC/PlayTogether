@@ -45,6 +45,15 @@ function loadCharactersFromFile(): StoredCharacter[] {
 }
 
 /**
+ * Export function to get character by name (for use in socket handlers)
+ */
+export function getCharacterByName(name: string): CharacterInCreation | null {
+  const characters = loadCharactersFromFile();
+  const found = characters.find((c) => c.name === name);
+  return found ? found.data : null;
+}
+
+/**
  * Save all characters to file
  */
 function saveCharactersToFile(characters: StoredCharacter[]): void {

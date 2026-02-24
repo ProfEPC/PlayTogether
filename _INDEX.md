@@ -120,9 +120,15 @@ PlayTogether/
 │
 ├── apps/server/
 │   ├── _README.md           ← Backend guide
+│   ├── data/                ← Persisted data (characters.json)
 │   ├── package.json
 │   └── src/
 │       ├── index.ts         ← Entry point
+│       ├── api/
+│       │   └── characters.ts ← Character CRUD endpoints
+│       ├── constants/
+│       │   ├── roles.ts
+│       │   └── socketEvents.ts
 │       ├── socket/
 │       │   ├── registerHandlers.ts
 │       │   ├── handlers/
@@ -131,11 +137,16 @@ PlayTogether/
 │       │   │   └── lifecycleHandlers.ts
 │       │   ├── roomActions.ts
 │       │   ├── gamePhaseHandlers.ts
-│       │   └── powerLogic.ts
-│       └── state/
-│           ├── rooms.ts
-│           ├── types.ts
-│           └── gameRules.ts
+│       │   ├── powerLogic.ts
+│       │   └── validation.ts
+│       ├── state/
+│       │   ├── rooms.ts
+│       │   ├── types.ts
+│       │   └── gameRules.ts
+│       └── utils/
+│           ├── logger.ts
+│           ├── roomCode.ts
+│           └── time.ts
 │
 ├── apps/web/
 │   ├── _README.md           ← Frontend guide
@@ -145,10 +156,28 @@ PlayTogether/
 │       ├── App.tsx
 │       ├── pages/
 │       ├── features/
+│       │   ├── infiltration/
+│       │   └── oddOneOut/
 │       ├── hooks/
-│       ├── state/
+│       ├── components/
 │       ├── lib/
-│       └── types/
+│       ├── state/
+│       ├── types/
+│       ├── utils/
+│       ├── constants/
+│       │   ├── infiltrationPowers.ts
+│       │   ├── infiltrationPowers/
+│       │   │   ├── index.ts
+│       │   │   ├── types.ts
+│       │   │   ├── learn.ts (16 powers)
+│       │   │   ├── reveal.ts (4 powers)
+│       │   │   ├── swap.ts (7 powers)
+│       │   │   ├── alter.ts (8 powers)
+│       │   │   ├── tamper.ts (7 powers)
+│       │   │   ├── condition.ts (2 powers)
+│       │   │   └── settingsNone.ts (2 powers)
+│       │   └── gameRules.ts
+│       └── config/ (deprecated)
 │
 └── packages/shared/
     └── src/types.ts         ← Shared types (mirrors apps)

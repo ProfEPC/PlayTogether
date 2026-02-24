@@ -33,7 +33,7 @@ export const SETTINGS_NONE_POWERS: InfiltrationPower[] = [
     index: 46,
     initiative: "0",
     powerName: "No Action",
-    description: "Has no power, can be modified",
+    description: "Has no power",
     type: "None",
     item: "NoAction",
     where: "None",

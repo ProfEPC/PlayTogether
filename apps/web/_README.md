@@ -46,18 +46,45 @@ apps/web/src/
 │   ├── useSocketConnection.ts  # Socket setup, auth, listeners
 │   └── useNow.ts              # Real-time clock for UI
 │
+├── components/                 # Shared UI components
+│   └── Panel.tsx              # Reusable panel component
+│
 ├── lib/                        # Utilities
-│   └── socket.ts              # Socket.io client configuration
+│   ├── socket.ts              # Socket.io client configuration
+│   └── characterPersistence.ts # Character save/load API
 │
 ├── state/                      # Global state management
 │   └── useAppStore.ts         # Zustand store (room, UI state)
 │
-├── components/                 # Shared UI components
-│   └── Panel.tsx              # Reusable panel component
+├── utils/                      # Utility functions
+│   ├── characterCreation/     # Character design utilities
+│   │   ├── filters.ts         # Cascading dropdown filters
+│   │   ├── validators.ts      # Validation & blocker logic
+│   │   ├── helpers.ts         # Slot management
+│   │   └── powerCompatibility.ts # Power compatibility checks
+│   └── powerSorting.ts        # Power slot sorting
 │
 ├── types/                      # TypeScript definitions
+│   ├── characterCreation.ts   # Character types
 │   ├── room.ts                # Room, Player, Phase types
 │   └── socket.ts              # Socket event payloads
+│
+├── constants/                  # Static constants
+│   ├── infiltrationPowers.ts  # Re-export all powers
+│   ├── infiltrationPowers/    # Modular power definitions (46 total)
+│   │   ├── index.ts
+│   │   ├── types.ts
+│   │   ├── learn.ts (16)
+│   │   ├── reveal.ts (4)
+│   │   ├── swap.ts (7)
+│   │   ├── alter.ts (8)
+│   │   ├── tamper.ts (7)
+│   │   ├── condition.ts (2)
+│   │   └── settingsNone.ts (2)
+│   ├── gameRules.ts           # Game rules and limits
+│   └── fix_indices.ps1        # [DEPRECATED]
+│
+├── config/                     # Configuration files (deprecated, now using API)
 │
 ├── constants/                  # Static values
 │   └── gameRules.ts           # Game rules (mirrors server)
@@ -579,7 +606,7 @@ export const socket = io(
   import.meta.env.VITE_SERVER_URL || "http://localhost:3001",
   {
     // ... config
-  }
+  },
 );
 ```
 

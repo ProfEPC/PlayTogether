@@ -4,8 +4,8 @@ import { socket } from "../lib/socket";
 import { useNow } from "../hooks/useNow";
 import { makeRoomCode, closeRoomAction } from "../utils/host/roomActions";
 import { copyRoomCodeToClipboard } from "../utils/shared/roomCodeClipboard";
+import { loadCharacters } from "../lib/characterPersistence";
 import type { RoomState, GameKey, RoleConfig } from "../types/room";
-import infiltrationRoles from "../config/infiltrationRoles.json";
 import {
   InfiltrationOptionsPanel,
   LobbySettingsPanel,
@@ -57,24 +57,52 @@ export default function HostPage() {
   const [gameKey, setGameKey] = useState<GameKey>("infiltration");
   const [maxPlayers, setMaxPlayers] = useState(8);
 
-  // Infiltration options
-  const [numInfiltrators, setNumInfiltrators] = useState<0 | 1 | 2>(2);
-
   const [selectedGameKey, setSelectedGameKey] = useState<GameKey | "">("");
   // Host flow state: whether we're selecting the game or in setup
   const [hostStep, setHostStep] = useState<"selectGame" | "setup">(() =>
-    selectedGameKey === "" ? "selectGame" : "setup"
+    selectedGameKey === "" ? "selectGame" : "setup",
   );
 
   const [playersCollapsed, setPlayersCollapsed] = useState(false);
   const prevPlayerCountRef = useRef<number>(
-    roomState ? roomState.players.length : 0
+    roomState ? roomState.players.length : 0,
   );
 
-  const roles = infiltrationRoles as RoleConfig[];
+  // Load characters and convert to roles
+  interface SavedCharacter {
+    id: string | number;
+    name: string;
+    data?: { description?: string; team?: "villager" | "infiltrator" | null };
+  }
+  const [savedCharacters, setSavedCharacters] = useState<SavedCharacter[]>([]);
+
+  // Convert saved characters to roles
+  const roles = useMemo(() => {
+    const converted = savedCharacters.map((char, idx) => ({
+      id: idx,
+      key: `character_${char.id}`,
+      title: char.name,
+      description: char.data?.description || "Custom character",
+      team: char.data?.team || undefined,
+    })) as (RoleConfig & { team?: "villager" | "infiltrator" })[];
+    console.log("Roles calculated:", converted);
+    return converted;
+  }, [savedCharacters]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const characters = await loadCharacters();
+        console.log("Characters loaded:", characters);
+        setSavedCharacters(characters);
+      } catch (error) {
+        console.error("Failed to load characters:", error);
+      }
+    })();
+  }, []);
 
   const [enabledRoleIds, setEnabledRoleIds] = useState<Set<number>>(
-    () => new Set([0, 1, 2, 100, 101]) // All roles: thief, hacker, engineer, + both infiltrators
+    () => new Set(), // Start empty, will be populated when roles load
   );
 
   const voteGroups = useMemo(() => {
@@ -167,19 +195,22 @@ export default function HostPage() {
     setMaxPlayers(roomState.settings.maxPlayers);
 
     if (roomState.settings.gameKey === "infiltration") {
-      const opts = roomState.settings.gameOptions?.infiltration;
-
-      const numInfs = opts?.numInfiltrators ?? 2;
-      setNumInfiltrators(numInfs as 0 | 1 | 2);
-
-      // Reconstruct enabled role IDs: include the base roles + infiltrator slots
-      const baseIds = opts?.enabledRoleIds ?? [0, 1, 2];
-      const infiltratorSlots =
-        numInfs === 2 ? [100, 101] : numInfs === 1 ? [100] : [];
-      const allIds = [...baseIds, ...infiltratorSlots];
-      setEnabledRoleIds(new Set(allIds));
+      // infiltration options are now managed purely by selected characters
     }
   }, [roomState]);
+
+  // Initialize enabledRoleIds from server when first receiving room state (for this game)
+  useEffect(() => {
+    if (!roomState || roomState.settings.gameKey !== "infiltration") return;
+
+    // Only set on initial load (when enabledRoleIds is empty)
+    if (enabledRoleIds.size === 0) {
+      const opts = roomState.settings.gameOptions?.infiltration;
+      const allIds = opts?.enabledRoleIds ?? [];
+      setEnabledRoleIds(new Set(allIds));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomState?.roomCode]); // Only reinit when switching rooms
 
   useEffect(() => {
     if (!roomState) return;
@@ -196,7 +227,7 @@ export default function HostPage() {
     } else if (hasEnoughPlayers) {
       const readyCount = roomState.players.filter((p) => p.ready).length;
       setStatus(
-        `Waiting for players to be ready (${readyCount}/${roomState.players.length})`
+        `Waiting for players to be ready (${readyCount}/${roomState.players.length})`,
       );
     } else {
       setStatus("Waiting for players");
@@ -271,10 +302,10 @@ export default function HostPage() {
           {selectedGameKey === "infiltration"
             ? "Infiltration"
             : selectedGameKey === "odd_one_out"
-            ? "Odd One Out"
-            : gameKey === "infiltration"
-            ? "Infiltration"
-            : "Odd One Out"}
+              ? "Odd One Out"
+              : gameKey === "infiltration"
+                ? "Infiltration"
+                : "Odd One Out"}
         </div>
 
         {/* Right: Room code block (two lines) */}
@@ -345,14 +376,82 @@ export default function HostPage() {
             <InfiltrationOptionsPanel
               enabledRoleIds={enabledRoleIds}
               setEnabledRoleIds={setEnabledRoleIds}
-              numInfiltrators={numInfiltrators}
-              setNumInfiltrators={setNumInfiltrators}
               roles={roles}
               lobbyLocked={lobbyLocked}
               roomCode={effectiveRoomCode}
               socket={socket}
             />
           )}
+          {(selectedGameKey === "infiltration" ||
+            roomState?.settings.gameKey === "infiltration") &&
+            roomState && (
+              <div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: 8,
+                    backgroundColor:
+                      enabledRoleIds.size === roomState.players.length + 3
+                        ? "#d4edda"
+                        : "#fff3cd",
+                    border:
+                      enabledRoleIds.size === roomState.players.length + 3
+                        ? "1px solid #28a745"
+                        : "1px solid #ffc107",
+                    borderRadius: 4,
+                    color:
+                      enabledRoleIds.size === roomState.players.length + 3
+                        ? "#155724"
+                        : "#856404",
+                    fontSize: 14,
+                  }}
+                >
+                  <strong>Characters Required:</strong>{" "}
+                  {roomState.players.length + 3} ({roomState.players.length}{" "}
+                  players + 3 center roles)
+                  <br />
+                  <strong>Characters Selected:</strong> {enabledRoleIds.size}
+                  {enabledRoleIds.size === roomState.players.length + 3
+                    ? " ✓"
+                    : " ✗"}
+                </div>
+                {/* Infiltrator team validation */}
+                {(() => {
+                  const selectedChars = roles.filter((r) =>
+                    enabledRoleIds.has(r.id),
+                  );
+                  const infiltratorCount = selectedChars.filter(
+                    (c) => c.team === "infiltrator",
+                  ).length;
+                  const numPlayers = roomState.players.length;
+                  const isValid =
+                    infiltratorCount > 0 && infiltratorCount < numPlayers;
+
+                  return (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        padding: 8,
+                        backgroundColor: isValid ? "#d4edda" : "#fff3cd",
+                        border: isValid
+                          ? "1px solid #c3e6cb"
+                          : "1px solid #ffc107",
+                        borderRadius: 4,
+                        color: isValid ? "#155724" : "#856404",
+                        fontSize: 14,
+                      }}
+                    >
+                      <strong>Infiltrator Team:</strong>{" "}
+                      {isValid ? "✓ Valid" : "✗ Invalid"}
+                      {infiltratorCount === 0 && <> (at least one required)</>}
+                      {infiltratorCount >= numPlayers && (
+                        <> (must be less than {numPlayers} players)</>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
         </div>
 
         {/* Core controls */}

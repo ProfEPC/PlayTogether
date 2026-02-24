@@ -1,0 +1,134 @@
+/* PowerActionPanel Styling */
+.power-action-panel {
+  margin-top: 12px;
+  padding: 12px;
+  background: #e8f4f8;
+  border: 1px solid #b3d9e8;
+  border-radius: 6px;
+  color: #0c4e6e;
+}
+
+.power-action-panel h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #0c4e6e;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.power-action-panel p {
+  margin: 8px 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.power-action-panel h4 {
+  margin: 12px 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.button-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.player-button,
+.center-button {
+  padding: 8px 12px;
+  border: 2px solid #b3d9e8;
+  background: #fff;
+  color: #0c4e6e;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.player-button:hover:not(:disabled),
+.center-button:hover:not(:disabled) {
+  background: #d1e8f1;
+  border-color: #0c4e6e;
+}
+
+.player-button.selected,
+.center-button.selected {
+  background: #0c4e6e;
+  color: #fff;
+  border-color: #0c4e6e;
+}
+
+.player-button:disabled,
+.center-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.power-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.random-button {
+  padding: 8px 16px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.random-button:hover:not(:disabled) {
+  background: #5a6268;
+}
+
+.random-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selection-info {
+  font-weight: 600;
+  padding: 6px 12px;
+  background: rgba(12, 78, 110, 0.1);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.submit-button {
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #218838;
+}
+
+.submit-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.complete-message {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  color: #155724;
+  font-weight: 500;
+  font-size: 14px;
+}

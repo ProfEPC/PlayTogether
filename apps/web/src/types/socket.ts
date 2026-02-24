@@ -12,7 +12,10 @@ export type ClientToServerEvents = {
   "room:join": (p: { roomCode: string; playerName: string }) => void;
   "room:leave": (p: { roomCode: string }) => void;
   "room:setLocked": (p: { roomCode: string; locked: boolean }) => void;
-  "room:setRequireApproval": (p: { roomCode: string; requireApproval: boolean }) => void;
+  "room:setRequireApproval": (p: {
+    roomCode: string;
+    requireApproval: boolean;
+  }) => void;
   "room:close": (p: { roomCode: string }) => void;
   "room:kick": (p: { roomCode: string; targetSocketId: string }) => void;
   "room:approveJoin": (p: { roomCode: string; targetSocketId: string }) => void;
@@ -24,6 +27,7 @@ export type ClientToServerEvents = {
     roomCode: string;
     numInfiltrators: 0 | 1 | 2;
     enabledRoleIds: number[];
+    enabledRoles?: string[]; // Character names/roles
   }) => void;
   "game:select": (p: { roomCode: string; gameKey: GameKey }) => void;
   "game:submit": (p: {
@@ -42,6 +46,13 @@ export type ClientToServerEvents = {
     target?: string;
   }) => void;
 
+  "game:submitPower": (p: {
+    roomCode: string;
+    powerName: string;
+    targetPlayers?: string[];
+    targetCenter?: number[];
+  }) => void;
+
   "room:setMaxPlayers": (p: { roomCode: string; maxPlayers: number }) => void;
 };
 
@@ -56,7 +67,21 @@ export type ServerToClientEvents = {
   "room:state": (state: RoomState) => void;
   "player:role": (p: { role: InfiltrationRole }) => void;
 
-  "power:result": (p: { type: string; [key: string]: unknown }) => void;
+  "power:result": (p: {
+    type: string;
+    powerName?: string;
+    learns?: Array<{
+      powerName: string;
+      targetPlayer?: string;
+      targetPlayerName?: string;
+      targetCenter?: number;
+      learned: string;
+      learnedAt: number;
+      item?: string;
+      where?: string;
+    }>;
+    [key: string]: unknown;
+  }) => void;
   // Server prompts a specific player to choose a target for their power
   "power:prompt": (p: {
     type: string;

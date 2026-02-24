@@ -24,8 +24,15 @@ Server runs on `http://localhost:3001` by default.
 apps/server/src/
 ├── index.ts                     # Entry point: HTTP server + Socket.io setup
 │
+├── api/                         # REST API endpoints
+│   └── characters.ts            # Character CRUD (file-based persistence)
+│
+├── constants/                   # Constants
+│   ├── roles.ts                 # Role constants
+│   └── socketEvents.ts          # Socket event names
+│
 ├── socket/                      # Socket event handling
-│   ├── registerHandlers.ts      # Orchestrator (30 lines)
+│   ├── registerHandlers.ts      # Orchestrator
 │   ├── handlers/                # Handler modules
 │   │   ├── roomHandlers.ts      # Room management (8 handlers)
 │   │   ├── gameHandlers.ts      # Game + submissions (14 handlers)
@@ -40,8 +47,13 @@ apps/server/src/
 │   ├── types.ts                 # TypeScript interfaces
 │   └── gameRules.ts             # Game configuration
 │
-└── utils/
-    └── time.ts                  # Time utilities
+├── utils/                       # Utilities
+│   ├── logger.ts                # Logging
+│   ├── roomCode.ts              # Room code normalization
+│   └── time.ts                  # Time utilities
+│
+└── data/                        # Persisted data files
+    └── characters.json          # Saved character database
 ```
 
 ## Key Components
@@ -225,35 +237,29 @@ export function registerLifecycleHandlers(io: Server, socket: Socket) {
 All handlers import from:
 
 - **`../roomActions`** - State mutations & broadcasting
-
   - `emitRoomState()` - Broadcasts updated room to all players
   - `startPhaseTimer()` - Initiates phase timers
   - `clearPhaseTimer()` - Stops phase timers
   - `cleanupRoom()` - Deletes room from state
 
 - **`../gamePhaseHandlers`** - Game phase logic
-
   - `beginRoleReveal()` - Starts reveal phase
   - `beginMayhem()` - Starts mayhem phase
   - `beginVoting()` - Starts voting phase
   - `endVoting()` - Processes votes and shows results
 
 - **`./powerLogic`** - Role power execution
-
   - `executePower()` - Handles role-specific abilities
 
 - **`./validation`** - Input validation
-
   - `validateRoomCode()` - Room code format checks
   - `validateJoinData()` - Join request validation
   - `validateGameSettings()` - Game settings validation
 
 - **`../state/rooms`** - Room storage
-
   - `rooms` Map - In-memory room storage
 
 - **`../state/types`** - TypeScript interfaces
-
   - `RoomState`, `Player`, etc.
 
 - **`../state/gameRules`** - Game configuration
@@ -270,7 +276,7 @@ const rooms = new Map<string, RoomState>();
 export function createRoom(
   code: string,
   hostSocketId: string,
-  settings: RoomSettings
+  settings: RoomSettings,
 ): RoomState {
   const room: RoomState = {
     roomCode: code,
@@ -310,7 +316,7 @@ export function startPhaseTimer(
   roomCode: string,
   phaseName: string,
   delayMs: number,
-  callback: () => void
+  callback: () => void,
 ) {
   const room = rooms.get(roomCode);
   const roundId = room.currentRound;
@@ -373,14 +379,14 @@ export function endVoting(io: Server, roomCode: string) {
     if (p.submission?.value) {
       voteCounts.set(
         p.submission.value,
-        (voteCounts.get(p.submission.value) || 0) + 1
+        (voteCounts.get(p.submission.value) || 0) + 1,
       );
     }
   });
 
   // Determine eliminated player
   const eliminated = [...voteCounts.entries()].sort(
-    (a, b) => b[1] - a[1]
+    (a, b) => b[1] - a[1],
   )[0]?.[0];
 
   // Store results
@@ -405,7 +411,7 @@ export function executePower(
   room: RoomState,
   sourcePlayer: Player,
   power: PowerType,
-  target: Player
+  target: Player,
 ): PowerResult {
   switch (power) {
     case "spy":
@@ -564,7 +570,6 @@ Update [\_API_REFERENCE.md](../../_API_REFERENCE.md) with the new socket event d
 **To locate a handler quickly:**
 
 1. Check the event name prefix:
-
    - `room:*` → [roomHandlers.ts](./handlers/roomHandlers.ts)
    - `game:*` → [gameHandlers.ts](./handlers/gameHandlers.ts)
    - `disconnect` → [lifecycleHandlers.ts](./handlers/lifecycleHandlers.ts)

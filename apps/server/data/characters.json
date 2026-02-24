@@ -46,5 +46,166 @@
     },
     "createdAt": "2026-02-21T18:15:37.643Z",
     "updatedAt": "2026-02-21T18:15:37.643Z"
+  },
+  {
+    "id": "1771889203340",
+    "name": "Seer",
+    "data": {
+      "name": "Seer",
+      "description": "1",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 1,
+          "type": "Learn",
+          "item": "Role",
+          "where": "Player",
+          "amount": null,
+          "toggles": {},
+          "timing": "before"
+        }
+      ]
+    },
+    "createdAt": "2026-02-23T23:26:43.340Z",
+    "updatedAt": "2026-02-23T23:26:43.340Z"
+  },
+  {
+    "id": "1771889214211",
+    "name": "Seer2",
+    "data": {
+      "name": "Seer2",
+      "description": "2",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 1,
+          "type": "Learn",
+          "item": "Role",
+          "where": "Player",
+          "amount": "2",
+          "toggles": {},
+          "timing": "before"
+        }
+      ]
+    },
+    "createdAt": "2026-02-23T23:26:54.211Z",
+    "updatedAt": "2026-02-23T23:26:54.211Z"
+  },
+  {
+    "id": "1771889230558",
+    "name": "vault",
+    "data": {
+      "name": "vault",
+      "description": "1",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 2,
+          "type": "Learn",
+          "item": "Role",
+          "where": "Center",
+          "amount": "1",
+          "toggles": {},
+          "timing": "before"
+        }
+      ]
+    },
+    "createdAt": "2026-02-23T23:27:10.558Z",
+    "updatedAt": "2026-02-23T23:27:10.558Z"
+  },
+  {
+    "id": "1771889245284",
+    "name": "vault2",
+    "data": {
+      "name": "vault2",
+      "description": "2",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 2,
+          "type": "Learn",
+          "item": "Role",
+          "where": "Center",
+          "amount": "2",
+          "toggles": {},
+          "timing": "before"
+        }
+      ]
+    },
+    "createdAt": "2026-02-23T23:27:25.284Z",
+    "updatedAt": "2026-02-23T23:27:25.284Z"
+  },
+  {
+    "id": "1771889277743",
+    "name": "villager",
+    "data": {
+      "name": "villager",
+      "description": "sg",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 46,
+          "type": "None",
+          "item": "NoAction",
+          "where": "None",
+          "amount": null,
+          "toggles": {},
+          "timing": null
+        }
+      ]
+    },
+    "createdAt": "2026-02-23T23:27:57.743Z",
+    "updatedAt": "2026-02-23T23:27:57.743Z"
+  },
+  {
+    "id": "1771889281359",
+    "name": "villager",
+    "data": {
+      "name": "villager",
+      "description": "sg",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 46,
+          "type": "None",
+          "item": "NoAction",
+          "where": "None",
+          "amount": null,
+          "toggles": {},
+          "timing": null
+        }
+      ]
+    },
+    "createdAt": "2026-02-23T23:28:01.359Z",
+    "updatedAt": "2026-02-23T23:28:01.359Z"
+  },
+  {
+    "id": "1771897756397",
+    "name": "Infiltrator",
+    "data": {
+      "name": "Infiltrator",
+      "description": "baddie",
+      "team": "infiltrator",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 46,
+          "type": "None",
+          "item": "NoAction",
+          "where": "None",
+          "amount": null,
+          "toggles": {},
+          "timing": null
+        }
+      ]
+    },
+    "createdAt": "2026-02-24T01:49:16.397Z",
+    "updatedAt": "2026-02-24T01:49:16.397Z"
   }
 ]

@@ -9,6 +9,7 @@ import {
 } from "../constants/roles";
 import { POWER_EVENTS, PLAYER_EVENTS } from "../constants/socketEvents";
 import { promptPlayerForPower, resetPlayerPowers } from "./powerLogic";
+import { getCharacterByName } from "../api/characters";
 
 function makeRoundId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -52,50 +53,64 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
   room.game.started = true;
   const ids = room.players.map((p) => p.socketId);
   const numPlayers = ids.length;
-  const defaultOptions = {
-    numInfiltrators: 2,
-    // Default to all special roles enabled
-    enabledRoleIds: [
-      SPECIAL_ROLE_INDICES.THIEF,
-      SPECIAL_ROLE_INDICES.HACKER,
-      SPECIAL_ROLE_INDICES.ENGINEER,
-    ],
-  };
-  const options = {
-    ...defaultOptions,
-    ...room.settings.gameOptions.infiltration,
-  };
+
+  // Use actual game options from room settings
+  const options = room.settings.gameOptions.infiltration;
+
+  // Validate numInfiltrators is a number between 0-2
+  const numInfiltrators =
+    typeof options.numInfiltrators === "number"
+      ? Math.max(0, Math.min(2, options.numInfiltrators))
+      : 0;
 
   logger.roleAssignment(
     room.roomCode,
     numPlayers,
-    options.enabledRoleIds || []
+    options.enabledRoleIds || [],
   );
 
   // Build the role pool: infiltrators and special roles first, then civilians fill extra slots to reach numPlayers + 3
   const pool: InfiltrationRole[] = [];
 
   // Add infiltrators
-  for (let i = 0; i < options.numInfiltrators; i++) {
+  for (let i = 0; i < numInfiltrators; i++) {
     pool.push(INFILTRATION_ROLES.INFILTRATOR);
   }
 
-  // Determine enabled role IDs (backwards compatible with legacy include* booleans)
-  let enabledRoleIds: number[] = [];
-  if (Array.isArray(options.enabledRoleIds)) {
-    enabledRoleIds = options.enabledRoleIds;
+  // Add enabled roles (character names) only up to what's needed after infiltrators
+  const rolesNeeded = numPlayers + 3 - numInfiltrators;
+  if (Array.isArray(options.enabledRoles) && options.enabledRoles.length > 0) {
+    // Use enabled roles from host selection (character names), up to rolesNeeded
+    for (
+      let i = 0;
+      i < Math.min(rolesNeeded, options.enabledRoles.length);
+      i++
+    ) {
+      pool.push(options.enabledRoles[i] as InfiltrationRole);
+    }
   } else {
-    // No legacy include flags supported; default to none
-    enabledRoleIds = [];
-  }
+    // Fallback to legacy hardcoded special roles for backwards compatibility
+    let enabledRoleIds: number[] = [];
+    if (Array.isArray(options.enabledRoleIds)) {
+      enabledRoleIds = options.enabledRoleIds;
+    }
 
-  // Add special roles if enabled via enabledRoleIds
-  if (enabledRoleIds.includes(SPECIAL_ROLE_INDICES.THIEF))
-    pool.push(INFILTRATION_ROLES.THIEF);
-  if (enabledRoleIds.includes(SPECIAL_ROLE_INDICES.HACKER))
-    pool.push(INFILTRATION_ROLES.HACKER);
-  if (enabledRoleIds.includes(SPECIAL_ROLE_INDICES.ENGINEER))
-    pool.push(INFILTRATION_ROLES.ENGINEER);
+    if (
+      enabledRoleIds.includes(SPECIAL_ROLE_INDICES.THIEF) &&
+      pool.length < numPlayers + 3
+    )
+      pool.push(INFILTRATION_ROLES.THIEF);
+    if (
+      enabledRoleIds.includes(SPECIAL_ROLE_INDICES.HACKER) &&
+      pool.length < numPlayers + 3
+    )
+      pool.push(INFILTRATION_ROLES.HACKER);
+    if (
+      enabledRoleIds.includes(SPECIAL_ROLE_INDICES.ENGINEER) &&
+      pool.length < numPlayers + 3
+    )
+      pool.push(INFILTRATION_ROLES.ENGINEER);
+  }
 
   // Fill remaining slots with civilians to reach numPlayers + 3 total roles
   const civiliansToAdd = Math.max(0, numPlayers + 3 - pool.length);
@@ -115,11 +130,64 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
     const player = room.players[i];
     const role = shuffledPool[i];
     player.role = role;
+    console.log(
+      `Emitting role ${role} to player ${player.socketId} (${player.name})`,
+    );
+
+    // Check if this role is a selected character (in enabledRoles) or an infiltrator
+    const enabledRolesArray = Array.isArray(options.enabledRoles)
+      ? options.enabledRoles
+      : [];
+    const isSelectedCharacter = enabledRolesArray.includes(role);
+    const isInfiltrator = role === INFILTRATION_ROLES.INFILTRATOR;
+
+    // For infiltrators, use the "Infiltrator" character; for others, use the selected character
+    let characterName = isSelectedCharacter
+      ? role
+      : isInfiltrator
+        ? "Infiltrator"
+        : null;
+
+    if (characterName) {
+      const characterData = getCharacterByName(characterName) as any;
+      if (characterData) {
+        // Convert powerSlots to powers format expected by client
+        const powers = (characterData.powerSlots || []).map((slot: any) => ({
+          powerIndex: slot.powerIndex,
+          type: slot.type,
+          item: slot.item,
+          where: slot.where,
+          quantity: slot.amount === "ALL" ? 999 : parseInt(slot.amount) || 1,
+        }));
+
+        player.character = {
+          name: characterData.name,
+          description: characterData.description || "",
+          team: characterData.team as "villager" | "infiltrator" | undefined,
+          powers,
+        };
+        console.log(
+          `Assigned character "${characterName}" with ${powers.length} powers to player ${player.name}`,
+        );
+      } else {
+        console.log(`Character "${characterName}" not found in database`);
+      }
+    }
+
     io.to(player.socketId).emit(PLAYER_EVENTS.ROLE, { role });
   }
 
-  // The remaining roles are unused
+  // The remaining roles are unused (these are the 3 center roles)
   room.game.unusedRoles = shuffledPool.slice(numPlayers);
+
+  // Store the 3 center roles (Center 1, 2, 3)
+  if (room.game.unusedRoles.length >= 3) {
+    room.game.centerRoles = [
+      room.game.unusedRoles[0],
+      room.game.unusedRoles[1],
+      room.game.unusedRoles[2],
+    ];
+  }
 
   room.game.phase = GAME_PHASES.REVEAL;
   room.game.prompt = "Role reveal: acknowledge when you've seen your role.";
@@ -148,7 +216,7 @@ export function beginVoting(io: Server, code: string, room: RoomState) {
     room.settings.roundDurationMs,
     (roomCode) => {
       endRound(io, roomCode, "timer");
-    }
+    },
   );
 
   emitRoomState(io, code);

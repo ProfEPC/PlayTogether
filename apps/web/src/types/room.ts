@@ -33,6 +33,32 @@ export type Submission = {
   submittedAt: number;
 };
 
+export type PowerSlot = {
+  powerIndex: number | null;
+  type?: string;
+  item?: string;
+  where?: string;
+  quantity?: number;
+};
+
+export type Character = {
+  name: string;
+  description: string;
+  team?: "villager" | "infiltrator";
+  powers: PowerSlot[];
+};
+
+export type LearnRecord = {
+  powerName: string;
+  targetPlayer?: string;
+  targetPlayerName?: string;
+  targetCenter?: number;
+  learned: string;
+  learnedAt: number;
+  item?: string;
+  where?: string;
+};
+
 export type Player = {
   socketId: string;
   name: string;
@@ -46,6 +72,11 @@ export type Player = {
   roleAcknowledged?: boolean; // Has player acknowledged their role?
   mayhemAcknowledged?: boolean; // Has player acknowledged completing mayhem actions?
   usedPower?: boolean; // Has player used their special power this round?
+  powerUsed?: boolean; // Has player used a character power this game?
+
+  // Character and powers
+  character?: Character;
+  learnsThisGame?: LearnRecord[];
 
   // NEW: Power state and effects (game phase specific)
   roleRevealed?: boolean; // Has this player's role been publicly revealed?
@@ -75,6 +106,9 @@ export type GameState = {
 
   // Unused roles from the initial pool
   unusedRoles?: Array<InfiltrationRole>;
+
+  // Center roles for Learn power selection
+  centerRoles?: Array<InfiltrationRole>;
 
   // Redacted summaries of power usage for display in-room
   powerSummary?: Array<{

@@ -38,7 +38,7 @@ export function isPlayerProtected(player: Player): boolean {
 export function getTargetsForPower(
   powerType: string,
   room: RoomState,
-  actorSocketId: string
+  actorSocketId: string,
 ) {
   if (powerType === POWER_PROMPT_TYPES.VIEW_UNUSED) {
     // Thief: offer unused role indices
@@ -60,7 +60,7 @@ export function getTargetsForPower(
         (q) =>
           q.socketId !== actorSocketId &&
           !isPlayerRevealed(q) &&
-          !isPlayerProtected(q)
+          !isPlayerProtected(q),
       )
       .map((q) => ({ id: q.socketId, label: q.name }));
   }
@@ -75,13 +75,13 @@ export function promptPlayerForPower(
   io: Server,
   playerSocketId: string,
   role: InfiltrationRole,
-  room: RoomState
+  room: RoomState,
 ) {
   if (role === INFILTRATION_ROLES.THIEF) {
     const targets = getTargetsForPower(
       POWER_PROMPT_TYPES.VIEW_UNUSED,
       room,
-      playerSocketId
+      playerSocketId,
     );
     io.to(playerSocketId).emit(POWER_EVENTS.PROMPT, {
       type: POWER_PROMPT_TYPES.VIEW_UNUSED,
@@ -92,7 +92,7 @@ export function promptPlayerForPower(
     const targets = getTargetsForPower(
       POWER_PROMPT_TYPES.VIEW_PLAYER_TEAM,
       room,
-      playerSocketId
+      playerSocketId,
     );
     io.to(playerSocketId).emit(POWER_EVENTS.PROMPT, {
       type: POWER_PROMPT_TYPES.VIEW_PLAYER_TEAM,
@@ -103,7 +103,7 @@ export function promptPlayerForPower(
     const targets = getTargetsForPower(
       POWER_PROMPT_TYPES.VIEW_PLAYER_ROLE,
       room,
-      playerSocketId
+      playerSocketId,
     );
     io.to(playerSocketId).emit(POWER_EVENTS.PROMPT, {
       type: POWER_PROMPT_TYPES.VIEW_PLAYER_ROLE,
@@ -123,7 +123,7 @@ export function executePower(
   powerType: string,
   target: string,
   room: RoomState,
-  actorSocketId: string
+  actorSocketId: string,
 ): { isValid: boolean; error?: string; result?: Record<string, unknown> } {
   if (powerType === POWER_PROMPT_TYPES.VIEW_UNUSED) {
     const index = parseInt(target);
@@ -203,7 +203,7 @@ export function recordPowerUsage(
   actorSocketId: string,
   actorName: string,
   powerType: string,
-  target: string
+  target: string,
 ) {
   if (!room.game.powerSummary) room.game.powerSummary = [];
 
@@ -238,4 +238,84 @@ export function hasPowerAbility(role: InfiltrationRole | string): boolean {
     role === INFILTRATION_ROLES.HACKER ||
     role === INFILTRATION_ROLES.ENGINEER
   );
+}
+
+/**
+ * Execute a character power based on character definition
+ * Handles Learn/Role powers: learns roles of selected players or center
+ */
+export function executeCharacterPower(
+  io: Server,
+  room: RoomState,
+  actor: Player,
+  powerName: string,
+  targetPlayerIds?: string[],
+  targetCenterNumbers?: number[],
+  powerSlot?: any,
+) {
+  if (!powerSlot) return;
+
+  const { item, where, quantity } = powerSlot;
+
+  // Handle Learn/Role powers
+  if (item === "Role" && powerName && quantity) {
+    const learns = [];
+
+    // Learn from selected players
+    if (where === "Player" && targetPlayerIds && targetPlayerIds.length > 0) {
+      for (const targetId of targetPlayerIds) {
+        const targetPlayer = room.players.find(
+          (p: any) => p.socketId === targetId,
+        );
+        if (targetPlayer && targetPlayer.role) {
+          learns.push({
+            powerName,
+            targetPlayer: targetId,
+            targetPlayerName: targetPlayer.name,
+            learned: targetPlayer.role,
+            learnedAt: Date.now(),
+            item,
+            where,
+          });
+        }
+      }
+    }
+
+    // Learn from center roles
+    if (
+      where === "Center" &&
+      targetCenterNumbers &&
+      targetCenterNumbers.length > 0
+    ) {
+      for (const centerNum of targetCenterNumbers) {
+        if (centerNum >= 1 && centerNum <= 3 && room.game.centerRoles) {
+          const centerRole = room.game.centerRoles[centerNum - 1];
+          learns.push({
+            powerName,
+            targetCenter: centerNum,
+            learned: centerRole,
+            learnedAt: Date.now(),
+            item,
+            where,
+          });
+        }
+      }
+    }
+
+    // Store learns in player record
+    if (!actor.learnsThisGame) {
+      actor.learnsThisGame = [];
+    }
+    actor.learnsThisGame.push(...learns);
+
+    // Send private message to actor with what they learned
+    io.to(actor.socketId).emit("power:result", {
+      powerName,
+      learns,
+    });
+
+    console.log(
+      `[Power] ${actor.name} used ${powerName}, learned: ${JSON.stringify(learns)}`,
+    );
+  }
 }

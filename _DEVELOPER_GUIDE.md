@@ -207,6 +207,11 @@ Remove Button (bottom, full-width)
 ```
 apps/server/src/
 ├── index.ts                    # HTTP + Socket.io server setup
+├── api/
+│   └── characters.ts           # Character CRUD endpoints (file-based)
+├── constants/
+│   ├── roles.ts
+│   └── socketEvents.ts
 ├── socket/
 │   ├── registerHandlers.ts     # Entry point for all handlers
 │   ├── handlers/
@@ -215,12 +220,15 @@ apps/server/src/
 │   │   └── lifecycleHandlers.ts # Connection lifecycle (1 handler)
 │   ├── roomActions.ts          # Room mutation + emit utilities
 │   ├── gamePhaseHandlers.ts    # Phase logic (reveal, mayhem, voting)
-│   └── powerLogic.ts           # Role power execution
+│   ├── powerLogic.ts           # Role power execution
+│   └── validation.ts           # Input validation
 ├── state/
 │   ├── rooms.ts                # Room creation & defaults
 │   ├── types.ts                # RoomState, Player, Phase types
 │   └── gameRules.ts            # Game configuration constants
 └── utils/
+    ├── logger.ts               # Logging utilities
+    ├── roomCode.ts             # Room code normalization
     └── time.ts                 # Time utility functions
 ```
 
@@ -235,19 +243,43 @@ apps/web/src/
 │   └── AdminPage.tsx           # Dev admin panel
 ├── features/
 │   ├── infiltration/           # Infiltration game UI
+│   │   └── CharacterCreation/  # Character design & saving
 │   └── oddOneOut/              # Odd One Out game UI
 ├── hooks/
 │   ├── useSocketConnection.ts  # Socket setup & auth
 │   └── useNow.ts              # Real-time clock hook
+├── components/
+│   └── Panel.tsx              # Reusable panel component
 ├── lib/
-│   └── socket.ts              # Socket.io client configuration
+│   ├── socket.ts              # Socket.io client configuration
+│   └── characterPersistence.ts # Character save/load API
 ├── state/
 │   └── useAppStore.ts         # Zustand global state
+├── utils/
+│   ├── characterCreation/     # Character creation utilities
+│   │   ├── filters.ts         # Cascading dropdown logic
+│   │   ├── validators.ts      # Validation & blocker logic
+│   │   ├── helpers.ts         # Slot management helpers
+│   │   └── powerCompatibility.ts # Power compatibility checks
+│   └── powerSorting.ts        # Power slot sorting
 ├── constants/
+│   ├── infiltrationPowers.ts  # Re-export
+│   ├── infiltrationPowers/    # Modular power definitions (46 total)
+│   │   ├── index.ts           # Combined export
+│   │   ├── types.ts
+│   │   ├── learn.ts (16)
+│   │   ├── reveal.ts (4)
+│   │   ├── swap.ts (7)
+│   │   ├── alter.ts (8)
+│   │   ├── tamper.ts (7)
+│   │   ├── condition.ts (2)
+│   │   └── settingsNone.ts (2)
 │   └── gameRules.ts           # Game rules (mirrors server)
-└── types/
-    ├── room.ts                # Room/Player/Game types
-    └── socket.ts              # Socket event type definitions
+├── types/
+│   ├── characterCreation.ts   # Character creation types
+│   ├── room.ts                # Room/Player/Game types
+│   └── socket.ts              # Socket event type definitions
+└── config/                     # (deprecated, now using API)
 ```
 
 ## Key Patterns & Conventions

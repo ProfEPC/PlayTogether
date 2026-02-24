@@ -16,8 +16,13 @@ import {
   acknowledgeMayhemAction,
   sendPowerAction,
 } from "../utils/player/gameActions";
-import type { RoomState } from "../types/room";
-import { VotingPanel, ResultsPanel } from "../components/PlayerPage";
+import type { RoomState, InfiltrationRole } from "../types/room";
+import { INFILTRATION_POWERS } from "../constants/infiltrationPowers";
+import {
+  VotingPanel,
+  ResultsPanel,
+  PowerActionPanel,
+} from "../components/PlayerPage";
 
 // PlayerPage: UI for players to join a room and participate in rounds.
 //
@@ -43,7 +48,9 @@ export default function PlayerPage() {
   const mySocketId = socket.id;
   const myPlayer =
     roomState?.players.find((p) => p.socketId === mySocketId) ?? null;
-  const myRole = myPlayer?.role ?? null;
+
+  // Store the player's assigned role locally since server sends it via private event
+  const [myRole, setMyRole] = useState<InfiltrationRole | null>(null);
 
   // Game timer countdown - updates every 500ms during mayhem/voting phases
   const [secondsLeft, setSecondsLeft] = useState<number>(0);
@@ -57,7 +64,7 @@ export default function PlayerPage() {
   };
   const [powerPrompt, setPowerPrompt] = useState<PowerPrompt | null>(null);
   const [powerNotifications, setPowerNotifications] = useState<string | null>(
-    null
+    null,
   );
 
   // Voting phase state - voteOptions includes all players plus "No Infiltrator" option
@@ -99,33 +106,77 @@ export default function PlayerPage() {
     const onDisconnect = () => setConnected(false);
     const onState = (s: RoomState) => {
       setRoomState(s);
+      // Clear role when game returns to lobby or resets
+      if (s.game.phase === "lobby") {
+        setMyRole(null);
+      }
       // Update status when player successfully joins
       if (s && s.players.some((p) => p.socketId === socket.id)) {
         setStatus(`Successfully joined room ${s.roomCode}`);
       }
     };
+    const onPlayerRole = (payload: { role: InfiltrationRole }) => {
+      console.log("Received player:role event:", payload);
+      setMyRole(payload.role);
+    };
     const onPowerResult = (payload: {
       type: string;
+      powerName?: string;
+      learns?: Array<{
+        powerName: string;
+        targetPlayer?: string;
+        targetPlayerName?: string;
+        targetCenter?: number;
+        learned: string;
+        learnedAt: number;
+        item?: string;
+        where?: string;
+      }>;
       [key: string]: unknown;
     }) => {
-      // server-side power results may include learned info or notes
-      if (typeof payload.learned === "string") setLearnedInfo(payload.learned);
-      if (typeof payload.note === "string") setPowerNotifications(payload.note);
+      // Handle character power learns (new format)
+      if (payload.learns && payload.learns.length > 0) {
+        const learnTexts = payload.learns.map(
+          (learn) =>
+            `${learn.targetPlayerName || `Center ${learn.targetCenter}`} is ${learn.learned}`,
+        );
+        setLearnedInfo(learnTexts.join(", "));
+      }
+      // Handle old-style power results
+      else {
+        if (typeof payload.learned === "string")
+          setLearnedInfo(payload.learned);
+        if (typeof payload.note === "string")
+          setPowerNotifications(payload.note);
+      }
     };
 
     const onPowerPrompt = (p: PowerPrompt) => setPowerPrompt(p);
 
-    socket.connect();
+    // Register listeners BEFORE connecting
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("room:state", onState);
+    socket.on("player:role", onPlayerRole);
     socket.on("power:result", onPowerResult);
     socket.on("power:prompt", onPowerPrompt);
+
+    // Debug: log all events
+    socket.onAny((eventName: string, ...args: unknown[]) => {
+      if (!eventName.startsWith("_")) {
+        // Filter out internal events
+        console.log(`Socket event received: ${eventName}`, args);
+      }
+    });
+
+    // NOW connect
+    socket.connect();
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("room:state", onState);
+      socket.off("player:role", onPlayerRole);
       socket.off("power:result", onPowerResult);
       socket.off("power:prompt", onPowerPrompt);
       socket.disconnect();
@@ -138,7 +189,7 @@ export default function PlayerPage() {
       const update = () => {
         const s = Math.max(
           0,
-          Math.ceil((roomState.game.endsAt! - Date.now()) / 1000)
+          Math.ceil((roomState.game.endsAt! - Date.now()) / 1000),
         );
         setSecondsLeft(s);
       };
@@ -266,7 +317,7 @@ export default function PlayerPage() {
           </div>
         ) : null}
 
-        {myPlayer && (
+        {myPlayer && !roomState?.game.started && (
           <div style={{ marginTop: 8 }}>
             <button
               onClick={() => {
@@ -291,6 +342,55 @@ export default function PlayerPage() {
                 {myRole ? myRole.toUpperCase() : "Waiting for role..."}
               </strong>
             </div>
+
+            {/* Display character and powers if available */}
+            {myPlayer?.character && (
+              <div
+                style={{
+                  marginBottom: 12,
+                  padding: 8,
+                  backgroundColor: "#e8f4f8",
+                  borderRadius: 4,
+                  border: "1px solid #b3d9e8",
+                  color: "#0c4e6e",
+                }}
+              >
+                <div style={{ fontSize: "0.9em", marginBottom: 4 }}>
+                  <strong>Character:</strong> {myPlayer.character.name}
+                </div>
+                {myPlayer.character.powers &&
+                  myPlayer.character.powers.length > 0 && (
+                    <div style={{ fontSize: "0.85em" }}>
+                      <strong>Powers:</strong>
+                      {myPlayer.character.powers.map((power, idx) => {
+                        if (power.powerIndex === null) return null;
+                        const powerDef =
+                          INFILTRATION_POWERS[power.powerIndex - 1];
+                        const description = powerDef?.description
+                          ? powerDef.description.replace(
+                              /#/g,
+                              String(power.quantity || 1),
+                            )
+                          : "";
+                        return (
+                          <div
+                            key={idx}
+                            style={{ marginLeft: 12, marginTop: 6 }}
+                          >
+                            <div style={{ fontWeight: 600 }}>
+                              {powerDef?.powerName || "Unknown"}
+                            </div>
+                            <div style={{ fontStyle: "italic", opacity: 0.8 }}>
+                              {description}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+              </div>
+            )}
+
             <div style={{ marginBottom: 8 }}>
               <button
                 onClick={() =>
@@ -319,77 +419,74 @@ export default function PlayerPage() {
               ready.
             </div>
 
-            {myRole &&
-              ["thief", "engineer", "hacker"].includes(myRole) &&
-              !myPlayer?.usedPower && (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                    Special Power ({myRole.toUpperCase()})
-                  </div>
-                  {myRole === "thief" && roomState.game.unusedRoles && (
-                    <div>
-                      <select id="thief-target" style={{ marginRight: 8 }}>
-                        {roomState.game.unusedRoles.map((_, idx) => (
-                          <option key={idx} value={idx.toString()}>
-                            Unused Role {idx + 1}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => {
-                          const select = document.getElementById(
-                            "thief-target"
-                          ) as HTMLSelectElement;
-                          sendPowerAction(
-                            socket,
-                            roomState,
-                            "viewUnused",
-                            select.value
-                          );
-                        }}
-                      >
-                        Last Look
-                      </button>
-                    </div>
-                  )}
-
-                  {(myRole === "engineer" || myRole === "hacker") && (
-                    <div>
-                      <select
-                        id={`${myRole}-target`}
-                        style={{ marginRight: 8 }}
-                      >
-                        {roomState.players
-                          .filter((p) => p.socketId !== mySocketId)
-                          .map((p) => (
-                            <option key={p.socketId} value={p.socketId}>
-                              {p.name}
-                            </option>
-                          ))}
-                      </select>
-                      <button
-                        onClick={() => {
-                          const select = document.getElementById(
-                            `${myRole}-target`
-                          ) as HTMLSelectElement;
-                          sendPowerAction(
-                            socket,
-                            roomState,
-                            myRole === "engineer"
-                              ? "viewPlayerRole"
-                              : "viewPlayerTeam",
-                            select.value
-                          );
-                        }}
-                      >
-                        {myRole === "engineer"
-                          ? "Role Peek"
-                          : "Allegiance Check"}
-                      </button>
-                    </div>
-                  )}
+            {/* Character and powers info */}
+            {myPlayer?.character && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 8,
+                  backgroundColor: "#e8f4f8",
+                  borderRadius: 4,
+                  border: "1px solid #b3d9e8",
+                  color: "#0c4e6e",
+                }}
+              >
+                <div style={{ fontSize: "0.9em", marginBottom: 4 }}>
+                  <strong>Character:</strong> {myPlayer.character.name}
                 </div>
-              )}
+                {myPlayer.character.powers &&
+                  myPlayer.character.powers.length > 0 && (
+                    <div style={{ fontSize: "0.85em" }}>
+                      <strong>Powers:</strong>
+                      {myPlayer.character.powers.map((power, idx) => {
+                        if (power.powerIndex === null) return null;
+                        const powerDef =
+                          INFILTRATION_POWERS[power.powerIndex - 1];
+                        const description = powerDef?.description
+                          ? powerDef.description.replace(
+                              /#/g,
+                              String(power.quantity || 1),
+                            )
+                          : "";
+                        return (
+                          <div
+                            key={idx}
+                            style={{ marginLeft: 12, marginTop: 6 }}
+                          >
+                            <div style={{ fontWeight: 600 }}>
+                              {powerDef?.powerName || "Unknown"}
+                            </div>
+                            <div style={{ fontStyle: "italic", opacity: 0.8 }}>
+                              {description}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {/* Character power panel - handles all character powers */}
+            {myPlayer?.character ? (
+              <>
+                {console.log(
+                  "Player character during mayhem:",
+                  myPlayer.character,
+                  "Powers:",
+                  myPlayer.character.powers,
+                )}
+                <PowerActionPanel
+                  roomState={roomState}
+                  mySocketId={mySocketId}
+                  character={myPlayer?.character}
+                />
+              </>
+            ) : (
+              <div style={{ marginTop: 12, color: "#666" }}>
+                No character assigned
+              </div>
+            )}
 
             {learnedInfo && (
               <div
@@ -435,14 +532,14 @@ export default function PlayerPage() {
                             socket,
                             roomState,
                             powerPrompt.type,
-                            t.id
+                            t.id,
                           );
                           setPowerPrompt(null);
                         }}
                       >
                         {t.label}
                       </button>
-                    )
+                    ),
                   )}
                 </div>
               </div>
@@ -515,7 +612,7 @@ export default function PlayerPage() {
                 roomState,
                 selectedVote,
                 setStatus,
-                setMySubmission
+                setMySubmission,
               )
             }
           />
