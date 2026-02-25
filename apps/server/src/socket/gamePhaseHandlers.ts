@@ -11,57 +11,62 @@ import { POWER_EVENTS, PLAYER_EVENTS } from "../constants/socketEvents";
 import { promptPlayerForPower, resetPlayerPowers } from "./powerLogic";
 import { getCharacterByName } from "../api/characters";
 
-function makeRoundId() {
+/**
+ * * Generate a unique game session ID to persist across entire game lifecycle
+ * - Format: timestamp-randomstring (e.g., "1708873200000-abc123")
+ */
+function makeGameId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * * Begin the mayhem phase where players can use character powers
+ * - Sets game started flag and phase to "mayhem"
+ * - Initializes empty submissions and acknowledgments
+ * - No timer: waits for all players to acknowledge completion
+ */
 export function beginMayhem(io: Server, code: string, room: RoomState) {
-  const MAYHEM_MS = 5_000;
   room.game.started = true;
   room.game.phase = GAME_PHASES.MAYHEM;
   room.game.prompt =
     "MAYHEM ROUND: Take your actions and acknowledge when done.";
   room.game.submissions = {};
-  room.game.roundId = makeRoundId();
   room.game.mayhemAck = {};
-  // Track which players have used their special powers this round
+  //* Track which players have used their special powers this round
   room.game.usedPowers = room.game.usedPowers || {};
-  // Redacted summaries of power usage to show in the room (no sensitive details)
+  //* Redacted summaries of power usage to show in the room (no sensitive details)
   room.game.powerSummary = [];
-
-  // Prompt players who have special roles to take their action now
-  for (const p of room.players) {
-    const role: InfiltrationRole | undefined = room.game._roles?.[p.socketId];
-    if (!role) continue;
-
-    // Prompt all power-enabled roles
-    if (
-      role === INFILTRATION_ROLES.THIEF ||
-      role === INFILTRATION_ROLES.HACKER ||
-      role === INFILTRATION_ROLES.ENGINEER
-    ) {
-      promptPlayerForPower(io, p.socketId, role, room);
-    }
-  }
-
-  // No timer - wait for all acknowledgments
+  //! No timer - wait for all acknowledgments (critical: don't add timer here)
 
   emitRoomState(io, code);
 }
 
+/**
+ * * Begin the role reveal phase - assign characters to players
+ *
+ * Character Assignment Flow:
+ * 1. Get list of selected characters from host options (enabledRoles)
+ * 2. Shuffle the character pool randomly
+ * 3. Assign one character to each player in order
+ * 4. Fetch character data from database (includes powers, description, team)
+ * 5. Send character assignment to each player privately via socket
+ * 6. Store remaining characters as center roles (unused)
+ *
+ * ! NOTE: System now uses ONLY character-based assignment (no legacy role abstraction)
+ */
 export function beginRoleReveal(io: Server, code: string, room: RoomState) {
   room.game.started = true;
+
+  //* Generate gameId once when game starts (persists until game reset)
+  if (!room.game.gameId) {
+    room.game.gameId = makeGameId();
+  }
+
   const ids = room.players.map((p) => p.socketId);
   const numPlayers = ids.length;
 
-  // Use actual game options from room settings
+  //* Use actual game options from room settings
   const options = room.settings.gameOptions.infiltration;
-
-  // Validate numInfiltrators is a number between 0-2
-  const numInfiltrators =
-    typeof options.numInfiltrators === "number"
-      ? Math.max(0, Math.min(2, options.numInfiltrators))
-      : 0;
 
   logger.roleAssignment(
     room.roomCode,
@@ -69,150 +74,105 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
     options.enabledRoleIds || [],
   );
 
-  // Build the role pool: infiltrators and special roles first, then civilians fill extra slots to reach numPlayers + 3
-  const pool: InfiltrationRole[] = [];
+  //* Build character pool: use only selected enabled characters from host
+  const pool: string[] = []; //* Character names only
 
-  // Add infiltrators
-  for (let i = 0; i < numInfiltrators; i++) {
-    pool.push(INFILTRATION_ROLES.INFILTRATOR);
-  }
+  const enabledRolesArray = Array.isArray(options.enabledRoles)
+    ? options.enabledRoles
+    : [];
 
-  // Add enabled roles (character names) only up to what's needed after infiltrators
-  const rolesNeeded = numPlayers + 3 - numInfiltrators;
-  if (Array.isArray(options.enabledRoles) && options.enabledRoles.length > 0) {
-    // Use enabled roles from host selection (character names), up to rolesNeeded
-    for (
-      let i = 0;
-      i < Math.min(rolesNeeded, options.enabledRoles.length);
-      i++
-    ) {
-      pool.push(options.enabledRoles[i] as InfiltrationRole);
+  //* Use only selected characters (host selection)
+  if (enabledRolesArray.length > 0) {
+    for (let i = 0; i < enabledRolesArray.length; i++) {
+      pool.push(enabledRolesArray[i] as string);
     }
-  } else {
-    // Fallback to legacy hardcoded special roles for backwards compatibility
-    let enabledRoleIds: number[] = [];
-    if (Array.isArray(options.enabledRoleIds)) {
-      enabledRoleIds = options.enabledRoleIds;
-    }
-
-    if (
-      enabledRoleIds.includes(SPECIAL_ROLE_INDICES.THIEF) &&
-      pool.length < numPlayers + 3
-    )
-      pool.push(INFILTRATION_ROLES.THIEF);
-    if (
-      enabledRoleIds.includes(SPECIAL_ROLE_INDICES.HACKER) &&
-      pool.length < numPlayers + 3
-    )
-      pool.push(INFILTRATION_ROLES.HACKER);
-    if (
-      enabledRoleIds.includes(SPECIAL_ROLE_INDICES.ENGINEER) &&
-      pool.length < numPlayers + 3
-    )
-      pool.push(INFILTRATION_ROLES.ENGINEER);
   }
 
-  // Fill remaining slots with civilians to reach numPlayers + 3 total roles
-  const civiliansToAdd = Math.max(0, numPlayers + 3 - pool.length);
-  for (let i = 0; i < civiliansToAdd; i++) {
-    pool.push(INFILTRATION_ROLES.CIVILIAN);
-  }
+  console.log("Character pool before shuffle:", pool);
 
-  console.log("Role pool before shuffle:", pool);
-
-  // Shuffle the pool
+  //* Shuffle the pool randomly
   const shuffledPool = pool.sort(() => Math.random() - 0.5);
 
   logger.rolePool(shuffledPool);
 
-  // Assign roles to player objects and emit privately
+  //* Assign characters to players in order
   for (let i = 0; i < numPlayers; i++) {
     const player = room.players[i];
-    const role = shuffledPool[i];
-    player.role = role;
-    console.log(
-      `Emitting role ${role} to player ${player.socketId} (${player.name})`,
-    );
+    const characterName = shuffledPool[i];
 
-    // Check if this role is a selected character (in enabledRoles) or an infiltrator
-    const enabledRolesArray = Array.isArray(options.enabledRoles)
-      ? options.enabledRoles
-      : [];
-    const isSelectedCharacter = enabledRolesArray.includes(role);
-    const isInfiltrator = role === INFILTRATION_ROLES.INFILTRATOR;
+    //* Fetch character metadata from database
+    const characterData = getCharacterByName(characterName) as any;
+    if (characterData) {
+      //* Convert powerSlots database format to client-expected format
+      //* Handles special cases like amount="ALL" → quantity=999
+      const powers = (characterData.powerSlots || []).map((slot: any) => ({
+        powerIndex: slot.powerIndex,
+        type: slot.type,
+        item: slot.item,
+        where: slot.where,
+        quantity: slot.amount === "ALL" ? 999 : parseInt(slot.amount) || 1,
+      }));
 
-    // For infiltrators, use the "Infiltrator" character; for others, use the selected character
-    let characterName = isSelectedCharacter
-      ? role
-      : isInfiltrator
-        ? "Infiltrator"
-        : null;
-
-    if (characterName) {
-      const characterData = getCharacterByName(characterName) as any;
-      if (characterData) {
-        // Convert powerSlots to powers format expected by client
-        const powers = (characterData.powerSlots || []).map((slot: any) => ({
-          powerIndex: slot.powerIndex,
-          type: slot.type,
-          item: slot.item,
-          where: slot.where,
-          quantity: slot.amount === "ALL" ? 999 : parseInt(slot.amount) || 1,
-        }));
-
-        player.character = {
-          name: characterData.name,
-          description: characterData.description || "",
-          team: characterData.team as "villager" | "infiltrator" | undefined,
-          powers,
-        };
-        console.log(
-          `Assigned character "${characterName}" with ${powers.length} powers to player ${player.name}`,
-        );
-      } else {
-        console.log(`Character "${characterName}" not found in database`);
-      }
+      //* Store on player object for server-side reference
+      player.character = {
+        name: characterData.name,
+        description: characterData.description || "",
+        team: characterData.team as "villager" | "infiltrator" | undefined,
+        powers,
+      };
+      console.log(
+        `Assigned character "${characterName}" with ${powers.length} powers to player ${player.name}`,
+      );
+    } else {
+      console.log(`Character "${characterName}" not found in database`);
     }
 
-    io.to(player.socketId).emit(PLAYER_EVENTS.ROLE, { role });
+    //! Send private character assignment to each player
+    io.to(player.socketId).emit(PLAYER_EVENTS.ROLE, {
+      character: player.character,
+    });
   }
 
-  // The remaining roles are unused (these are the 3 center roles)
-  room.game.unusedRoles = shuffledPool.slice(numPlayers);
-
-  // Store the 3 center roles (Center 1, 2, 3)
-  if (room.game.unusedRoles.length >= 3) {
-    room.game.centerRoles = [
-      room.game.unusedRoles[0],
-      room.game.unusedRoles[1],
-      room.game.unusedRoles[2],
-    ];
-  }
-
+  //* Transition to reveal phase where players acknowledge character assignments
   room.game.phase = GAME_PHASES.REVEAL;
   room.game.prompt = "Role reveal: acknowledge when you've seen your role.";
 
   emitRoomState(io, code);
 }
 
+/**
+ * * Begin the voting phase where players vote for suspected infiltrators
+ *
+ * Voting Logic:
+ * - Players vote for a player they suspect OR "No Infiltrator" option
+ * - Timer starts for roundDurationMs (default: 30 seconds)
+ * - When timer expires or all players vote, round ends and votes are revealed
+ * - Prompt changes based on numInfiltrators (1 vs multiple)
+ * - Previous winner/results cleared for fresh round
+ */
 export function beginVoting(io: Server, code: string, room: RoomState) {
+  //* Get number of infiltrators from game settings
   const numInfil = room.settings.gameOptions.infiltration.numInfiltrators;
+
   room.game.phase = GAME_PHASES.VOTING;
+
+  //* Customize voting prompt based on infiltrator count
   room.game.prompt =
     numInfil === 1
       ? "VOTE: Who is the infiltrator? (or choose No Infiltrator)"
       : `VOTE: Who is an infiltrator? (${numInfil} total, or choose No Infiltrator)`;
-  room.game.submissions = {};
-  room.game.roundId = makeRoundId();
+
+  room.game.submissions = {}; //* Reset vote submissions
   room.game.endsAt = Date.now() + room.settings.roundDurationMs;
 
-  // clear previous results/winner for the upcoming round
+  //* Clear previous results/winner for the upcoming round
   room.game.winner = undefined;
 
+  //! Start countdown timer - calls endRound when time expires
   startPhaseTimer(
     io,
     code,
-    room.game.roundId,
+    room.game.gameId!,
     room.settings.roundDurationMs,
     (roomCode) => {
       endRound(io, roomCode, "timer");

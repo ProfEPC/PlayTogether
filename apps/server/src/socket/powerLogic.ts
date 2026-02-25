@@ -138,7 +138,10 @@ export function executePower(
     return { isValid: true, result: { type: powerType, role } };
   }
 
-  if (powerType === POWER_PROMPT_TYPES.VIEW_PLAYER_ROLE) {
+  if (
+    powerType === POWER_PROMPT_TYPES.VIEW_PLAYER_ROLE ||
+    powerType === POWER_PROMPT_TYPES.VIEW_PLAYER_TEAM
+  ) {
     const targetPlayer = room.players.find((p) => p.socketId === target);
     if (!targetPlayer?.role) {
       return {
@@ -153,43 +156,22 @@ export function executePower(
         error: "Target player is revealed or protected.",
       };
     }
-    return {
-      isValid: true,
-      result: {
-        type: powerType,
-        playerName: targetPlayer.name || "Unknown",
-        role: targetPlayer.role,
-      },
-    };
-  }
 
-  if (powerType === POWER_PROMPT_TYPES.VIEW_PLAYER_TEAM) {
-    const targetPlayer = room.players.find((p) => p.socketId === target);
-    if (!targetPlayer?.role) {
-      return {
-        isValid: false,
-        error: "Invalid target player or role not assigned.",
-      };
-    }
-    // RULE: Cannot target revealed or protected players
-    if (isPlayerRevealed(targetPlayer) || isPlayerProtected(targetPlayer)) {
-      return {
-        isValid: false,
-        error: "Target player is revealed or protected.",
-      };
-    }
-    const team =
-      targetPlayer.role === INFILTRATION_ROLES.INFILTRATOR
-        ? "infiltrator"
-        : "civilian";
-    return {
-      isValid: true,
-      result: {
-        type: powerType,
-        playerName: targetPlayer.name || "Unknown",
-        team,
-      },
+    const resultData: Record<string, unknown> = {
+      type: powerType,
+      playerName: targetPlayer.name || "Unknown",
     };
+
+    if (powerType === POWER_PROMPT_TYPES.VIEW_PLAYER_ROLE) {
+      resultData.role = targetPlayer.role;
+    } else {
+      resultData.team =
+        targetPlayer.role === INFILTRATION_ROLES.INFILTRATOR
+          ? "infiltrator"
+          : "civilian";
+    }
+
+    return { isValid: true, result: resultData };
   }
 
   return { isValid: false, error: "Unknown power type." };
@@ -242,7 +224,7 @@ export function hasPowerAbility(role: InfiltrationRole | string): boolean {
 
 /**
  * Execute a character power based on character definition
- * Handles Learn/Role powers: learns roles of selected players or center
+ * Handles Learn/Role and Learn/Team powers: learns roles or teams of selected players or center
  */
 export function executeCharacterPower(
   io: Server,
@@ -257,8 +239,8 @@ export function executeCharacterPower(
 
   const { item, where, quantity } = powerSlot;
 
-  // Handle Learn/Role powers
-  if (item === "Role" && powerName && quantity) {
+  // Handle Learn/Role and Learn/Team powers
+  if ((item === "Role" || item === "Team") && powerName && quantity) {
     const learns = [];
 
     // Learn from selected players
@@ -267,22 +249,27 @@ export function executeCharacterPower(
         const targetPlayer = room.players.find(
           (p: any) => p.socketId === targetId,
         );
-        if (targetPlayer && targetPlayer.role) {
-          learns.push({
-            powerName,
-            targetPlayer: targetId,
-            targetPlayerName: targetPlayer.name,
-            learned: targetPlayer.role,
-            learnedAt: Date.now(),
-            item,
-            where,
-          });
+        if (targetPlayer) {
+          const learnedValue =
+            item === "Role" ? targetPlayer.role : targetPlayer.character?.team;
+          if (learnedValue) {
+            learns.push({
+              powerName,
+              targetPlayer: targetId,
+              targetPlayerName: targetPlayer.name,
+              learned: learnedValue,
+              learnedAt: Date.now(),
+              item,
+              where,
+            });
+          }
         }
       }
     }
 
-    // Learn from center roles
+    // Learn from center roles (only for Role item, not Team)
     if (
+      item === "Role" &&
       where === "Center" &&
       targetCenterNumbers &&
       targetCenterNumbers.length > 0
@@ -301,6 +288,8 @@ export function executeCharacterPower(
         }
       }
     }
+
+    // Learn team from center (center roles don't have teams, so skip for Team item from Center)
 
     // Store learns in player record
     if (!actor.learnsThisGame) {

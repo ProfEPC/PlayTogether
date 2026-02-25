@@ -38,7 +38,7 @@ export function emitRoomState(io: Server, roomCode: string) {
           if (p.role) acc[p.socketId] = p.role;
           return acc;
         },
-        {}
+        {},
       );
       publicRoom.game.unusedRoles = room.game.unusedRoles || [];
     }
@@ -50,7 +50,7 @@ export function kickPlayer(
   io: Server,
   roomCode: string,
   targetSocketId: string,
-  reason = "kicked"
+  reason = "kicked",
 ) {
   const code = normalizeRoomCode(roomCode);
   const room = rooms.get(code);
@@ -69,9 +69,9 @@ export function kickPlayer(
 export function startPhaseTimer(
   io: Server,
   roomCode: string,
-  roundId: string,
+  gameId: string,
   durationMs: number,
-  onExpire: (roomCode: string) => void
+  onExpire: (roomCode: string) => void,
 ) {
   const code = normalizeRoomCode(roomCode);
   clearPhaseTimer(code);
@@ -79,7 +79,7 @@ export function startPhaseTimer(
   const t = setTimeout(() => {
     const room = rooms.get(code);
     if (!room) return;
-    if (room.game.roundId !== roundId) return; // ignore stale timers
+    if (room.game.gameId !== gameId) return; // ignore stale timers from expired game sessions
     onExpire(code);
   }, durationMs);
 

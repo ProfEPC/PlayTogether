@@ -150,16 +150,17 @@ export function validateGamePhase(
 }
 
 /**
- * Validate round ID matches current round.
- * Emits error and returns false if round IDs don't match.
+ * Validate game ID matches current game session.
+ * Emits error and returns false if game IDs don't match.
+ * Prevents actions from stale clients or expired game sessions.
  */
-export function validateRoundId(
+export function validateGameId(
   socket: Socket,
   room: RoomState,
-  roundId: string
+  gameId: string
 ): boolean {
-  if (!room.game.roundId || room.game.roundId !== roundId) {
-    socket.emit(ERROR_EVENTS.BAD_REQUEST, { message: "Round ID mismatch." });
+  if (!room.game.gameId || room.game.gameId !== gameId) {
+    socket.emit(ERROR_EVENTS.BAD_REQUEST, { message: "Game ID mismatch." });
     return false;
   }
   return true;

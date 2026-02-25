@@ -1,0 +1,277 @@
+/**
+ * Themes admin panel styling
+ */
+
+.themes-admin {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.themes-admin h2 {
+  margin-bottom: 1.5rem;
+  color: #1a1a1a;
+}
+
+.message {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid #c3e6cb;
+}
+
+.message .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #155724;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.themes-container {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+}
+
+/* Themes List Panel */
+.themes-list-panel {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  height: fit-content;
+}
+
+.themes-list-panel h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+  font-size: 1.1rem;
+}
+
+.themes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.theme-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  color: #1a1a1a;
+}
+
+.theme-item:hover {
+  background: #f0f0f0;
+  border-color: #1e5a96;
+}
+
+.theme-item.active {
+  background: #1e5a96;
+  color: white;
+  border-color: #1e5a96;
+}
+
+.theme-name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.theme-badge {
+  font-size: 0.75rem;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.theme-item.active .theme-badge {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.add-button {
+  width: 100%;
+  padding: 0.75rem;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.add-button:hover {
+  background: #218838;
+}
+
+.loading {
+  text-align: center;
+  color: #666;
+  padding: 2rem 0;
+}
+
+/* Theme Editor Panel */
+.theme-editor-panel {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 2rem;
+  max-height: 800px;
+  overflow-y: auto;
+}
+
+.theme-editor-panel h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #1a1a1a;
+}
+
+.no-selection {
+  text-align: center;
+  color: #999;
+  padding: 3rem 1rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1a1a1a;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1e5a96;
+  box-shadow: 0 0 0 2px rgba(30, 90, 150, 0.1);
+}
+
+.form-group input:disabled {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.form-group small {
+  display: block;
+  color: #999;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.view-text {
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  color: #1a1a1a;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.section {
+  background: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #1e5a96;
+}
+
+.section h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.save-button,
+.edit-button {
+  flex: 1;
+  padding: 0.75rem;
+  background: #1e5a96;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.save-button:hover,
+.edit-button:hover {
+  background: #173f6b;
+}
+
+.cancel-button,
+.delete-button {
+  flex: 1;
+  padding: 0.75rem;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.cancel-button:hover,
+.delete-button:hover {
+  background: #c82333;
+}
+
+@media (max-width: 1024px) {
+  .themes-container {
+    grid-template-columns: 1fr;
+  }
+
+  .themes-list-panel {
+    height: auto;
+  }
+
+  .theme-editor-panel {
+    max-height: none;
+  }
+}

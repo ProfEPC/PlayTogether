@@ -98,7 +98,8 @@ export function LoadCharacterModal({
                   </div>
                   <div className="character-meta">
                     Team: {char.data.team || "None"} • Powers:{" "}
-                    {char.data.powerSlots.filter((s) => s.powerIndex).length}
+                    {char.data.powerSlots.filter((s) => s.powerIndex).length} •
+                    Theme: {char.data.theme || "none"}
                   </div>
                   <div className="character-date">
                     Saved {new Date(char.updatedAt).toLocaleDateString()}

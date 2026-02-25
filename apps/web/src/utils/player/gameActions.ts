@@ -19,12 +19,12 @@ export function submitVoteAction(
   roomState: RoomState | null,
   selectedVote: string | null,
   onStatusUpdate: (status: string) => void,
-  onSubmissionUpdate: (submission: { value: string }) => void
+  onSubmissionUpdate: (submission: { value: string }) => void,
 ) {
-  if (!roomState || !selectedVote || !roomState.game.roundId) return;
+  if (!roomState || !selectedVote || !roomState.game.gameId) return;
   socket.emit("game:submit", {
     roomCode: roomState.roomCode,
-    roundId: roomState.game.roundId,
+    gameId: roomState.game.gameId,
     value: selectedVote,
   });
   onSubmissionUpdate({ value: selectedVote });
@@ -42,7 +42,7 @@ export function acknowledgeRoleAction(
   socket: Socket,
   roomState: RoomState | null,
   myRole: InfiltrationRole | null,
-  onStatusUpdate: (status: string) => void
+  onStatusUpdate: (status: string) => void,
 ) {
   if (!roomState || !myRole) return;
   socket.emit("player:ackRole", {
@@ -59,7 +59,7 @@ export function acknowledgeRoleAction(
  */
 export function acknowledgeMayhemAction(
   socket: Socket,
-  roomState: RoomState | null
+  roomState: RoomState | null,
 ) {
   if (!roomState) return;
   socket.emit("player:ackMayhem", {
@@ -78,7 +78,7 @@ export function sendPowerAction(
   socket: Socket,
   roomState: RoomState | null,
   powerType: string,
-  target: string
+  target: string,
 ) {
   if (!roomState) return;
   socket.emit("player:usePower", {

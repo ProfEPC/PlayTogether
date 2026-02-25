@@ -32,7 +32,7 @@ export type ClientToServerEvents = {
   "game:select": (p: { roomCode: string; gameKey: GameKey }) => void;
   "game:submit": (p: {
     roomCode: string;
-    roundId: string;
+    gameId: string;
     value: string;
   }) => void;
   "game:nextRound": (p: { roomCode: string }) => void;

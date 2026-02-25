@@ -102,7 +102,7 @@ export type GameState = {
   phase: GamePhase;
   prompt?: string | null;
   endsAt: number | null;
-  roundId: string | null;
+  gameId: string | null;
 
   // Unused roles from the initial pool
   unusedRoles?: Array<InfiltrationRole>;

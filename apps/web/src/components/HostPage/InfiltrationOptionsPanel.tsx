@@ -46,6 +46,7 @@ export function InfiltrationOptionsPanel({
           {/* Character roles from saved characters */}
           {roles.map((role) => {
             const checked = enabledRoleIds.has(role.id);
+            const isInfiltrator = role.team === "infiltrator";
 
             return (
               <button
@@ -77,7 +78,13 @@ export function InfiltrationOptionsPanel({
                   padding: 12,
                   border: checked ? "3px solid #2196F3" : "1px solid #999",
                   borderRadius: 8,
-                  backgroundColor: checked ? "#E3F2FD" : "#f5f5f5",
+                  backgroundColor: checked
+                    ? isInfiltrator
+                      ? "#ffcccc"
+                      : "#ccffcc"
+                    : isInfiltrator
+                      ? "#ffe6e6"
+                      : "#e6ffe6",
                   color: "#000",
                   cursor: lobbyLocked ? "not-allowed" : "pointer",
                   fontWeight: checked ? 700 : 400,

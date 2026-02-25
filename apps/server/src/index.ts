@@ -5,6 +5,7 @@ import { Server } from "socket.io";
 import { registerSocketHandlers } from "./socket/registerHandlers";
 import { logger } from "./utils/logger";
 import characterRoutes from "./api/characters";
+import themesRoutes from "./api/themes";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
@@ -14,8 +15,11 @@ app.use(express.json());
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-// Character API routes
+// ! API routes for game resources
+// * Character management
 app.use("/api/characters", characterRoutes);
+// * Theme management
+app.use("/api/themes", themesRoutes);
 
 const httpServer = http.createServer(app);
 

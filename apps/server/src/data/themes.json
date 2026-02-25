@@ -1,0 +1,21 @@
+[
+  {
+    "id": "coop_office",
+    "name": "Alien Invasion",
+    "description": "Aliens are on the ship and turning you into aliens.",
+    "teamTerms": {
+      "infiltratorSingular": "Alien",
+      "infiltratorPlural": "Aliens",
+      "villagerSingular": "Crew",
+      "villagerPlural": "Crew"
+    },
+    "phaseText": {
+      "revealPrompt": "Briefing complete: acknowledge when you've reviewed your role.",
+      "mayhemPrompt": "INFILTRATION PHASE: Execute your actions and acknowledge completion.",
+      "votingPrompt": "VOTE: Who is the Alien?",
+      "noInfiltratorOption": "No Alien on the Ship"
+    },
+    "createdAt": "2026-02-25T03:20:47.856Z",
+    "updatedAt": "2026-02-25T03:20:47.856Z"
+  }
+]

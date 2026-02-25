@@ -19,6 +19,7 @@ export default function CharacterCreation() {
     team: null,
     infectedUponSight: false,
     powerSlots: [createEmptySlot()], // Start with Slot 1
+    theme: "debug", // * Default to "debug" theme
   });
 
   const [loadModalOpen, setLoadModalOpen] = useState(false);
@@ -216,6 +217,19 @@ export default function CharacterCreation() {
               onChange={handleDescriptionChange}
               placeholder="e.g., A shadowy figure who learns secrets..."
               rows={3}
+            />
+          </div>
+
+          {/* Theme Selector */}
+          <div className="form-group">
+            <label>Theme:</label>
+            <input
+              type="text"
+              value={character.theme || "debug"}
+              onChange={(e) =>
+                setCharacter({ ...character, theme: e.target.value })
+              }
+              placeholder="e.g., debug, coop_office, heist"
             />
           </div>
 

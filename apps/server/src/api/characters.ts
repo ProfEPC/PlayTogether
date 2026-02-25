@@ -4,6 +4,7 @@ import * as path from "path";
 
 export interface CharacterInCreation {
   name: string;
+  theme?: string;
   [key: string]: unknown;
 }
 

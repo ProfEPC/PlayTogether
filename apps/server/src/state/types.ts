@@ -114,10 +114,10 @@ export type RoomSettings = {
 };
 
 export type GameState = {
+  gameId: string | null; // Unique ID for this game session (generated when game starts, persists until game ends)
   started: boolean;
   phase: GamePhase;
   endsAt: number | null;
-  roundId: string | null;
   prompt?: string; // Current phase prompt/instruction for players
 
   // The roles that were not dealt to players

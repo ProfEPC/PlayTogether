@@ -5,7 +5,7 @@ interface VotingPanelProps {
   voteOptions: Array<{ id: string; label: string }>;
   selectedVote: string | null;
   mySubmission: Submission | null;
-  roundId: string | null;
+  gameId: string | null;
   secondsLeft: number;
   onSelectVote: (voteId: string) => void;
   onSubmit: () => void;
@@ -15,14 +15,29 @@ export const VotingPanel: FC<VotingPanelProps> = ({
   voteOptions,
   selectedVote,
   mySubmission,
-  roundId,
+  gameId,
   secondsLeft,
   onSelectVote,
   onSubmit,
 }) => (
-  <div style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8, position: "relative" }}>
+  <div
+    style={{
+      padding: 12,
+      border: "1px solid #ccc",
+      borderRadius: 8,
+      position: "relative",
+    }}
+  >
     {/* Timer in top right corner */}
-    <div style={{ position: "absolute", top: 12, right: 12, fontSize: "0.9em", opacity: 0.7 }}>
+    <div
+      style={{
+        position: "absolute",
+        top: 12,
+        right: 12,
+        fontSize: "0.9em",
+        opacity: 0.7,
+      }}
+    >
       <strong>{secondsLeft}s</strong>
     </div>
 
@@ -57,7 +72,7 @@ export const VotingPanel: FC<VotingPanelProps> = ({
     {/* Submit vote button - disabled after submission */}
     <button
       onClick={onSubmit}
-      disabled={!roundId || !!mySubmission}
+      disabled={!gameId || !!mySubmission}
       style={{ marginTop: 10 }}
     >
       Submit Vote

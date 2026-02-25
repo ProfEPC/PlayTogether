@@ -1,17 +1,21 @@
 import type { FC } from "react";
 import { socket } from "../../lib/socket";
-import type { RoomState, InfiltrationRole } from "../../types/room";
+import type { RoomState } from "../../types/room";
 
 interface RoleRevealPanelProps {
   roomState: RoomState | null;
-  myRole: InfiltrationRole | null;
+  myCharacter?: {
+    name: string;
+    description: string;
+    team?: "villager" | "infiltrator";
+  } | null;
   mySocketId: string | undefined;
   onAck: () => void;
 }
 
 export const RoleRevealPanel: FC<RoleRevealPanelProps> = ({
   roomState,
-  myRole,
+  myCharacter,
   mySocketId,
   onAck,
 }) => {
@@ -23,8 +27,11 @@ export const RoleRevealPanel: FC<RoleRevealPanelProps> = ({
     return null;
   }
 
+  // Determine team color from character's team affiliation
+  const roleColor = myCharacter?.team === "infiltrator" ? "#a00" : "#060";
+
   const handleAckRole = () => {
-    if (!roomState || !myRole) return;
+    if (!roomState || !myCharacter) return;
     socket.emit("player:ackRole", {
       roomCode: roomState.roomCode,
       seen: true,
@@ -32,17 +39,16 @@ export const RoleRevealPanel: FC<RoleRevealPanelProps> = ({
     onAck();
   };
 
-  const ackedCount = roomState?.players.filter(
-    (p) => p.roleAcknowledged
-  ).length ?? 0;
+  const ackedCount =
+    roomState?.players.filter((p) => p.roleAcknowledged).length ?? 0;
 
   return (
     <div style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}>
-      {/* Display the player's assigned role */}
-      <div style={{ fontWeight: 700, marginBottom: 8 }}>Your Role</div>
+      {/* Display the player's assigned character */}
+      <div style={{ fontWeight: 700, marginBottom: 8 }}>Your Character</div>
       <div style={{ marginBottom: 8 }}>
-        <strong style={{ color: myRole === "infiltrator" ? "#a00" : "#060" }}>
-          {myRole ? myRole.toUpperCase() : "Waiting for role..."}
+        <strong style={{ color: roleColor }}>
+          {myCharacter ? myCharacter.name : "Waiting for character..."}
         </strong>
       </div>
 
@@ -50,9 +56,13 @@ export const RoleRevealPanel: FC<RoleRevealPanelProps> = ({
       <div style={{ marginBottom: 8 }}>
         <button
           onClick={handleAckRole}
-          disabled={!myRole || !!roomState?.players.find((p) => p.socketId === mySocketId)?.roleAcknowledged}
+          disabled={
+            !myCharacter ||
+            !!roomState?.players.find((p) => p.socketId === mySocketId)
+              ?.roleAcknowledged
+          }
         >
-          I have seen my role
+          I have seen my character
         </button>
       </div>
 

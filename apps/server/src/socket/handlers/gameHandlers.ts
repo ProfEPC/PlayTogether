@@ -30,7 +30,7 @@ import {
   validateGameStarted,
   validateGamePhase,
   validatePlayerInRoom,
-  validateRoundId,
+  validateGameId,
   validateRoundNotEnded,
 } from "../validation";
 
@@ -114,7 +114,7 @@ export function registerGameHandlers(io: Server, socket: Socket) {
     room.game.started = false;
     room.game.phase = "lobby";
     room.game.endsAt = null;
-    room.game.roundId = null;
+    room.game.gameId = null;
     room.game.winner = undefined;
     room.players.forEach((p: any) => {
       p.submission = undefined;
@@ -407,11 +407,11 @@ export function registerSubmissionHandlers(io: Server, socket: Socket) {
     GAME_EVENTS.SUBMIT,
     ({
       roomCode,
-      roundId,
+      gameId,
       value,
     }: {
       roomCode: string;
-      roundId: string;
+      gameId: string;
       value: string;
     }) => {
       const room = validateRoom(roomCode);
@@ -421,7 +421,7 @@ export function registerSubmissionHandlers(io: Server, socket: Socket) {
 
       if (!validateGameStarted(socket, room)) return;
       if (!validateGamePhase(socket, room, "voting")) return;
-      if (!validateRoundId(socket, room, roundId)) return;
+      if (!validateGameId(socket, room, gameId)) return;
       if (!validateRoundNotEnded(socket, room)) return;
 
       const cleaned = (value ?? "").trim();

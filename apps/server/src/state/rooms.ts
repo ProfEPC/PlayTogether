@@ -29,7 +29,7 @@ export function createRoomHosted(
       phase: "lobby",
 
       endsAt: null,
-      roundId: null,
+      gameId: null,
       unusedRoles: [],
       winner: undefined,
     },

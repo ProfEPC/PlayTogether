@@ -1,34 +1,12 @@
 [
   {
-    "id": "1771697671676",
-    "name": "Villager",
-    "data": {
-      "name": "Villager",
-      "description": "Kinda boring",
-      "team": "villager",
-      "infectedUponSight": false,
-      "powerSlots": [
-        {
-          "powerIndex": 46,
-          "type": "None",
-          "item": "NoAction",
-          "where": "None",
-          "amount": null,
-          "toggles": {},
-          "timing": null
-        }
-      ]
-    },
-    "createdAt": "2026-02-21T18:14:31.676Z",
-    "updatedAt": "2026-02-21T18:14:31.676Z"
-  },
-  {
     "id": "1771697737643",
     "name": "Robber",
     "data": {
       "name": "Robber",
       "description": "sneaky sneaky",
       "team": "villager",
+      "theme": "debug",
       "infectedUponSight": false,
       "powerSlots": [
         {
@@ -54,6 +32,7 @@
       "name": "Seer",
       "description": "1",
       "team": "villager",
+      "theme": "debug",
       "infectedUponSight": false,
       "powerSlots": [
         {
@@ -71,35 +50,13 @@
     "updatedAt": "2026-02-23T23:26:43.340Z"
   },
   {
-    "id": "1771889214211",
-    "name": "Seer2",
-    "data": {
-      "name": "Seer2",
-      "description": "2",
-      "team": "villager",
-      "infectedUponSight": false,
-      "powerSlots": [
-        {
-          "powerIndex": 1,
-          "type": "Learn",
-          "item": "Role",
-          "where": "Player",
-          "amount": "2",
-          "toggles": {},
-          "timing": "before"
-        }
-      ]
-    },
-    "createdAt": "2026-02-23T23:26:54.211Z",
-    "updatedAt": "2026-02-23T23:26:54.211Z"
-  },
-  {
     "id": "1771889230558",
     "name": "vault",
     "data": {
       "name": "vault",
       "description": "1",
       "team": "villager",
+      "theme": "debug",
       "infectedUponSight": false,
       "powerSlots": [
         {
@@ -117,35 +74,13 @@
     "updatedAt": "2026-02-23T23:27:10.558Z"
   },
   {
-    "id": "1771889245284",
-    "name": "vault2",
-    "data": {
-      "name": "vault2",
-      "description": "2",
-      "team": "villager",
-      "infectedUponSight": false,
-      "powerSlots": [
-        {
-          "powerIndex": 2,
-          "type": "Learn",
-          "item": "Role",
-          "where": "Center",
-          "amount": "2",
-          "toggles": {},
-          "timing": "before"
-        }
-      ]
-    },
-    "createdAt": "2026-02-23T23:27:25.284Z",
-    "updatedAt": "2026-02-23T23:27:25.284Z"
-  },
-  {
     "id": "1771889277743",
     "name": "villager",
     "data": {
       "name": "villager",
       "description": "sg",
       "team": "villager",
+      "theme": "debug",
       "infectedUponSight": false,
       "powerSlots": [
         {
@@ -163,35 +98,13 @@
     "updatedAt": "2026-02-23T23:27:57.743Z"
   },
   {
-    "id": "1771889281359",
-    "name": "villager",
-    "data": {
-      "name": "villager",
-      "description": "sg",
-      "team": "villager",
-      "infectedUponSight": false,
-      "powerSlots": [
-        {
-          "powerIndex": 46,
-          "type": "None",
-          "item": "NoAction",
-          "where": "None",
-          "amount": null,
-          "toggles": {},
-          "timing": null
-        }
-      ]
-    },
-    "createdAt": "2026-02-23T23:28:01.359Z",
-    "updatedAt": "2026-02-23T23:28:01.359Z"
-  },
-  {
     "id": "1771897756397",
     "name": "Infiltrator",
     "data": {
       "name": "Infiltrator",
       "description": "baddie",
       "team": "infiltrator",
+      "theme": "debug",
       "infectedUponSight": false,
       "powerSlots": [
         {
@@ -207,5 +120,110 @@
     },
     "createdAt": "2026-02-24T01:49:16.397Z",
     "updatedAt": "2026-02-24T01:49:16.397Z"
+  },
+  {
+    "id": "1771903974448",
+    "name": "Allegiance Check2",
+    "data": {
+      "name": "Allegiance Check2",
+      "description": "where do your allegiances lie fool.",
+      "team": "villager",
+      "theme": "debug",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 4,
+          "type": "Learn",
+          "item": "Team",
+          "where": "Player",
+          "amount": "2",
+          "toggles": {},
+          "timing": "before"
+        },
+        {
+          "powerIndex": null,
+          "type": null,
+          "item": null,
+          "where": null,
+          "amount": null,
+          "toggles": {},
+          "timing": null
+        }
+      ]
+    },
+    "createdAt": "2026-02-24T03:32:54.448Z",
+    "updatedAt": "2026-02-24T03:32:54.448Z"
+  },
+  {
+    "id": "1771904175920",
+    "name": "Vault Allegiance2",
+    "data": {
+      "name": "Vault Allegiance2",
+      "description": "dsfs",
+      "team": "infiltrator",
+      "theme": "debug",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 5,
+          "type": "Learn",
+          "item": "Team",
+          "where": "Center",
+          "amount": "2",
+          "toggles": {},
+          "timing": "before"
+        }
+      ]
+    },
+    "createdAt": "2026-02-24T03:36:15.920Z",
+    "updatedAt": "2026-02-24T03:36:15.920Z"
+  },
+  {
+    "id": "1771981126914",
+    "name": "Allegiance Check",
+    "data": {
+      "name": "Allegiance Check",
+      "description": "where do your allegiances lie fool.",
+      "team": "villager",
+      "theme": "debug",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 4,
+          "type": "Learn",
+          "item": "Team",
+          "where": "Player",
+          "amount": "1",
+          "toggles": {},
+          "timing": "before"
+        }
+      ]
+    },
+    "createdAt": "2026-02-25T00:58:46.914Z",
+    "updatedAt": "2026-02-25T00:58:46.914Z"
+  },
+  {
+    "id": "1771981150480",
+    "name": "Vault Allegiance",
+    "data": {
+      "name": "Vault Allegiance",
+      "description": "dsfs",
+      "team": "villager",
+      "theme": "debug",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 5,
+          "type": "Learn",
+          "item": "Team",
+          "where": "Center",
+          "amount": "1",
+          "toggles": {},
+          "timing": "before"
+        }
+      ]
+    },
+    "createdAt": "2026-02-25T00:59:10.480Z",
+    "updatedAt": "2026-02-25T00:59:10.480Z"
   }
 ]
