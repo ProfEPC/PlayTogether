@@ -82,6 +82,21 @@ export type ServerToClientEvents = {
     }>;
     [key: string]: unknown;
   }) => void;
+  // Broadcast when reveal power reveals a player (shown during voting)
+  "reveal:broadcast": (p: {
+    powerName: string;
+    actorName: string;
+    learns: Array<{
+      powerName: string;
+      targetPlayer?: string;
+      targetPlayerName?: string;
+      targetCenter?: number;
+      learned: string;
+      learnedAt: number;
+      item: string;
+      where: string;
+    }>;
+  }) => void;
   // Server prompts a specific player to choose a target for their power
   "power:prompt": (p: {
     type: string;

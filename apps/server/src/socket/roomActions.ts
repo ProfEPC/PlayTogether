@@ -43,6 +43,9 @@ export function emitRoomState(io: Server, roomCode: string) {
       publicRoom.game.unusedRoles = room.game.unusedRoles || [];
     }
   }
+  console.log(
+    `[RoomState] Broadcasting to ${code}: ${room.players.length} players`,
+  );
   io.to(code).emit(ROOM_EVENTS.STATE, publicRoom);
 }
 

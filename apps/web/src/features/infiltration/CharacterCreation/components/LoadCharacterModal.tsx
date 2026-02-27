@@ -5,6 +5,7 @@ import {
   deleteCharacter,
   type SavedCharacter,
 } from "../../../../lib/characterPersistence";
+import { loadThemes, type StoredTheme } from "../../../../lib/themePersistence";
 import "./LoadCharacterModal.css";
 
 interface LoadCharacterModalProps {
@@ -21,12 +22,24 @@ export function LoadCharacterModal({
   const [characters, setCharacters] = useState<SavedCharacter[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [themes, setThemes] = useState<StoredTheme[]>([]);
+  const [selectedThemeFilter, setSelectedThemeFilter] = useState<string>("all");
 
   useEffect(() => {
     if (isOpen) {
       fetchCharacters();
+      fetchThemes();
     }
   }, [isOpen]);
+
+  const fetchThemes = async () => {
+    try {
+      const availableThemes = await loadThemes();
+      setThemes(availableThemes);
+    } catch (err) {
+      console.error("Failed to load themes:", err);
+    }
+  };
 
   const fetchCharacters = async () => {
     setLoading(true);
@@ -65,6 +78,12 @@ export function LoadCharacterModal({
 
   if (!isOpen) return null;
 
+  // ! Filter characters by selected theme
+  const filteredCharacters =
+    selectedThemeFilter === "all"
+      ? characters
+      : characters.filter((c) => c.data.theme === selectedThemeFilter);
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -81,13 +100,31 @@ export function LoadCharacterModal({
 
         {error && <div className="modal-error">{error}</div>}
 
+        {/* ! Theme Filter */}
+        {!loading && themes.length > 0 && (
+          <div className="modal-filters">
+            <label>Filter by Theme:</label>
+            <select
+              value={selectedThemeFilter}
+              onChange={(e) => setSelectedThemeFilter(e.target.value)}
+            >
+              <option value="all">All Themes</option>
+              {themes.map((theme) => (
+                <option key={theme.id} value={theme.id}>
+                  {theme.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {loading ? (
           <div className="modal-loading">Loading characters...</div>
-        ) : characters.length === 0 ? (
+        ) : filteredCharacters.length === 0 ? (
           <div className="modal-empty">No saved characters yet.</div>
         ) : (
           <div className="characters-list">
-            {characters.map((char) => (
+            {filteredCharacters.map((char) => (
               <div key={char.id} className="character-item">
                 <div className="character-info">
                   <div className="character-name">

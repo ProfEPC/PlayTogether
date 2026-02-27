@@ -529,7 +529,7 @@ export function registerSubmissionHandlers(io: Server, socket: Socket) {
         return;
       }
 
-      // Execute the power (validation happens inside)
+      // Execute the power (handles both Learn and Reveal based on powerSlot.type)
       executeCharacterPower(
         io,
         room,

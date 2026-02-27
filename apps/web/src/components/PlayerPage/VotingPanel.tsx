@@ -1,7 +1,9 @@
 import type { FC } from "react";
-import type { Submission } from "../../types/room";
+import type { Submission, RoomState } from "../../types/room";
+import { COLORS } from "../../constants/colors";
 
 interface VotingPanelProps {
+  roomState: RoomState | null;
   voteOptions: Array<{ id: string; label: string }>;
   selectedVote: string | null;
   mySubmission: Submission | null;
@@ -12,6 +14,7 @@ interface VotingPanelProps {
 }
 
 export const VotingPanel: FC<VotingPanelProps> = ({
+  roomState,
   voteOptions,
   selectedVote,
   mySubmission,
@@ -23,7 +26,7 @@ export const VotingPanel: FC<VotingPanelProps> = ({
   <div
     style={{
       padding: 12,
-      border: "1px solid #ccc",
+      border: `1px solid ${COLORS.border}`,
       borderRadius: 8,
       position: "relative",
     }}
@@ -77,5 +80,31 @@ export const VotingPanel: FC<VotingPanelProps> = ({
     >
       Submit Vote
     </button>
+
+    {/* Display revealed information from powers */}
+    {roomState?.players.some((p) => p.roleRevealed) && (
+      <div
+        style={{
+          marginTop: 12,
+          padding: 12,
+          background: COLORS.info,
+          border: `1px solid ${COLORS.infoBorder}`,
+          borderRadius: 6,
+          color: COLORS.infoText,
+        }}
+      >
+        <strong>Revealed Roles:</strong>
+        <ul style={{ marginTop: 4, paddingLeft: 20 }}>
+          {roomState?.players
+            .filter((p) => p.roleRevealed)
+            .map((p) => (
+              <li key={p.socketId}>
+                <strong>{p.name}</strong> is {p.role}
+                {p.character?.name && ` (${p.character.name})`}
+              </li>
+            ))}
+        </ul>
+      </div>
+    )}
   </div>
 );

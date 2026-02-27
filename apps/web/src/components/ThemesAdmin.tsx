@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import type { GameTheme, StoredTheme } from "../types/themes";
-import { DEFAULT_THEMES } from "../constants/themes";
 import {
   loadThemes,
   saveTheme,

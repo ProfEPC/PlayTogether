@@ -1,5 +1,7 @@
 import type { FC } from "react";
 import type { GameKey } from "../../types/room";
+import { COLORS } from "../../constants/colors";
+import { GAMES } from "../../constants/games";
 
 interface GameSelectionPanelProps {
   connected: boolean;
@@ -25,7 +27,7 @@ export const GameSelectionPanel: FC<GameSelectionPanelProps> = ({
       <div
         style={{
           padding: 24,
-          border: "1px solid #ccc",
+          border: `1px solid ${COLORS.border}`,
           borderRadius: 8,
           textAlign: "center",
         }}
@@ -40,37 +42,27 @@ export const GameSelectionPanel: FC<GameSelectionPanelProps> = ({
             gap: 12,
             justifyContent: "center",
             marginBottom: 12,
+            flexWrap: "wrap",
           }}
         >
-          <button
-            onClick={() => onSelectGame("infiltration")}
-            style={{
-              padding: "12px 18px",
-              minWidth: 160,
-              fontSize: 16,
-              background: selectedGameKey === "infiltration" ? "#036" : "#eee",
-              color: selectedGameKey === "infiltration" ? "#fff" : "#000",
-              border: "none",
-              borderRadius: 6,
-            }}
-          >
-            Infiltration
-          </button>
-
-          <button
-            onClick={() => onSelectGame("odd_one_out")}
-            style={{
-              padding: "12px 18px",
-              minWidth: 160,
-              fontSize: 16,
-              background: selectedGameKey === "odd_one_out" ? "#036" : "#eee",
-              color: selectedGameKey === "odd_one_out" ? "#fff" : "#000",
-              border: "none",
-              borderRadius: 6,
-            }}
-          >
-            Odd One Out
-          </button>
+          {GAMES.map((game) => (
+            <button
+              key={game.key}
+              onClick={() => onSelectGame(game.key)}
+              style={{
+                padding: "12px 18px",
+                minWidth: 160,
+                fontSize: 16,
+                background: selectedGameKey === game.key ? COLORS.primary : COLORS.backgroundSecondary,
+                color: selectedGameKey === game.key ? COLORS.primaryText : COLORS.text,
+                border: "none",
+                borderRadius: 6,
+              }}
+              title={game.description}
+            >
+              {game.title}
+            </button>
+          ))}
         </div>
       </div>
     </div>

@@ -225,5 +225,29 @@
     },
     "createdAt": "2026-02-25T00:59:10.480Z",
     "updatedAt": "2026-02-25T00:59:10.480Z"
+  },
+  {
+    "id": "1772064662606",
+    "name": "Captain",
+    "data": {
+      "name": "Captain",
+      "description": "gfwfqw",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 42,
+          "type": "Tamper",
+          "item": "Duplicate",
+          "where": "Self",
+          "amount": "2",
+          "toggles": {},
+          "timing": null
+        }
+      ],
+      "theme": "debug"
+    },
+    "createdAt": "2026-02-26T00:11:02.606Z",
+    "updatedAt": "2026-02-26T00:11:02.606Z"
   }
 ]

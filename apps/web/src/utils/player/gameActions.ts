@@ -35,7 +35,7 @@ export function submitVoteAction(
  * Acknowledge that the player has seen their assigned role
  * @param socket - Socket.io client instance
  * @param roomState - Current room state
- * @param myRole - The player's assigned role
+ * @param myRole - The player's assigned role (deprecated, not used)
  * @param onStatusUpdate - Callback to update status message
  */
 export function acknowledgeRoleAction(
@@ -44,7 +44,7 @@ export function acknowledgeRoleAction(
   myRole: InfiltrationRole | null,
   onStatusUpdate: (status: string) => void,
 ) {
-  if (!roomState || !myRole) return;
+  if (!roomState) return;
   socket.emit("player:ackRole", {
     roomCode: roomState.roomCode,
     seen: true,

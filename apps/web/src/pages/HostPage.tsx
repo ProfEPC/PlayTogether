@@ -5,6 +5,7 @@ import { useNow } from "../hooks/useNow";
 import { makeRoomCode, closeRoomAction } from "../utils/host/roomActions";
 import { copyRoomCodeToClipboard } from "../utils/shared/roomCodeClipboard";
 import { loadCharacters } from "../lib/characterPersistence";
+import { COLORS } from "../constants/colors";
 import type { RoomState, GameKey, RoleConfig } from "../types/room";
 import {
   InfiltrationOptionsPanel,
@@ -89,7 +90,21 @@ export default function HostPage() {
     return converted;
   }, [savedCharacters]);
 
+  // ! Only load characters when infiltration is selected
   useEffect(() => {
+    console.log(
+      "[HostPage] Character loading useEffect triggered. selectedGameKey:",
+      selectedGameKey,
+    );
+    if (selectedGameKey !== "infiltration") {
+      console.log(
+        "[HostPage] selectedGameKey is not infiltration, clearing characters",
+      );
+      setSavedCharacters([]);
+      return;
+    }
+
+    console.log("[HostPage] Loading characters from API...");
     (async () => {
       try {
         const characters = await loadCharacters();
@@ -99,7 +114,7 @@ export default function HostPage() {
         console.error("Failed to load characters:", error);
       }
     })();
-  }, []);
+  }, [selectedGameKey]);
 
   const [enabledRoleIds, setEnabledRoleIds] = useState<Set<number>>(
     () => new Set(), // Start empty, will be populated when roles load
@@ -181,7 +196,8 @@ export default function HostPage() {
       socket.off("room:hosted", onHosted);
       socket.off("room:state", onState);
       socket.off("room:closed", onClosed);
-      socket.disconnect();
+      // ! Don't disconnect - socket is persistent and shared across pages
+      // socket.disconnect();
     };
     // run once
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -272,8 +288,8 @@ export default function HostPage() {
             }
             style={{
               padding: "8px 12px",
-              backgroundColor: "#ff6b6b",
-              color: "#fff",
+              backgroundColor: COLORS.actionDanger,
+              color: COLORS.actionDangerText,
               border: "none",
               borderRadius: 4,
               cursor: "pointer",
@@ -313,7 +329,7 @@ export default function HostPage() {
           style={{
             width: 160,
             padding: 10,
-            border: "1px solid #ccc",
+            border: `1px solid ${COLORS.border}`,
             borderRadius: 8,
           }}
         >
@@ -337,13 +353,13 @@ export default function HostPage() {
                 width: 120, // shrink the code display
                 fontSize: 20,
                 letterSpacing: 5,
-                border: "1px solid #ccc",
+                border: `1px solid ${COLORS.border}`,
                 borderRadius: 6,
                 padding: "6px 8px",
                 fontWeight: 800,
                 textAlign: "center",
-                background: "#ffffff",
-                color: "#000000",
+                background: COLORS.backgroundLight,
+                color: COLORS.textDark,
                 userSelect: "text", // lets people highlight it
               }}
             >
@@ -392,17 +408,17 @@ export default function HostPage() {
                     padding: 8,
                     backgroundColor:
                       enabledRoleIds.size === roomState.players.length + 3
-                        ? "#d4edda"
-                        : "#fff3cd",
+                        ? COLORS.success
+                        : COLORS.warning,
                     border:
                       enabledRoleIds.size === roomState.players.length + 3
-                        ? "1px solid #28a745"
-                        : "1px solid #ffc107",
+                        ? `1px solid ${COLORS.borderLight}`
+                        : `1px solid ${COLORS.border}`,
                     borderRadius: 4,
                     color:
                       enabledRoleIds.size === roomState.players.length + 3
-                        ? "#155724"
-                        : "#856404",
+                        ? COLORS.primaryLight
+                        : COLORS.textSecondary,
                     fontSize: 14,
                   }}
                 >
@@ -432,12 +448,12 @@ export default function HostPage() {
                       style={{
                         marginTop: 8,
                         padding: 8,
-                        backgroundColor: isValid ? "#d4edda" : "#fff3cd",
+                        backgroundColor: isValid ? COLORS.success : COLORS.warning,
                         border: isValid
-                          ? "1px solid #c3e6cb"
-                          : "1px solid #ffc107",
+                          ? `1px solid ${COLORS.borderLight}`
+                          : `1px solid ${COLORS.border}`,
                         borderRadius: 4,
-                        color: isValid ? "#155724" : "#856404",
+                        color: isValid ? COLORS.primaryLight : COLORS.textSecondary,
                         fontSize: 14,
                       }}
                     >
@@ -485,7 +501,7 @@ export default function HostPage() {
         {/* Room State panel */}
         {roomState && (
           <div
-            style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}
+            style={{ padding: 12, border: `1px solid ${COLORS.border}`, borderRadius: 8 }}
           >
             {/* Lobby settings now live in room state */}
             {!roomState.game.started && (

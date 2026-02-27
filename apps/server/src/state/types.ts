@@ -62,6 +62,8 @@ export type Player = {
   // NEW: Power state and effects (game phase specific)
   roleRevealed?: boolean; // Has this player's role been publicly revealed?
   protected?: boolean; // Is this player currently protected/shielded from actions?
+  blocked?: boolean; // Can this player not perform actions (silenced)?
+  swapped?: boolean; // Has this player's role been swapped with another?
   actedThisRound?: boolean; // Has this player's role already acted in mayhem phase?
 
   // NEW: Power usage tracking

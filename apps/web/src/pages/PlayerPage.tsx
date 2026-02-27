@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../state/useAppStore";
 import { socket } from "../lib/socket";
+import { COLORS } from "../constants/colors";
 import {
   copyRoomCodeToClipboard,
   pasteRoomCodeFromClipboard,
@@ -37,11 +38,25 @@ export default function PlayerPage() {
   const [playerName, setPlayerName] = useState<string>(storedPlayerName || "");
   const [roomCode, setRoomCode] = useState<string>(storedRoomCode || "");
   const [status, setStatus] = useState<string>("");
+  const [isJoining, setIsJoining] = useState(false);
 
   // Derived state from current room - find this player's socket ID, player object, and assigned role
   const mySocketId = socket.id;
   const myPlayer =
     roomState?.players.find((p) => p.socketId === mySocketId) ?? null;
+
+  // Log for debugging
+  if (roomState && myPlayer === null && mySocketId) {
+    console.log("[PlayerPage] Socket ID:", mySocketId);
+    console.log(
+      "[PlayerPage] Room has players:",
+      roomState.players.map((p) => p.socketId),
+    );
+    console.log(
+      "[PlayerPage] Match found:",
+      roomState.players.find((p) => p.socketId === mySocketId),
+    );
+  }
 
   // Store the player's assigned character locally since server sends it via private event
   const [myCharacter, setMyCharacter] = useState<{
@@ -110,9 +125,10 @@ export default function PlayerPage() {
       // Update status when player successfully joins
       if (s && s.players.some((p) => p.socketId === socket.id)) {
         setStatus(`Successfully joined room ${s.roomCode}`);
+        setIsJoining(false);
       }
     },
-    onCharacterAssigned: (character) => setMyCharacter(character),
+    onCharacterAssigned: (character) => setMyCharacter(character.role),
     onPowerResult: (payload) => {
       // Handle character power learns (new format)
       if (payload.learns && payload.learns.length > 0) {
@@ -132,6 +148,10 @@ export default function PlayerPage() {
     },
     onPowerPrompt: (p) => setPowerPrompt(p),
     setConnected,
+    onJoinDenied: (payload) => {
+      setStatus(`❌ Join denied: ${payload.reason}`);
+      setIsJoining(false);
+    },
   });
 
   // Timer for voting/mayhem countdown
@@ -177,10 +197,10 @@ export default function PlayerPage() {
         <div
           style={{
             padding: 12,
-            background: "#f8d7da",
-            border: "1px solid #f5c6cb",
+            background: COLORS.error,
+            border: `1px solid ${COLORS.errorBorder}`,
             borderRadius: 8,
-            color: "#721c24",
+            color: COLORS.errorText,
             marginBottom: 12,
           }}
         >
@@ -220,12 +240,13 @@ export default function PlayerPage() {
             </label>
 
             <button
-              onClick={() =>
-                joinRoomAction(socket, roomCode, playerName, setStatus)
-              }
-              disabled={!canJoin}
+              onClick={() => {
+                setIsJoining(true);
+                joinRoomAction(socket, roomCode, playerName, setStatus);
+              }}
+              disabled={!canJoin || !connected || isJoining}
             >
-              Join Room
+              {isJoining ? "Joining..." : "Join Room"}
             </button>
           </>
         ) : myPlayer && !roomState?.game.started ? (
@@ -238,8 +259,8 @@ export default function PlayerPage() {
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <div
                 style={{
-                  background: "#fff",
-                  color: "#000",
+                  background: COLORS.backgroundLight,
+                  color: COLORS.textDark,
                   padding: "6px 10px",
                   borderRadius: 6,
                   fontSize: 18,
@@ -305,6 +326,7 @@ export default function PlayerPage() {
 
         {roomState && myPlayer && roomState?.game.phase === "voting" && (
           <VotingPanel
+            roomState={roomState}
             voteOptions={voteOptions}
             selectedVote={selectedVote}
             mySubmission={

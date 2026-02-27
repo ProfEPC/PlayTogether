@@ -5,6 +5,8 @@
 
 import type { GameTheme, StoredTheme } from "../types/themes";
 
+export type { StoredTheme };
+
 const API_BASE = "http://localhost:3001/api";
 
 /**

@@ -1,5 +1,6 @@
 import type { FC } from "react";
 import { INFILTRATION_POWERS } from "../../constants/infiltrationPowers";
+import { COLORS } from "../../constants/colors";
 import type { Character, PowerSlot } from "../../types/room";
 
 interface CharacterPowerDisplayProps {
@@ -16,10 +17,10 @@ export const CharacterPowerDisplay: FC<CharacterPowerDisplayProps> = ({
       style={{
         marginBottom: 12,
         padding: 8,
-        backgroundColor: "#e8f4f8",
+        backgroundColor: COLORS.info,
         borderRadius: 4,
-        border: "1px solid #b3d9e8",
-        color: "#0c4e6e",
+        border: `1px solid ${COLORS.infoBorder}`,
+        color: COLORS.infoText,
       }}
     >
       <div style={{ fontSize: "0.9em", marginBottom: 4 }}>

@@ -24,10 +24,13 @@ export function joinRoomAction(
   socket: Socket,
   roomCode: string,
   playerName: string,
-  onStatusUpdate: (status: string) => void
+  onStatusUpdate: (status: string) => void,
 ) {
   const code = normalizeRoomCode(roomCode);
   if (!code || !playerName.trim()) return;
+  console.log("[Client] Socket connected?", socket.connected);
+  console.log("[Client] Socket ID:", socket.id);
+  console.log("[Client] Sending room:join:", { roomCode: code, playerName });
   socket.emit("room:join", { roomCode: code, playerName: playerName });
   onStatusUpdate("Requesting to join room...");
 }
@@ -43,7 +46,7 @@ export function leaveRoomAction(
   socket: Socket,
   roomState: RoomState | null,
   onStatusUpdate: (status: string) => void,
-  onRoomStateUpdate: (state: RoomState | null) => void
+  onRoomStateUpdate: (state: RoomState | null) => void,
 ) {
   if (roomState) socket.emit("room:leave", { roomCode: roomState.roomCode });
   onStatusUpdate("Player Left the Room");
@@ -61,13 +64,13 @@ export function togglePlayerReadyAction(
   socket: Socket,
   roomState: RoomState | null,
   myPlayer: Player | null,
-  onStatusUpdate: (status: string) => void
+  onStatusUpdate: (status: string) => void,
 ) {
   if (!roomState || !myPlayer) return;
   socket.emit("player:setReady", {
     roomCode: roomState.roomCode,
   });
   onStatusUpdate(
-    `${myPlayer.name} is now ${!myPlayer.ready ? "ready" : "not ready"}`
+    `${myPlayer.name} is now ${!myPlayer.ready ? "ready" : "not ready"}`,
   );
 }

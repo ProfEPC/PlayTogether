@@ -226,6 +226,15 @@ export function hasPowerAbility(role: InfiltrationRole | string): boolean {
  * Execute a character power based on character definition
  * Handles Learn/Role and Learn/Team powers: learns roles or teams of selected players or center
  */
+/**
+ * Execute a character power: unified dispatcher for all power types
+ * Uses player state flags (roleRevealed, protected, blocked, swapped) for effect application
+ * Learn powers: store knowledge in learnsThisGame, silent (only actor sees result)
+ * Reveal powers: store knowledge + mark player.roleRevealed = true, broadcast to room
+ * Protect powers: mark player.protected = true, silent
+ * Block powers: mark player.blocked = true, silent
+ * Swap powers: mark player.swapped = true, silent
+ */
 export function executeCharacterPower(
   io: Server,
   room: RoomState,
@@ -237,13 +246,20 @@ export function executeCharacterPower(
 ) {
   if (!powerSlot) return;
 
-  const { item, where, quantity } = powerSlot;
+  const { item, where, quantity, type } = powerSlot;
 
-  // Handle Learn/Role and Learn/Team powers
+  // Determine which state flag(s) this power type applies
+  const isReveal = type === "Reveal";
+  const isProtect = type === "Protect" || item === "Protect";
+  const isBlock = item === "Block";
+  const isSwap = item === "Swap";
+  const isInitiative = type === "Initiative";
+
+  // Handle Learn/Role, Learn/Team, and similar information-gathering powers
   if ((item === "Role" || item === "Team") && powerName && quantity) {
     const learns = [];
 
-    // Learn from selected players
+    // Gather information from selected players
     if (where === "Player" && targetPlayerIds && targetPlayerIds.length > 0) {
       for (const targetId of targetPlayerIds) {
         const targetPlayer = room.players.find(
@@ -257,17 +273,31 @@ export function executeCharacterPower(
               powerName,
               targetPlayer: targetId,
               targetPlayerName: targetPlayer.name,
-              learned: learnedValue,
+              learned: learnedValue as string,
               learnedAt: Date.now(),
-              item,
-              where,
+              item: item as string,
+              where: where as string,
             });
+
+            // Apply state flags based on power type
+            if (isReveal) {
+              targetPlayer.roleRevealed = true;
+            }
+            if (isProtect) {
+              targetPlayer.protected = true;
+            }
+            if (isBlock) {
+              targetPlayer.blocked = true;
+            }
+            if (isSwap) {
+              targetPlayer.swapped = true;
+            }
           }
         }
       }
     }
 
-    // Learn from center roles (only for Role item, not Team)
+    // Gather information from center roles
     if (
       item === "Role" &&
       where === "Center" &&
@@ -280,31 +310,75 @@ export function executeCharacterPower(
           learns.push({
             powerName,
             targetCenter: centerNum,
-            learned: centerRole,
+            learned: centerRole as string,
             learnedAt: Date.now(),
-            item,
-            where,
+            item: item as string,
+            where: where as string,
           });
         }
       }
     }
 
-    // Learn team from center (center roles don't have teams, so skip for Team item from Center)
+    // Gather by role (reveal all players with specific role)
+    if (
+      isReveal &&
+      item === "Role" &&
+      where === "Role" &&
+      targetPlayerIds &&
+      targetPlayerIds.length > 0
+    ) {
+      for (const roleToReveal of targetPlayerIds) {
+        const playersWithRole = room.players.filter(
+          (p: any) => p.role === roleToReveal,
+        );
+        for (const targetPlayer of playersWithRole) {
+          learns.push({
+            powerName,
+            targetPlayer: targetPlayer.socketId,
+            targetPlayerName: targetPlayer.name,
+            learned: targetPlayer.role as string,
+            learnedAt: Date.now(),
+            item: item as string,
+            where: where as string,
+          });
+          targetPlayer.roleRevealed = true;
+        }
+      }
+    }
 
-    // Store learns in player record
+    // Store what actor learned
     if (!actor.learnsThisGame) {
       actor.learnsThisGame = [];
     }
     actor.learnsThisGame.push(...learns);
 
-    // Send private message to actor with what they learned
+    // Broadcast if reveal power
+    if (isReveal && learns.length) {
+      io.to(room.roomCode).emit("reveal:broadcast", {
+        powerName,
+        actorName: actor.name,
+        learns,
+      });
+    }
+
+    // Send private result to actor
     io.to(actor.socketId).emit("power:result", {
       powerName,
       learns,
     });
 
+    const flagsApplied = [
+      isReveal && "roleRevealed",
+      isProtect && "protected",
+      isBlock && "blocked",
+      isSwap && "swapped",
+    ]
+      .filter(Boolean)
+      .join(", ");
+
     console.log(
-      `[Power] ${actor.name} used ${powerName}, learned: ${JSON.stringify(learns)}`,
+      `[Power] ${actor.name} used ${powerName} (${type}), applied flags: [${flagsApplied}], result: ${JSON.stringify(learns)}`,
     );
   }
 }
+

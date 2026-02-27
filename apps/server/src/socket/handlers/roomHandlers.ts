@@ -35,7 +35,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       emitRoomState(io, room.roomCode);
 
       logger.roomHosted(socket.id, room.roomCode, gameKey);
-    }
+    },
   );
 
   // Host closes the room
@@ -52,14 +52,24 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
   socket.on(
     ROOM_EVENTS.JOIN,
     ({ roomCode, playerName }: { roomCode: string; playerName: string }) => {
+      console.log(
+        `[Join] Attempt: ${socket.id} joining ${roomCode} as ${playerName}`,
+      );
       const room = validateRoom(roomCode);
-      if (!room) return;
+      if (!room) {
+        console.log(`[Join] Room not found: ${roomCode}`);
+        return;
+      }
 
       const name = playerName.trim();
-      if (!name) return;
+      if (!name) {
+        console.log(`[Join] Invalid name`);
+        return;
+      }
 
       // Must exist AND be hosted
       if (!room.hostSocketId) {
+        console.log(`[Join] Room not hosted: ${roomCode}`);
         socket.emit(ROOM_EVENTS.JOIN_DENIED, {
           roomCode: room.roomCode,
           reason: "Room is not being hosted.",
@@ -112,6 +122,9 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
       socket.join(room.roomCode);
 
+      console.log(`[Join] Success: ${socket.id} joined ${roomCode}`);
+      console.log(`[Join] Room now has ${room.players.length} players`);
+      console.log(`[Join] Emitting room:joined to ${socket.id}`);
       socket.emit(ROOM_EVENTS.JOINED, {
         roomCode: room.roomCode,
         socketId: socket.id,
@@ -121,8 +134,9 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         playerName: name,
       });
 
+      console.log(`[Join] Calling emitRoomState for ${room.roomCode}`);
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Host kicks a player
@@ -145,7 +159,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         roomCode: room.roomCode,
         targetSocketId,
       });
-    }
+    },
   );
 
   // Host approves a pending join
@@ -164,7 +178,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       if (!validateIsHost(socket, room)) return;
 
       const idx = room.pending.findIndex(
-        (p: any) => p.socketId === targetSocketId
+        (p: any) => p.socketId === targetSocketId,
       );
       if (idx === -1) return;
 
@@ -196,7 +210,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       }
 
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Host toggles requireApprovalToJoin
@@ -216,7 +230,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
       room.settings.requireApprovalToJoin = !!requireApproval;
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Host locks/unlocks room
@@ -230,7 +244,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
       room.locked = locked;
       emitRoomState(io, room.roomCode);
-    }
+    },
   );
 
   // Player leaves the room

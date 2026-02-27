@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { CharacterInCreation } from "../../../types/characterCreation";
 import { INFILTRATION_POWERS } from "../../../constants/infiltrationPowers";
+import { loadThemes, type StoredTheme } from "../../../lib/themePersistence";
 import {
   getBlockers,
   canAddSlot,
@@ -25,6 +26,24 @@ export default function CharacterCreation() {
   const [loadModalOpen, setLoadModalOpen] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [themes, setThemes] = useState<StoredTheme[]>([]);
+  const [themesLoading, setThemesLoading] = useState(true);
+
+  // ! Load themes on mount
+  const loadAvailableThemes = async () => {
+    try {
+      const availableThemes = await loadThemes();
+      setThemes(availableThemes);
+    } catch (error) {
+      console.error("Failed to load themes:", error);
+    } finally {
+      setThemesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAvailableThemes();
+  }, []);
 
   const blockers = getBlockers(character, INFILTRATION_POWERS);
 
@@ -223,14 +242,23 @@ export default function CharacterCreation() {
           {/* Theme Selector */}
           <div className="form-group">
             <label>Theme:</label>
-            <input
-              type="text"
-              value={character.theme || "debug"}
-              onChange={(e) =>
-                setCharacter({ ...character, theme: e.target.value })
-              }
-              placeholder="e.g., debug, coop_office, heist"
-            />
+            {themesLoading ? (
+              <div className="loading-text">Loading themes...</div>
+            ) : (
+              <select
+                value={character.theme || "debug"}
+                onChange={(e) =>
+                  setCharacter({ ...character, theme: e.target.value })
+                }
+              >
+                <option value="">-- Select a theme --</option>
+                {themes.map((theme) => (
+                  <option key={theme.id} value={theme.id}>
+                    {theme.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           {/* Save/Load Buttons */}

@@ -68,6 +68,43 @@
   font-size: 0.9rem;
 }
 
+/* ! Theme Filter */
+.modal-filters {
+  padding: 1rem;
+  border-bottom: 1px solid #d0d0d0;
+  background: #f9f9f9;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modal-filters label {
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.modal-filters select {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: white;
+  color: #1a1a1a;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.modal-filters select:hover {
+  border-color: #1e5a96;
+}
+
+.modal-filters select:focus {
+  outline: none;
+  border-color: #1e5a96;
+  box-shadow: 0 0 0 2px rgba(30, 90, 150, 0.1);
+}
+
 .modal-loading,
 .modal-empty {
   padding: 2rem;
