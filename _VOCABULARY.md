@@ -19,7 +19,8 @@ Standardized terminology for the PlayTogether project. Use these terms consisten
 |------|-----------|------|-------|
 | **Infiltrator** | Hidden antagonist. Wins if they reach the end of all rounds without elimination. | Enemy | Singular; max 1 per game |
 | **Civilian** | Default role. Wins if infiltrator is eliminated before game ends. | Friendly | Majority role; has no special powers |
-| **Thief** | Special civilian role. Can perform heist-related actions during mayhem phase. | Friendly | Optional; subset of civilians |
+| **Thief** | Special civilian role. Can steal a role ability during mayhem phase. | Friendly | Optional; subset of civilians |
+| **Spy** | Special civilian role. Can see another player's role during mayhem phase. | Friendly | Optional; subset of civilians |
 | **Hacker** | Special civilian role. Can perform tech-related actions during mayhem phase. | Friendly | Optional; subset of civilians |
 | **Engineer** | Special civilian role. Can perform engineering-related actions during mayhem phase. | Friendly | Optional; subset of civilians |
 

@@ -16,6 +16,8 @@ Welcome to the PlayTogether documentation! This is your guide to understanding a
 - **[\_ARCHITECTURE.md](_ARCHITECTURE.md)** - System design, data flow, and state management
 - **[\_API_REFERENCE.md](_API_REFERENCE.md)** - Complete socket events reference and type definitions
 - **[\_GAME_RULES.md](_GAME_RULES.md)** - Game mechanics, rules, and configuration
+- **[\_CHARACTER_POWERS.md](_CHARACTER_POWERS.md)** - Character power system, data structures, and how to add new powers
+- **[\_THEME_SYSTEM.md](_THEME_SYSTEM.md)** - Theme system for customizing game terminology and UI text
 
 ### App-Specific Documentation
 
@@ -68,6 +70,7 @@ Navigate to `http://localhost:5173` and start playing!
 1. [apps/server/\_README.md](apps/server/_README.md) - Server overview and handler organization
 2. [\_API_REFERENCE.md](_API_REFERENCE.md) - Socket events reference
 3. [\_GAME_RULES.md](_GAME_RULES.md) - Game configuration
+4. [\_CHARACTER_POWERS.md](_CHARACTER_POWERS.md) - Character power execution logic
 
 ### I'm a Frontend Developer
 
@@ -75,6 +78,8 @@ Navigate to `http://localhost:5173` and start playing!
 2. [\_API_REFERENCE.md](_API_REFERENCE.md) - Socket events
 3. [\_ARCHITECTURE.md](_ARCHITECTURE.md) - Data flow
 4. [\_GAME_RULES.md](_GAME_RULES.md) - Game logic
+5. [\_CHARACTER_POWERS.md](_CHARACTER_POWERS.md) - Character power UI components
+6. [\_THEME_SYSTEM.md](_THEME_SYSTEM.md) - Theme customization
 
 ### I Want to Add a Game
 
@@ -82,6 +87,7 @@ Navigate to `http://localhost:5173` and start playing!
 2. [\_ARCHITECTURE.md](_ARCHITECTURE.md) - See state structure
 3. [apps/server/\_README.md](apps/server/_README.md) - Implement server logic
 4. [apps/web/\_README.md](apps/web/_README.md) - Build client UI
+5. [\_CHARACTER_POWERS.md](_CHARACTER_POWERS.md) - Add character powers for the new game
 
 ## 🎮 How the Game Works
 
@@ -117,6 +123,8 @@ PlayTogether/
 ├── _ARCHITECTURE.md          ← System design
 ├── _API_REFERENCE.md         ← Socket events
 ├── _GAME_RULES.md           ← Game mechanics
+├── _CHARACTER_POWERS.md     ← Character power system
+├── _THEME_SYSTEM.md         ← Theme customization
 │
 ├── apps/server/
 │   ├── _README.md           ← Backend guide
@@ -295,8 +303,10 @@ See [\_DEVELOPER_GUIDE.md](_DEVELOPER_GUIDE.md) → "Building for Production"
 2. **Architecture Questions?** → [\_ARCHITECTURE.md](_ARCHITECTURE.md)
 3. **Getting Started?** → [\_DEVELOPER_GUIDE.md](_DEVELOPER_GUIDE.md)
 4. **Game Rules?** → [\_GAME_RULES.md](_GAME_RULES.md)
-5. **Server Code?** → [apps/server/\_README.md](apps/server/_README.md)
-6. **Client Code?** → [apps/web/\_README.md](apps/web/_README.md)
+5. **Character Powers?** → [\_CHARACTER_POWERS.md](_CHARACTER_POWERS.md)
+6. **Theme Customization?** → [\_THEME_SYSTEM.md](_THEME_SYSTEM.md)
+7. **Server Code?** → [apps/server/\_README.md](apps/server/_README.md)
+8. **Client Code?** → [apps/web/\_README.md](apps/web/_README.md)
 
 ## 🎯 Project Goals
 
