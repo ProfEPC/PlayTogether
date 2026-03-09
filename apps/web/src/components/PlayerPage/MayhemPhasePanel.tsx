@@ -2,7 +2,7 @@ import type { FC } from "react";
 import {
   acknowledgeMayhemAction,
   sendPowerAction,
-} from "../../utils/player/gameActions";
+} from "../../utils/player/playerGamePhaseActions";
 import { socket } from "../../lib/socket";
 import type { RoomState, Player } from "../../types/room";
 import { PowerActionPanel } from "./PowerActionPanel";

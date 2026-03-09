@@ -133,6 +133,34 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
     });
   }
 
+  //* Create center players for unused characters
+  const centerCharacterNames = shuffledPool.slice(numPlayers);
+  let centerIndex = 0;
+  for (const charName of centerCharacterNames) {
+    const charData = getCharacterByName(charName) as any;
+    if (charData) {
+      //* Create a synthetic player for the center card
+      const centerPlayer: any = {
+        socketId: `center_${centerIndex}`, //* Fake socket ID for center cards
+        name: `Center ${centerIndex + 1}`,
+        isCenter: true,
+        ready: true,
+        connectedAt: Date.now(),
+        lastSeenAt: Date.now(),
+        character: {
+          name: charData.name,
+          description: charData.description || "",
+          team: charData.team,
+          powers: charData.powers || [],
+        },
+        role: charData.role as InfiltrationRole,
+      };
+      room.players.push(centerPlayer);
+      centerIndex++;
+    }
+  }
+  console.log(`Created ${centerIndex} center card players`);
+
   //* Transition to reveal phase where players acknowledge character assignments
   room.game.phase = GAME_PHASES.REVEAL;
   room.game.prompt = "Role reveal: acknowledge when you've seen your role.";

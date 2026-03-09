@@ -1,8 +1,14 @@
 import type { FC } from "react";
-import { useState } from "react";
-import { socket } from "../../lib/socket";
 import type { RoomState, Character } from "../../types/room";
-import { INFILTRATION_POWERS } from "../../constants/infiltrationPowers";
+import { getVillagerCenterPlayers } from "../../utils/roleTeamHelper";
+import {
+  getSelectedCount,
+  getDescriptionWithQuantity,
+  canSubmit,
+  isSelectionComplete,
+} from "../../utils/powerActionHelpers";
+import { validatePowerAction } from "../../utils/powerActionValidation";
+import { usePowerTargetSelection } from "../../hooks/usePowerTargetSelection";
 import "./PowerActionPanel.css";
 
 interface PowerActionPanelProps {
@@ -16,134 +22,26 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
   mySocketId,
   character,
 }) => {
-  const [selectedTargets, setSelectedTargets] = useState<{
-    players: string[];
-    centers: number[];
-  }>({ players: [], centers: [] });
+  const {
+    selectedTargets,
+    isSubmitting,
+    handleSelectPlayer,
+    handleSelectCenter,
+    handleRandom,
+    handleSubmit,
+  } = usePowerTargetSelection(0);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const validation = validatePowerAction(roomState, mySocketId, character);
+  if (!validation) return null;
 
-  if (!roomState || roomState.game.phase !== "mayhem") return null;
-  if (!character || character.powers.length === 0) return null;
+  const { activePower, fullPowerDef, quantity, actualQuantity } = validation;
 
-  const myPlayer = roomState.players.find((p) => p.socketId === mySocketId);
-  if (!myPlayer || myPlayer.powerUsed) return null;
-
-  // Find first power with powerIndex not null
-  const activePower = character.powers.find((p) => p.powerIndex !== null);
-  if (!activePower || activePower.powerIndex === null) return null;
-
-  // Look up full power definition from constants
-  const fullPowerDef = INFILTRATION_POWERS[activePower.powerIndex - 1];
-  if (!fullPowerDef) return null;
-
-  // Skip powers with no targets
-  if (!activePower.where || !fullPowerDef.max || fullPowerDef.max === 0)
-    return null;
-
-  const handleSelectPlayer = (socketId: string) => {
-    const playerTargets = selectedTargets.players;
-    if (playerTargets.includes(socketId)) {
-      setSelectedTargets({
-        ...selectedTargets,
-        players: playerTargets.filter((id) => id !== socketId),
-      });
-    } else {
-      if (playerTargets.length < actualQuantity) {
-        setSelectedTargets({
-          ...selectedTargets,
-          players: [...playerTargets, socketId],
-        });
-      } else {
-        // At capacity, replace the oldest selection with the new one
-        setSelectedTargets({
-          ...selectedTargets,
-          players: [...playerTargets.slice(1), socketId],
-        });
-      }
-    }
-  };
-
-  const handleSelectCenter = (centerNum: number) => {
-    const centerTargets = selectedTargets.centers;
-    if (centerTargets.includes(centerNum)) {
-      setSelectedTargets({
-        ...selectedTargets,
-        centers: centerTargets.filter((c) => c !== centerNum),
-      });
-    } else {
-      if (centerTargets.length < actualQuantity) {
-        setSelectedTargets({
-          ...selectedTargets,
-          centers: [...centerTargets, centerNum],
-        });
-      } else {
-        // At capacity, replace the oldest selection with the new one
-        setSelectedTargets({
-          ...selectedTargets,
-          centers: [...centerTargets.slice(1), centerNum],
-        });
-      }
-    }
-  };
-
-  const handleRandom = () => {
-    const otherPlayers = roomState.players.filter(
-      (p) => p.socketId !== mySocketId,
-    );
-
-    if (activePower.where === "Player") {
-      const shuffled = [...otherPlayers].sort(() => Math.random() - 0.5);
-      const randomPlayers = shuffled
-        .slice(0, actualQuantity)
-        .map((p) => p.socketId);
-      setSelectedTargets({
-        ...selectedTargets,
-        players: randomPlayers,
-      });
-    } else if (activePower.where === "Center") {
-      const availableCenters = [1, 2, 3];
-      const randomCenters = availableCenters
-        .sort(() => Math.random() - 0.5)
-        .slice(0, actualQuantity);
-      setSelectedTargets({
-        ...selectedTargets,
-        centers: randomCenters,
-      });
-    }
-  };
-
-  const handleSubmit = async () => {
-    const targetPlayers =
-      activePower.where === "Player" ? selectedTargets.players : undefined;
-    const targetCenter =
-      activePower.where === "Center" ? selectedTargets.centers : undefined;
-
-    setIsSubmitting(true);
-
-    try {
-      socket.emit("game:submitPower", {
-        roomCode: roomState.roomCode,
-        powerName: `${activePower.item || "Unknown"} Power`,
-        targetPlayers,
-        targetCenter,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const canSubmit =
-    selectedTargets.players.length + selectedTargets.centers.length > 0 &&
-    !isSubmitting;
-
-  const quantity = fullPowerDef.max || 1;
-  const selected =
-    selectedTargets.players.length + selectedTargets.centers.length;
-  const actualQuantity = activePower.quantity || quantity;
-  const descriptionWithQuantity = (fullPowerDef.description || "").replace(
-    /#/g,
-    String(actualQuantity),
+  const isReady = canSubmit(selectedTargets, isSubmitting);
+  const isComplete = isSelectionComplete(selectedTargets, actualQuantity);
+  const selected = getSelectedCount(selectedTargets);
+  const descriptionWithQuantity = getDescriptionWithQuantity(
+    fullPowerDef.description,
+    actualQuantity,
   );
 
   return (
@@ -162,22 +60,68 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
             Select {fullPowerDef.item ? `${fullPowerDef.item}s` : "Players"}
           </h4>
           <div className="button-grid">
-            {roomState.players.map((player) => {
-              if (player.socketId === mySocketId) return null;
-              const isSelected = selectedTargets.players.includes(
-                player.socketId,
-              );
-              return (
-                <button
-                  key={player.socketId}
-                  className={`player-button ${isSelected ? "selected" : ""}`}
-                  onClick={() => handleSelectPlayer(player.socketId)}
-                  disabled={isSubmitting}
-                >
-                  {player.name}
-                </button>
-              );
-            })}
+            {/* Role Spotlight (index 20): Show villager players + villager center roles */}
+            {fullPowerDef.index === 20 ? (
+              <>
+                {validation.roomState.players
+                  .filter(
+                    (p) =>
+                      p.character?.team === "villager" &&
+                      p.socketId !== mySocketId,
+                  )
+                  .map((player) => {
+                    const isSelected = selectedTargets.players.includes(
+                      player.socketId,
+                    );
+                    return (
+                      <button
+                        key={player.socketId}
+                        className={`player-button ${isSelected ? "selected" : ""}`}
+                        onClick={() => handleSelectPlayer(player.socketId)}
+                        disabled={isSubmitting}
+                      >
+                        {player.character?.name || player.name}
+                      </button>
+                    );
+                  })}
+                {getVillagerCenterPlayers(validation.roomState.players).map(
+                  (player) => {
+                    const isSelected = selectedTargets.players.includes(
+                      player.socketId,
+                    );
+                    return (
+                      <button
+                        key={player.socketId}
+                        className={`player-button ${isSelected ? "selected" : ""}`}
+                        onClick={() => handleSelectPlayer(player.socketId)}
+                        disabled={isSubmitting}
+                      >
+                        {player.character?.name || player.name}
+                      </button>
+                    );
+                  },
+                )}
+              </>
+            ) : (
+              /* Other Player-type powers: Show all players */
+              validation.roomState.players
+                .filter((p) => p.socketId !== mySocketId)
+                .map((player) => {
+                  const isSelected = selectedTargets.players.includes(
+                    player.socketId,
+                  );
+                  return (
+                    <button
+                      key={player.socketId}
+                      className={`player-button ${isSelected ? "selected" : ""}`}
+                      onClick={() => handleSelectPlayer(player.socketId)}
+                      disabled={isSubmitting}
+                    >
+                      {player.name}
+                    </button>
+                  );
+                })
+            )}
           </div>
         </div>
       )}
@@ -209,7 +153,14 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
       <div className="power-controls">
         <button
           className="random-button"
-          onClick={handleRandom}
+          onClick={() =>
+            handleRandom(
+              validation.roomState,
+              mySocketId,
+              fullPowerDef.where,
+              actualQuantity,
+            )
+          }
           disabled={isSubmitting}
         >
           Random
@@ -221,16 +172,20 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
 
         <button
           className="submit-button"
-          onClick={handleSubmit}
-          disabled={!canSubmit}
+          onClick={() =>
+            handleSubmit(
+              validation.roomState.roomCode,
+              `${activePower.item || "Unknown"} Power`,
+              activePower.where || "Player",
+            )
+          }
+          disabled={!isReady}
         >
           {isSubmitting ? "Submitting..." : "Submit"}
         </button>
       </div>
 
-      {selected >= actualQuantity && (
-        <div className="complete-message">✓ Ready to submit</div>
-      )}
+      {isComplete && <div className="complete-message">✓ Ready to submit</div>}
     </div>
   );
 };

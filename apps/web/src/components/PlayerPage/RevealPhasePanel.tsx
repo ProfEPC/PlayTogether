@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { acknowledgeRoleAction } from "../../utils/player/gameActions";
+import { acknowledgeRoleAction } from "../../utils/player/playerGamePhaseActions";
 import { socket } from "../../lib/socket";
 import type { RoomState, Player } from "../../types/room";
 import { CharacterPowerDisplay } from "./CharacterPowerDisplay";
@@ -21,16 +21,19 @@ export const RevealPhasePanel: FC<RevealPhasePanelProps> = ({
   myCharacter,
   setStatus,
 }) => {
+  // Use myPlayer.character as source of truth (it comes from roomState)
+  const character = myPlayer?.character || myCharacter;
+
   return (
     <div style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}>
       <div style={{ fontWeight: 700, marginBottom: 8 }}>Your Character</div>
       <div style={{ marginBottom: 8 }}>
         <strong
           style={{
-            color: myCharacter?.team === "infiltrator" ? "#a00" : "#060",
+            color: character?.team === "infiltrator" ? "#a00" : "#060",
           }}
         >
-          {myCharacter ? myCharacter.name : "Waiting for character..."}
+          {character ? character.name : "Waiting for character..."}
         </strong>
       </div>
 
@@ -41,7 +44,7 @@ export const RevealPhasePanel: FC<RevealPhasePanelProps> = ({
           onClick={() =>
             acknowledgeRoleAction(socket, roomState, null, setStatus)
           }
-          disabled={!myCharacter || !!myPlayer?.roleAcknowledged}
+          disabled={!character || !!myPlayer?.roleAcknowledged}
         >
           I have seen my character
         </button>

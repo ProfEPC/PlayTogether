@@ -15,13 +15,7 @@ export type OddOneOutGamePhase =
 
 export type GamePhase = InfiltrationGamePhase | OddOneOutGamePhase;
 
-//TO DO: Change the structure of this to
-export type InfiltrationRole =
-  | "infiltrator"
-  | "civilian"
-  | "thief"
-  | "hacker"
-  | "engineer";
+export type InfiltrationRole = "infiltrator" | "civilian";
 
 export type Submission = { value: string; submittedAt: number };
 
@@ -31,6 +25,7 @@ export type PowerSlot = {
   item?: string;
   where?: string;
   quantity?: number;
+  description?: string; // Power description/prompt text from character creation
 };
 
 export type CharacterPowers = {
@@ -43,6 +38,9 @@ export type Player = {
   ready: boolean;
   connectedAt: number;
   lastSeenAt: number;
+
+  // Center card flag
+  isCenter?: boolean; // Is this player representing a center card?
 
   // Character assignment
   character?: {
@@ -72,7 +70,6 @@ export type Player = {
     powerName: string;
     targetPlayer?: string;
     targetPlayerName?: string;
-    targetCenter?: number; // 1, 2, or 3
     targetRole?: InfiltrationRole;
     learned: string; // Role or other revealed info
     learnedAt: number;
@@ -124,9 +121,6 @@ export type GameState = {
 
   // The roles that were not dealt to players
   unusedRoles?: Array<InfiltrationRole>;
-
-  // Center roles assigned at game start
-  centerRoles?: [InfiltrationRole, InfiltrationRole, InfiltrationRole]; // Center 1, 2, 3
 
   // Role assignments during game (server-side only)
   _roles?: Record<string, InfiltrationRole>;

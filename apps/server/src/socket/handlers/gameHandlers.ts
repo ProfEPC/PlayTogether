@@ -16,13 +16,7 @@ import {
 } from "../../constants/socketEvents";
 import { GAME_WINNERS } from "../../constants/roles";
 import { getCharacterByName } from "../../api/characters";
-import {
-  executePower,
-  executeCharacterPower,
-  recordPowerUsage,
-  resetPlayerPowers,
-  hasPowerAbility,
-} from "../powerLogic";
+import { executeCharacterPower, resetPlayerPowers } from "../powerLogic/index";
 import {
   validateRoom,
   validateIsHost,
@@ -309,73 +303,6 @@ export function registerPlayerHandlers(io: Server, socket: Socket) {
     },
   );
 
-  // Player uses special power
-  socket.on(
-    "player:usePower",
-    ({
-      roomCode,
-      type,
-      target,
-    }: {
-      roomCode: string;
-      type: "viewUnused" | "viewPlayerRole" | "viewPlayerAlliance";
-      target: string;
-    }) => {
-      const room = validateRoom(roomCode);
-      if (!room) return;
-
-      const playerObj = room.players.find((p: any) => p.socketId === socket.id);
-      const playerRole = playerObj?.role;
-
-      // Validate player has power ability
-      if (!playerRole || !hasPowerAbility(playerRole)) {
-        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-          message: "You don't have a special power.",
-        });
-        return;
-      }
-
-      // Check if already used
-      if (!playerObj || playerObj.usedPower) {
-        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-          message: "You have already used your power.",
-        });
-        return;
-      }
-
-      // Check phase
-      if (!validateGamePhase(socket, room, "mayhem")) return;
-
-      // Execute power and validate target
-      const execution = executePower(type, target, room, socket.id);
-      if (!execution.isValid) {
-        socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-          message: execution.error || "Power execution failed.",
-        });
-        return;
-      }
-
-      // Mark as used
-      playerObj.usedPower = true;
-
-      // Send result privately to the actor
-      socket.emit(POWER_EVENTS.RESULT, execution.result);
-
-      // Record and broadcast power usage
-      const actorName = playerObj?.name || "Unknown";
-      recordPowerUsage(room, socket.id, actorName, type, target);
-
-      // Notify the room that a power was used (redacted)
-      io.to(room.roomCode).emit(POWER_EVENTS.USED, {
-        actorSocketId: socket.id,
-        actorName,
-        type,
-      });
-
-      emitRoomState(io, room.roomCode);
-    },
-  );
-
   // Player acknowledges completing mayhem actions
   socket.on(PLAYER_EVENTS.ACK_MAYHEM, ({ roomCode }: { roomCode: string }) => {
     const room = validateRoom(roomCode);
@@ -478,7 +405,7 @@ export function registerSubmissionHandlers(io: Server, socket: Socket) {
       roomCode: string;
       powerName: string;
       targetPlayers?: string[];
-      targetCenter?: number[];
+      targetCenter?: string[];
     }) => {
       const room = validateRoom(roomCode);
       if (!room) return;
@@ -514,7 +441,17 @@ export function registerSubmissionHandlers(io: Server, socket: Socket) {
         (slot: any) => slot.powerIndex !== null,
       );
 
+      console.log(`[GameHandler] Power submission received:`, {
+        playerName: player.name,
+        powerSlot: JSON.stringify(powerSlot),
+        powerSlotWhere: powerSlot?.where,
+        powerSlotItem: powerSlot?.item,
+      });
+
       if (!powerSlot || !powerSlot.powerIndex) {
+        console.log(
+          `[GameHandler] Power validation FAILED: no powerSlot or no powerIndex`,
+        );
         socket.emit(ERROR_EVENTS.BAD_REQUEST, {
           message: "Power not found.",
         });
@@ -523,22 +460,26 @@ export function registerSubmissionHandlers(io: Server, socket: Socket) {
 
       // Validate that the power slot has required fields
       if (!powerSlot.where || !powerSlot.item) {
+        console.log(
+          `[GameHandler] Power validation FAILED: missing where or item`,
+          {
+            where: powerSlot.where,
+            item: powerSlot.item,
+          },
+        );
         socket.emit(ERROR_EVENTS.BAD_REQUEST, {
           message: "Invalid power configuration.",
         });
         return;
       }
 
+      console.log(`[GameHandler] Power validation PASSED, executing...`);
+
+      //* Combine player and center targets into a single array of player IDs
+      const allTargets = [...(targetPlayers || []), ...(targetCenter || [])];
+
       // Execute the power (handles both Learn and Reveal based on powerSlot.type)
-      executeCharacterPower(
-        io,
-        room,
-        player,
-        powerName,
-        targetPlayers,
-        targetCenter,
-        powerSlot,
-      );
+      executeCharacterPower(io, room, player, powerName, allTargets, powerSlot);
 
       // Mark power as used
       player.powerUsed = true;

@@ -249,5 +249,77 @@
     },
     "createdAt": "2026-02-26T00:11:02.606Z",
     "updatedAt": "2026-02-26T00:11:02.606Z"
+  },
+  {
+    "id": "1772235580982",
+    "name": "RevealPlayer",
+    "data": {
+      "name": "RevealPlayer",
+      "description": "fads",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 17,
+          "type": "Reveal",
+          "item": "Role",
+          "where": "Player",
+          "amount": null,
+          "toggles": {},
+          "timing": null
+        }
+      ],
+      "theme": "debug"
+    },
+    "createdAt": "2026-02-27T23:39:40.982Z",
+    "updatedAt": "2026-02-27T23:39:40.982Z"
+  },
+  {
+    "id": "1772235600224",
+    "name": "RevealCenter2",
+    "data": {
+      "name": "RevealCenter2",
+      "description": "fads",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 18,
+          "type": "Reveal",
+          "item": "Role",
+          "where": "Center",
+          "amount": "2",
+          "toggles": {},
+          "timing": null
+        }
+      ],
+      "theme": "debug"
+    },
+    "createdAt": "2026-02-27T23:40:00.224Z",
+    "updatedAt": "2026-02-27T23:40:00.224Z"
+  },
+  {
+    "id": "1772241046825",
+    "name": "Revealrole2",
+    "data": {
+      "name": "Revealrole2",
+      "description": "fads",
+      "team": "villager",
+      "infectedUponSight": false,
+      "powerSlots": [
+        {
+          "powerIndex": 20,
+          "type": "Reveal",
+          "item": "Role",
+          "where": "Role",
+          "amount": "2",
+          "toggles": {},
+          "timing": "after"
+        }
+      ],
+      "theme": "debug"
+    },
+    "createdAt": "2026-02-28T01:10:46.825Z",
+    "updatedAt": "2026-02-28T01:10:46.825Z"
   }
 ]

@@ -14,12 +14,7 @@ export type OddOneOutGamePhase =
   | "results";
 export type GamePhase = InfiltrationGamePhase | OddOneOutGamePhase;
 
-export type InfiltrationRole =
-  | "infiltrator"
-  | "civilian"
-  | "thief"
-  | "hacker"
-  | "engineer";
+export type InfiltrationRole = "infiltrator" | "civilian";
 
 export type RoleConfig = {
   id: number;
@@ -39,6 +34,7 @@ export type PowerSlot = {
   item?: string;
   where?: string;
   quantity?: number;
+  description?: string; // Power description/prompt text from character creation
 };
 
 export type Character = {
@@ -65,6 +61,9 @@ export type Player = {
   ready: boolean;
   connectedAt: number;
   lastSeenAt: number;
+
+  // Center card flag
+  isCenter?: boolean; // Is this player representing a center card?
 
   // Per-player game state
   role?: InfiltrationRole; // Player's assigned role
@@ -106,9 +105,6 @@ export type GameState = {
 
   // Unused roles from the initial pool
   unusedRoles?: Array<InfiltrationRole>;
-
-  // Center roles for Learn power selection
-  centerRoles?: Array<InfiltrationRole>;
 
   // Redacted summaries of power usage for display in-room
   powerSummary?: Array<{

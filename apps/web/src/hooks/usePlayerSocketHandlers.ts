@@ -109,6 +109,25 @@ export function usePlayerSocketHandlers({
     });
     socket.on("power:result", onPower);
     socket.on("power:prompt", onPowerPrompt);
+    socket.on("reveal:broadcast", (payload: unknown) => {
+      // When a reveal power is used, show what was revealed to all players
+      const revealPayload = payload as {
+        powerName: string;
+        actorName: string;
+        learns: Array<{
+          powerName: string;
+          targetPlayer?: string;
+          targetPlayerName?: string;
+          targetCenter?: number;
+          learned: string;
+          learnedAt: number;
+          item?: string;
+          where?: string;
+        }>;
+      };
+      console.log("[Client] Reveal broadcast received:", revealPayload);
+      // Could display this in a room-wide message panel in the future
+    });
 
     // * Debug: log all events
     socket.onAny((eventName: string, ...args: unknown[]) => {
@@ -128,6 +147,7 @@ export function usePlayerSocketHandlers({
       socket.off("player:role");
       socket.off("power:result", onPower);
       socket.off("power:prompt", onPowerPrompt);
+      socket.off("reveal:broadcast");
       // ! Don't disconnect - socket is persistent and shared
       // socket.disconnect();
     };

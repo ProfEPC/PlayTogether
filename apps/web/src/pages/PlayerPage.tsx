@@ -10,8 +10,8 @@ import {
   joinRoomAction,
   leaveRoomAction,
   togglePlayerReadyAction,
-} from "../utils/player/roomActions";
-import { submitVoteAction } from "../utils/player/gameActions";
+} from "../utils/player/playerRoomConnectionActions";
+import { submitVoteAction } from "../utils/player/playerGamePhaseActions";
 import type { RoomState } from "../types/room";
 import { VotingPanel, ResultsPanel } from "../components/PlayerPage";
 import { RevealPhasePanel } from "../components/PlayerPage/RevealPhasePanel";
@@ -128,7 +128,11 @@ export default function PlayerPage() {
         setIsJoining(false);
       }
     },
-    onCharacterAssigned: (character) => setMyCharacter(character.role),
+    onCharacterAssigned: () => {
+      // Character is now part of roomState (myPlayer.character),
+      // so we don't need to track it separately
+      // This callback is just for notification purposes
+    },
     onPowerResult: (payload) => {
       // Handle character power learns (new format)
       if (payload.learns && payload.learns.length > 0) {
