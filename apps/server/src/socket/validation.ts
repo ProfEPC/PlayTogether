@@ -43,23 +43,6 @@ export function validateIsHost(socket: Socket, room: RoomState): boolean {
 }
 
 /**
- * Validate that the room game has not started.
- * Emits error and returns false if game has already started.
- */
-export function validateGameNotStarted(
-  socket: Socket,
-  room: RoomState
-): boolean {
-  if (room.game.started) {
-    socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-      message: "Cannot perform this action while game is running.",
-    });
-    return false;
-  }
-  return true;
-}
-
-/**
  * Validate that the game has started.
  * Emits error and returns false if game has not started.
  */
@@ -67,56 +50,6 @@ export function validateGameStarted(socket: Socket, room: RoomState): boolean {
   if (!room.game.started) {
     socket.emit(ERROR_EVENTS.BAD_REQUEST, {
       message: "Game has not started yet.",
-    });
-    return false;
-  }
-  return true;
-}
-
-/**
- * Validate that the room is not locked and game hasn't started.
- * Emits error and returns false if validation fails.
- */
-export function validateRoomOpen(socket: Socket, room: RoomState): boolean {
-  if (room.locked || room.game.started) {
-    socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-      message: "Room is locked or already started.",
-    });
-    return false;
-  }
-  return true;
-}
-
-/**
- * Validate minimum player count.
- * Emits error and returns false if validation fails.
- */
-export function validateMinPlayers(
-  socket: Socket,
-  room: RoomState,
-  minRequired: number
-): boolean {
-  if (room.players.length < minRequired) {
-    socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-      message: `Minimum ${minRequired} players required.`,
-    });
-    return false;
-  }
-  return true;
-}
-
-/**
- * Validate max player capacity.
- * Emits error and returns false if validation fails.
- */
-export function validateMaxPlayers(
-  socket: Socket,
-  room: RoomState,
-  maxCapacity: number
-): boolean {
-  if (room.players.length >= maxCapacity) {
-    socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-      message: "Room is full.",
     });
     return false;
   }
@@ -138,45 +71,11 @@ export function validatePlayerInRoom(socket: Socket, room: RoomState): boolean {
 export function validateGamePhase(
   socket: Socket,
   room: RoomState,
-  expectedPhase: string
+  expectedPhase: string,
 ): boolean {
   if (room.game.phase !== expectedPhase) {
     socket.emit(ERROR_EVENTS.BAD_REQUEST, {
       message: `This action is only allowed during ${expectedPhase} phase.`,
-    });
-    return false;
-  }
-  return true;
-}
-
-/**
- * Validate game ID matches current game session.
- * Emits error and returns false if game IDs don't match.
- * Prevents actions from stale clients or expired game sessions.
- */
-export function validateGameId(
-  socket: Socket,
-  room: RoomState,
-  gameId: string
-): boolean {
-  if (!room.game.gameId || room.game.gameId !== gameId) {
-    socket.emit(ERROR_EVENTS.BAD_REQUEST, { message: "Game ID mismatch." });
-    return false;
-  }
-  return true;
-}
-
-/**
- * Validate round hasn't ended (time-based).
- * Emits error and returns false if round has ended.
- */
-export function validateRoundNotEnded(
-  socket: Socket,
-  room: RoomState
-): boolean {
-  if (room.game.endsAt && Date.now() > room.game.endsAt) {
-    socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-      message: "Round already ended.",
     });
     return false;
   }

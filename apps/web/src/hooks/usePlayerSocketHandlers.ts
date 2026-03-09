@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { socket } from "../lib/socket";
 import type { RoomState } from "../types/room";
 
@@ -37,22 +37,22 @@ interface UsePlayerSocketHandlersProps {
   onJoinDenied?: (payload: { roomCode: string; reason: string }) => void;
 }
 
-export function usePlayerSocketHandlers({
-  onRoomStateUpdate,
-  onCharacterAssigned,
-  onPowerResult,
-  onPowerPrompt,
-  setConnected,
-  onJoinDenied,
-}: UsePlayerSocketHandlersProps) {
+export function usePlayerSocketHandlers(props: UsePlayerSocketHandlersProps) {
+  // Keep a stable ref to the latest callbacks so the effect never re-runs
+  // due to new inline function references from the parent component.
+  const propsRef = useRef(props);
+  useEffect(() => {
+    propsRef.current = props;
+  });
+
   useEffect(() => {
     const onConnect = () => {
       console.log("[Socket] Connected, ID:", socket.id);
-      setConnected(true);
+      propsRef.current.setConnected(true);
     };
     const onDisconnect = () => {
       console.log("[Socket] Disconnected");
-      setConnected(false);
+      propsRef.current.setConnected(false);
     };
 
     const onState = (s: RoomState) => {
@@ -62,7 +62,7 @@ export function usePlayerSocketHandlers({
         "[Client] Players in state:",
         s.players.map((p) => ({ id: p.socketId, name: p.name })),
       );
-      onRoomStateUpdate(s);
+      propsRef.current.onRoomStateUpdate(s);
     };
 
     const onPower = (payload: {
@@ -80,7 +80,11 @@ export function usePlayerSocketHandlers({
       }>;
       [key: string]: unknown;
     }) => {
-      onPowerResult(payload);
+      propsRef.current.onPowerResult(payload);
+    };
+
+    const onPowerPrompt = (prompt: PowerPrompt) => {
+      propsRef.current.onPowerPrompt(prompt);
     };
 
     // ! Register listeners BEFORE connecting
@@ -92,7 +96,7 @@ export function usePlayerSocketHandlers({
       console.log("Join confirmed by server");
     });
     socket.on("room:joinDenied", (payload) => {
-      if (onJoinDenied) onJoinDenied(payload);
+      propsRef.current.onJoinDenied?.(payload);
     });
     socket.on("player:role", (payload: unknown) => {
       const rolePayload = payload as {
@@ -104,13 +108,12 @@ export function usePlayerSocketHandlers({
       };
       if (rolePayload.role) {
         console.log("[Client] Character assigned:", rolePayload.role);
-        onCharacterAssigned(rolePayload);
+        propsRef.current.onCharacterAssigned(rolePayload);
       }
     });
     socket.on("power:result", onPower);
     socket.on("power:prompt", onPowerPrompt);
     socket.on("reveal:broadcast", (payload: unknown) => {
-      // When a reveal power is used, show what was revealed to all players
       const revealPayload = payload as {
         powerName: string;
         actorName: string;
@@ -126,7 +129,6 @@ export function usePlayerSocketHandlers({
         }>;
       };
       console.log("[Client] Reveal broadcast received:", revealPayload);
-      // Could display this in a room-wide message panel in the future
     });
 
     // * Debug: log all events
@@ -151,12 +153,5 @@ export function usePlayerSocketHandlers({
       // ! Don't disconnect - socket is persistent and shared
       // socket.disconnect();
     };
-  }, [
-    onRoomStateUpdate,
-    onCharacterAssigned,
-    onPowerResult,
-    onPowerPrompt,
-    setConnected,
-    onJoinDenied,
-  ]);
+  }, []); // stable — callbacks accessed via propsRef
 }

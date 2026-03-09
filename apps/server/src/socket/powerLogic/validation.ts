@@ -3,7 +3,7 @@
  */
 
 import type { Player, RoomState } from "../../state/types";
-import { INFILTRATION_ROLES, POWER_PROMPT_TYPES } from "../../constants/roles";
+import { POWER_PROMPT_TYPES } from "../../constants/roles";
 
 /**
  * Check if a player is currently revealed (their role has been publicly shown).
@@ -30,7 +30,7 @@ export function getTargetsForPower(
   actorSocketId: string,
 ) {
   if (powerType === POWER_PROMPT_TYPES.VIEW_UNUSED) {
-    // Thief: offer unused role indices
+    // Offer unused role indices as targets
     const unused = room.game.unusedRoles || [];
     return unused.map((_: any, idx: number) => ({
       id: String(idx),
@@ -42,7 +42,7 @@ export function getTargetsForPower(
     powerType === POWER_PROMPT_TYPES.VIEW_PLAYER_TEAM ||
     powerType === POWER_PROMPT_TYPES.VIEW_PLAYER_ROLE
   ) {
-    // Hacker/Engineer: offer other players as targets
+    // Offer other players as targets
     // RULE: Filter out revealed or protected players from selectable targets
     return room.players
       .filter(

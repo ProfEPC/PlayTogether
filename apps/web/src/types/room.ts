@@ -85,13 +85,10 @@ export type Player = {
 
 export type GameOptionsByKey = {
   infiltration: {
-    allowNoInfiltrator: boolean;
-    revealVotes: boolean;
-    numInfiltrators: 0 | 1 | 2;
-    enabledRoleIds: number[];
+    // Character names selected by the host for this game
+    selectedCharacters: string[];
   };
   odd_one_out: {
-    revealVotes: boolean;
     numOddOnes: number;
   };
 };

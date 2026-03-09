@@ -9,7 +9,7 @@ export const GAME_RULES: Record<
 };
 
 export const DEFAULT_SETTINGS_FOR_GAME = (
-  gameKey: GameKey
+  gameKey: GameKey,
 ): Pick<RoomSettings, "gameKey" | "maxPlayers" | "gameOptions"> => {
   const cap = GAME_RULES[gameKey].maxPlayersCap;
 
@@ -18,13 +18,9 @@ export const DEFAULT_SETTINGS_FOR_GAME = (
     maxPlayers: cap,
     gameOptions: {
       infiltration: {
-        allowNoInfiltrator: false,
-        revealVotes: true,
-        numInfiltrators: 2,
-        // default to enabling all special roles
-        enabledRoleIds: [0, 1, 2],
+        selectedCharacters: [],
       },
-      odd_one_out: { revealVotes: true, numOddOnes: 2 },
+      odd_one_out: { numOddOnes: 2 },
     },
   };
 };

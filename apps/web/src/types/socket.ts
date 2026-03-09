@@ -25,9 +25,7 @@ export type ClientToServerEvents = {
   "game:setDuration": (p: { roomCode: string; seconds: number }) => void;
   "game:setInfiltrationOptions": (p: {
     roomCode: string;
-    numInfiltrators: 0 | 1 | 2;
-    enabledRoleIds: number[];
-    enabledRoles?: string[]; // Character names/roles
+    selectedCharacters: string[];
   }) => void;
   "game:select": (p: { roomCode: string; gameKey: GameKey }) => void;
   "game:submit": (p: {

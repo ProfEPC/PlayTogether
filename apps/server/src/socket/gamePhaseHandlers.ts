@@ -2,13 +2,9 @@ import type { Server } from "socket.io";
 import type { InfiltrationRole, RoomState } from "../state/types";
 import { emitRoomState, endRound, startPhaseTimer } from "./roomActions";
 import { logger } from "../utils/logger";
-import {
-  INFILTRATION_ROLES,
-  SPECIAL_ROLE_INDICES,
-  GAME_PHASES,
-} from "../constants/roles";
-import { POWER_EVENTS, PLAYER_EVENTS } from "../constants/socketEvents";
-import { promptPlayerForPower, resetPlayerPowers } from "./powerLogic";
+import { GAME_PHASES } from "../constants/roles";
+import { PLAYER_EVENTS } from "../constants/socketEvents";
+import { resetPlayerPowers } from "./powerLogic";
 import { getCharacterByName } from "../api/characters";
 
 /**
@@ -45,7 +41,7 @@ export function beginMayhem(io: Server, code: string, room: RoomState) {
  * * Begin the role reveal phase - assign characters to players
  *
  * Character Assignment Flow:
- * 1. Get list of selected characters from host options (enabledRoles)
+ * 1. Get list of selected characters from host options (selectedCharacters)
  * 2. Shuffle the character pool randomly
  * 3. Assign one character to each player in order
  * 4. Fetch character data from database (includes powers, description, team)
@@ -68,25 +64,10 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
   //* Use actual game options from room settings
   const options = room.settings.gameOptions.infiltration;
 
-  logger.roleAssignment(
-    room.roomCode,
-    numPlayers,
-    options.enabledRoleIds || [],
-  );
+  logger.roleAssignment(room.roomCode, numPlayers, options.selectedCharacters);
 
-  //* Build character pool: use only selected enabled characters from host
-  const pool: string[] = []; //* Character names only
-
-  const enabledRolesArray = Array.isArray(options.enabledRoles)
-    ? options.enabledRoles
-    : [];
-
-  //* Use only selected characters (host selection)
-  if (enabledRolesArray.length > 0) {
-    for (let i = 0; i < enabledRolesArray.length; i++) {
-      pool.push(enabledRolesArray[i] as string);
-    }
-  }
+  //* Build character pool from host's selected characters
+  const pool: string[] = [...(options.selectedCharacters || [])];
 
   console.log("Character pool before shuffle:", pool);
 
@@ -175,20 +156,13 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
  * - Players vote for a player they suspect OR "No Infiltrator" option
  * - Timer starts for roundDurationMs (default: 30 seconds)
  * - When timer expires or all players vote, round ends and votes are revealed
- * - Prompt changes based on numInfiltrators (1 vs multiple)
+ * - Players vote for who they suspect
  * - Previous winner/results cleared for fresh round
  */
 export function beginVoting(io: Server, code: string, room: RoomState) {
-  //* Get number of infiltrators from game settings
-  const numInfil = room.settings.gameOptions.infiltration.numInfiltrators;
-
   room.game.phase = GAME_PHASES.VOTING;
 
-  //* Customize voting prompt based on infiltrator count
-  room.game.prompt =
-    numInfil === 1
-      ? "VOTE: Who is the infiltrator? (or choose No Infiltrator)"
-      : `VOTE: Who is an infiltrator? (${numInfil} total, or choose No Infiltrator)`;
+  room.game.prompt = "VOTE: Who is the infiltrator? (or choose No Infiltrator)";
 
   room.game.submissions = {}; //* Reset vote submissions
   room.game.endsAt = Date.now() + room.settings.roundDurationMs;

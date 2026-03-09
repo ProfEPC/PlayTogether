@@ -1,30 +1,14 @@
 /**
  * Infiltration game role constants.
- * Single source of truth for all role names and indices to prevent typos and ensure consistency.
+ * Single source of truth for base role names to prevent typos and ensure consistency.
+ * Character-specific powers are defined in the character data, not here.
  */
 
-// Role names as literal strings
+// Base role names (team assignment)
 export const INFILTRATION_ROLES = {
   INFILTRATOR: "infiltrator",
   CIVILIAN: "civilian",
-  THIEF: "thief",
-  HACKER: "hacker",
-  ENGINEER: "engineer",
 } as const;
-
-// Role index mapping (for enabledRoleIds array)
-export const SPECIAL_ROLE_INDICES = {
-  THIEF: 0,
-  HACKER: 1,
-  ENGINEER: 2,
-} as const;
-
-// Power-enabled roles (non-infiltrators/non-civilians)
-export const POWER_ROLES = [
-  INFILTRATION_ROLES.THIEF,
-  INFILTRATION_ROLES.HACKER,
-  INFILTRATION_ROLES.ENGINEER,
-] as const;
 
 // Power prompt types
 export const POWER_PROMPT_TYPES = {

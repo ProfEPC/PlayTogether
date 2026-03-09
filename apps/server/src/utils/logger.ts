@@ -52,12 +52,12 @@ export const logger = {
   roleAssignment(
     roomCode: string,
     numPlayers: number,
-    enabledRoles: number[]
+    selectedCharacters: string[],
   ): void {
     console.log(
-      `[Game] Role assignment for ${roomCode}: ${numPlayers} players, enabled roles: [${enabledRoles.join(
-        ", "
-      )}]`
+      `[Game] Role assignment for ${roomCode}: ${numPlayers} players, characters: [${selectedCharacters.join(
+        ", ",
+      )}]`,
     );
   },
 
@@ -71,15 +71,11 @@ export const logger = {
   /**
    * Log infiltration options update
    */
-  infiltrationOptions(
-    roomCode: string,
-    numInfiltrators: number,
-    enabledRoleIds: number[]
-  ): void {
+  infiltrationOptions(roomCode: string, selectedCharacters: string[]): void {
     console.log(
-      `[Game] Updated infiltration options for ${roomCode}: ${numInfiltrators} infiltrators, enabled roles: [${enabledRoleIds.join(
-        ", "
-      )}]`
+      `[Game] Updated infiltration options for ${roomCode}: characters: [${selectedCharacters.join(
+        ", ",
+      )}]`,
     );
   },
 

@@ -1,30 +1,35 @@
 import type { Server, Socket } from "socket.io";
 import { logger } from "../utils/logger";
 import { registerRoomHandlers } from "./handlers/roomHandlers";
-import {
-  registerGameHandlers,
-  registerPlayerHandlers,
-  registerSubmissionHandlers,
-} from "./handlers/gameHandlers";
+import { registerGameControlHandlers } from "./handlers/gameControlHandlers";
+import { registerGameConfigHandlers } from "./handlers/gameConfigHandlers";
+import { registerPlayerPhaseHandlers } from "./handlers/playerPhaseHandlers";
+import { registerPlayerPowerHandlers } from "./handlers/playerPowerHandlers";
 import { registerLifecycleHandlers } from "./handlers/lifecycleHandlers";
 
 /**
- * Registers all socket event handlers for the PlayTogether game
+ * Registers all socket event handlers for the PlayTogether game.
  *
- * Handlers are organized into logical modules:
- * - roomHandlers: Room creation, joining, leaving, moderation
- * - gameHandlers: Game control (start, reset, settings) and player actions
- * - lifecycleHandlers: Connection/disconnection events
+ * Each handler module is registered exactly ONCE per socket to prevent
+ * duplicate listeners (which would cause toggles to fire twice, etc.).
+ *
+ * Modules:
+ * - roomHandlers:          Room creation, joining, leaving, moderation
+ * - gameControlHandlers:   Start, reset, next round
+ * - gameConfigHandlers:    Game selection, duration, max players, options
+ * - playerPhaseHandlers:   Ready toggle, role ack, mayhem ack
+ * - playerPowerHandlers:   Power submission
+ * - lifecycleHandlers:     Connect / disconnect
  */
 export function registerSocketHandlers(io: Server) {
   io.on("connection", (socket: Socket) => {
     logger.socketConnected(socket.id);
 
-    // Register all handler types
     registerRoomHandlers(io, socket);
-    registerGameHandlers(io, socket);
-    registerPlayerHandlers(io, socket);
-    registerSubmissionHandlers(io, socket);
+    registerGameControlHandlers(io, socket);
+    registerGameConfigHandlers(io, socket);
+    registerPlayerPhaseHandlers(io, socket);
+    registerPlayerPowerHandlers(io, socket);
     registerLifecycleHandlers(io, socket);
   });
 }

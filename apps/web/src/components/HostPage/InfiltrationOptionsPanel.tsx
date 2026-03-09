@@ -59,18 +59,14 @@ export function InfiltrationOptionsPanel({
 
                   setEnabledRoleIds(next);
 
-                  // Map enabled IDs back to role names and calculate infiltrators
-                  const selectedRoles = roles.filter((r) => next.has(r.id));
-                  const enabledRoles = selectedRoles.map((r) => r.title);
-                  const calcNumInfiltrators = selectedRoles.filter(
-                    (char) => char.team === "infiltrator",
-                  ).length as 0 | 1 | 2;
+                  // Map enabled IDs back to character names
+                  const selectedCharacters = roles
+                    .filter((r) => next.has(r.id))
+                    .map((r) => r.title);
 
                   socket.emit("game:setInfiltrationOptions", {
                     roomCode: effectiveRoomCode,
-                    numInfiltrators: calcNumInfiltrators,
-                    enabledRoleIds: Array.from(next).sort((a, b) => a - b),
-                    enabledRoles,
+                    selectedCharacters,
                   });
                 }}
                 title={role.description ?? ""}

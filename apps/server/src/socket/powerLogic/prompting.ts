@@ -1,11 +1,10 @@
 /**
- * Power prompting logic: sends prompts to players for special role powers.
- * Pulls power descriptions from player character data instead of hardcoding.
+ * Power prompting logic: sends prompts to players for character powers.
+ * Power types and descriptions come from the character data, not hardcoded roles.
  */
 
 import type { Server } from "socket.io";
 import type { RoomState, Player } from "../../state/types";
-import { INFILTRATION_ROLES, POWER_PROMPT_TYPES } from "../../constants/roles";
 import { POWER_EVENTS } from "../../constants/socketEvents";
 import { getTargetsForPower } from "./validation";
 
@@ -30,49 +29,37 @@ function getPowerDescription(player: Player): string {
 }
 
 /**
- * Send power prompt to a player based on their role.
+ * Get the power type from the player's character data.
+ * Returns the type string from the first active power slot.
+ */
+function getPowerType(player: Player): string | null {
+  if (!player.character?.powers) return null;
+  const activePower = player.character.powers.find(
+    (p) => p.powerIndex !== null,
+  );
+  return activePower?.type || null;
+}
+
+/**
+ * Send power prompt to a player based on their character's power type.
  */
 export function promptPlayerForPower(
   io: Server,
   playerSocketId: string,
-  role: string,
+  _role: string,
   room: RoomState,
 ) {
   const player = room.players.find((p) => p.socketId === playerSocketId);
   if (!player) return;
 
-  if (role === INFILTRATION_ROLES.THIEF) {
-    const targets = getTargetsForPower(
-      POWER_PROMPT_TYPES.VIEW_UNUSED,
-      room,
-      playerSocketId,
-    );
-    io.to(playerSocketId).emit(POWER_EVENTS.PROMPT, {
-      type: POWER_PROMPT_TYPES.VIEW_UNUSED,
-      prompt: getPowerDescription(player),
-      targets,
-    });
-  } else if (role === INFILTRATION_ROLES.HACKER) {
-    const targets = getTargetsForPower(
-      POWER_PROMPT_TYPES.VIEW_PLAYER_TEAM,
-      room,
-      playerSocketId,
-    );
-    io.to(playerSocketId).emit(POWER_EVENTS.PROMPT, {
-      type: POWER_PROMPT_TYPES.VIEW_PLAYER_TEAM,
-      prompt: getPowerDescription(player),
-      targets,
-    });
-  } else if (role === INFILTRATION_ROLES.ENGINEER) {
-    const targets = getTargetsForPower(
-      POWER_PROMPT_TYPES.VIEW_PLAYER_ROLE,
-      room,
-      playerSocketId,
-    );
-    io.to(playerSocketId).emit(POWER_EVENTS.PROMPT, {
-      type: POWER_PROMPT_TYPES.VIEW_PLAYER_ROLE,
-      prompt: getPowerDescription(player),
-      targets,
-    });
-  }
+  const powerType = getPowerType(player);
+  if (!powerType) return;
+
+  const targets = getTargetsForPower(powerType, room, playerSocketId);
+
+  io.to(playerSocketId).emit(POWER_EVENTS.PROMPT, {
+    type: powerType,
+    prompt: getPowerDescription(player),
+    targets,
+  });
 }

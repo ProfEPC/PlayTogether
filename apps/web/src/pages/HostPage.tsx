@@ -1,12 +1,27 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+/**
+ * HostPage — Orchestrator for the host's view.
+ *
+ * This page is a thin shell that wires custom hooks to presentational
+ * components.  All heavy logic lives in hooks (socket handling, character
+ * management, vote tallying) and child panels (game controls, settings, etc.).
+ *
+ * Flow:
+ *   1. "selectGame" step  →  <GameSelectionScreen />   (pick a game & host)
+ *   2. "setup" step       →  header + lobby panels     (configure & wait)
+ *   3. game started        →  in-game display panels   (timer, submissions)
+ *   4. results phase       →  results panel            (vote tallies)
+ */
+import { useEffect, useState } from "react";
 import { useAppStore } from "../state/useAppStore";
 import { socket } from "../lib/socket";
 import { useNow } from "../hooks/useNow";
-import { makeRoomCode, closeRoomAction } from "../utils/host/roomActions";
+import { useHostSocket } from "../hooks/useHostSocket";
+import { useCharacterRoles } from "../hooks/useCharacterRoles";
+import { useVoteGroups } from "../hooks/useVoteGroups";
+import { closeRoomAction } from "../utils/host/roomActions";
 import { copyRoomCodeToClipboard } from "../utils/shared/roomCodeClipboard";
-import { loadCharacters } from "../lib/characterPersistence";
 import { COLORS } from "../constants/colors";
-import type { RoomState, GameKey, RoleConfig } from "../types/room";
+import type { GameKey } from "../types/room";
 import {
   InfiltrationOptionsPanel,
   LobbySettingsPanel,
@@ -15,224 +30,69 @@ import {
   HostGameDisplayPanel,
   HostResultsPanel,
   GameSelectionScreen,
+  HostHeader,
+  CharacterValidationPanel,
 } from "../components/HostPage";
 
 export default function HostPage() {
+  // ── Persisted store ──────────────────────────────────────────────────
   const roomCode = useAppStore((s) => s.roomCode);
   const setRoomCode = useAppStore((s) => s.setRoomCode);
-  const setRole = useAppStore((s) => s.setRole);
 
-  const [connected, setConnected] = useState(socket.connected);
-  const [roomState, setRoomState] = useState<RoomState | null>(null);
-  const [status, setStatus] = useState("");
-
-  const timeNow = useNow(250);
-  useEffect(() => {
-    const prev = prevPlayerCountRef.current || 0;
-    if (!roomState) {
-      prevPlayerCountRef.current = 0;
-      return;
-    }
-    const cur = roomState.players.length;
-    if (cur > prev) {
-      // previously tracked last joined name here; no longer needed
-    }
-    prevPlayerCountRef.current = cur;
-  }, [roomState]);
-  const playersLabel = roomState
-    ? roomState.game.started
-      ? `${roomState.players.length}`
-      : `${roomState.players.length} of ${roomState.settings.maxPlayers}`
-    : "";
-
-  const secondsLeft = roomState?.game.endsAt
-    ? Math.max(0, Math.ceil((roomState.game.endsAt - timeNow) / 1000))
-    : null;
-
-  const [roundSeconds, setRoundSeconds] = useState(30);
-  const submittedCount = roomState
-    ? roomState.players.filter((p) => p.submission !== undefined).length
-    : 0;
-  const totalPlayers = roomState ? roomState.players.length : 0;
-
-  const [gameKey, setGameKey] = useState<GameKey>("infiltration");
-  const [maxPlayers, setMaxPlayers] = useState(8);
-
+  // ── Host flow step ───────────────────────────────────────────────────
+  // "selectGame" — choosing which game to host.
+  // "setup"      — room is created, waiting for players / configuring.
   const [selectedGameKey, setSelectedGameKey] = useState<GameKey | "">("");
-  // Host flow state: whether we're selecting the game or in setup
   const [hostStep, setHostStep] = useState<"selectGame" | "setup">(() =>
     selectedGameKey === "" ? "selectGame" : "setup",
   );
 
+  // ── Custom hooks ─────────────────────────────────────────────────────
+  // useHostSocket: manages socket connection, room:state, room:hosted,
+  //   room:closed events.  The callback resets the UI when a room closes.
+  const { connected, roomState, status, setStatus } = useHostSocket(() => {
+    setSelectedGameKey("");
+    setHostStep("selectGame");
+  });
+
+  // useCharacterRoles: loads characters from API when infiltration is
+  //   selected, converts them to roles, and manages the toggle selection.
+  const { roles, enabledRoleIds, setEnabledRoleIds } = useCharacterRoles(
+    selectedGameKey as string,
+    roomState,
+  );
+
+  // useVoteGroups: computes per-target vote tallies for the results panel.
+  const voteGroups = useVoteGroups(roomState);
+
+  // useNow: ticks every 250ms so the countdown timer updates smoothly.
+  const timeNow = useNow(250);
+
+  // ── Local settings (mirrors of server state) ────────────────────────
+  // These are kept in local state so input fields are responsive while the
+  // user drags/types; the actual source-of-truth is the server room state.
+  const [gameKey, setGameKey] = useState<GameKey>("infiltration");
+  const [roundSeconds, setRoundSeconds] = useState(30);
+  const [maxPlayers, setMaxPlayers] = useState(8);
   const [playersCollapsed, setPlayersCollapsed] = useState(false);
-  const prevPlayerCountRef = useRef<number>(
-    roomState ? roomState.players.length : 0,
-  );
 
-  // Load characters and convert to roles
-  interface SavedCharacter {
-    id: string | number;
-    name: string;
-    data?: { description?: string; team?: "villager" | "infiltrator" | null };
-  }
-  const [savedCharacters, setSavedCharacters] = useState<SavedCharacter[]>([]);
-
-  // Convert saved characters to roles
-  const roles = useMemo(() => {
-    const converted = savedCharacters.map((char, idx) => ({
-      id: idx,
-      key: `character_${char.id}`,
-      title: char.name,
-      description: char.data?.description || "Custom character",
-      team: char.data?.team || undefined,
-    })) as (RoleConfig & { team?: "villager" | "infiltrator" })[];
-    console.log("Roles calculated:", converted);
-    return converted;
-  }, [savedCharacters]);
-
-  // ! Only load characters when infiltration is selected
-  useEffect(() => {
-    console.log(
-      "[HostPage] Character loading useEffect triggered. selectedGameKey:",
-      selectedGameKey,
-    );
-    if (selectedGameKey !== "infiltration") {
-      console.log(
-        "[HostPage] selectedGameKey is not infiltration, clearing characters",
-      );
-      setSavedCharacters([]);
-      return;
-    }
-
-    console.log("[HostPage] Loading characters from API...");
-    (async () => {
-      try {
-        const characters = await loadCharacters();
-        console.log("Characters loaded:", characters);
-        setSavedCharacters(characters);
-      } catch (error) {
-        console.error("Failed to load characters:", error);
-      }
-    })();
-  }, [selectedGameKey]);
-
-  const [enabledRoleIds, setEnabledRoleIds] = useState<Set<number>>(
-    () => new Set(), // Start empty, will be populated when roles load
-  );
-
-  const voteGroups = useMemo(() => {
-    if (!roomState) return [];
-
-    const groups = new Map<
-      string,
-      { targetId: string; label: string; voters: string[] }
-    >();
-
-    // Initialize buckets: each player + "none"
-    for (const p of roomState.players) {
-      groups.set(p.socketId, {
-        targetId: p.socketId,
-        label: p.name,
-        voters: [],
-      });
-    }
-    groups.set("none", {
-      targetId: "none",
-      label: "No Infiltrator",
-      voters: [],
-    });
-
-    // Fill voters
-    for (const voter of roomState?.players || []) {
-      if (!voter.submission) continue;
-
-      const targetId = voter.submission.value;
-      const g = groups.get(targetId);
-      if (!g) continue; // should not happen if server validates
-      g.voters.push(voter.name);
-    }
-
-    // Sort by most votes desc, then label
-    return Array.from(groups.values()).sort((a, b) => {
-      const d = b.voters.length - a.voters.length;
-      if (d !== 0) return d;
-      return a.label.localeCompare(b.label);
-    });
-  }, [roomState]);
-  useEffect(() => {
-    setRole("host");
-    if (!roomCode) setRoomCode(makeRoomCode());
-
-    socket.connect();
-
-    const onConnect = () => setConnected(true);
-    const onDisconnect = () => {
-      setConnected(false);
-      setStatus("Disconnected");
-    };
-
-    const onHosted = (payload: { roomCode: string; socketId: string }) => {
-      setStatus(`Hosting room ${payload.roomCode}`);
-    };
-
-    const onState = (state: RoomState) => setRoomState(state);
-
-    const onClosed = (payload: { roomCode: string; reason: string }) => {
-      setRoomState(null);
-      setSelectedGameKey("");
-      setHostStep("selectGame");
-      setStatus(`Room closed: ${payload.reason}`);
-    };
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
-    socket.on("room:hosted", onHosted);
-    socket.on("room:state", onState);
-    socket.on("room:closed", onClosed);
-
-    return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
-      socket.off("room:hosted", onHosted);
-      socket.off("room:state", onState);
-      socket.off("room:closed", onClosed);
-      // ! Don't disconnect - socket is persistent and shared across pages
-      // socket.disconnect();
-    };
-    // run once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!roomState) return;
-
+  // Overwrite local mirrors whenever the server pushes a new room:state.
+  // Done during render (not in an effect) to avoid an extra cascading render.
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevRoomState, setPrevRoomState] = useState(roomState);
+  if (roomState && roomState !== prevRoomState) {
+    setPrevRoomState(roomState);
     setGameKey(roomState.settings.gameKey);
     setRoundSeconds(Math.round(roomState.settings.roundDurationMs / 1000));
     setMaxPlayers(roomState.settings.maxPlayers);
+  }
 
-    if (roomState.settings.gameKey === "infiltration") {
-      // infiltration options are now managed purely by selected characters
-    }
-  }, [roomState]);
-
-  // Initialize enabledRoleIds from server when first receiving room state (for this game)
-  useEffect(() => {
-    if (!roomState || roomState.settings.gameKey !== "infiltration") return;
-
-    // Only set on initial load (when enabledRoleIds is empty)
-    if (enabledRoleIds.size === 0) {
-      const opts = roomState.settings.gameOptions?.infiltration;
-      const allIds = opts?.enabledRoleIds ?? [];
-      setEnabledRoleIds(new Set(allIds));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomState?.roomCode]); // Only reinit when switching rooms
-
+  // ── Status bar text ──────────────────────────────────────────────────
+  // Automatically updates the status string whenever room state changes
+  // so the host always sees the current lobby/game situation at a glance.
   useEffect(() => {
     if (!roomState) return;
-
-    const minPlayers = roomState.settings.gameKey === "infiltration" ? 3 : 3;
-    const hasEnoughPlayers = roomState.players.length >= minPlayers;
+    const hasEnoughPlayers = roomState.players.length >= 3;
     const allReady =
       hasEnoughPlayers && roomState.players.every((p) => p.ready);
 
@@ -248,12 +108,50 @@ export default function HostPage() {
     } else {
       setStatus("Waiting for players");
     }
-  }, [roomState]);
+  }, [roomState, setStatus]);
 
+  // ── Derived / computed values ─────────────────────────────────────────
+  // Use server room code when available, fall back to locally generated one.
   const effectiveRoomCode = roomState?.roomCode ?? roomCode;
+  // True when this socket is the room's host (guards host-only UI).
   const hosted = roomState?.hostSocketId === socket.id;
-  const lobbyLocked = !roomState || roomState.game.started; // disable lobby settings after game starts
+  // Disable lobby settings once the game is running.
+  const lobbyLocked = !roomState || roomState.game.started;
+  // Check both the local selection and server state for infiltration mode.
+  const isInfiltration =
+    selectedGameKey === "infiltration" ||
+    roomState?.settings.gameKey === "infiltration";
 
+  // Player count label: "4 of 8" in lobby, just "4" during a game.
+  const playersLabel = roomState
+    ? roomState.game.started
+      ? `${roomState.players.length}`
+      : `${roomState.players.length} of ${roomState.settings.maxPlayers}`
+    : "";
+
+  // Countdown timer — null when no active round.
+  const secondsLeft = roomState?.game.endsAt
+    ? Math.max(0, Math.ceil((roomState.game.endsAt - timeNow) / 1000))
+    : null;
+
+  // Voting progress indicators.
+  const submittedCount = roomState
+    ? roomState.players.filter((p) => p.submission !== undefined).length
+    : 0;
+  const totalPlayers = roomState ? roomState.players.length : 0;
+
+  // Human-readable game title for the header.
+  const gameTitle =
+    selectedGameKey === "infiltration"
+      ? "Infiltration"
+      : selectedGameKey === "odd_one_out"
+        ? "Odd One Out"
+        : gameKey === "infiltration"
+          ? "Infiltration"
+          : "Odd One Out";
+
+  // ── Render ────────────────────────────────────────────────────────────
+  // Step 1: game picker (early return — nothing else renders).
   if (hostStep === "selectGame" || selectedGameKey === "") {
     return (
       <GameSelectionScreen
@@ -269,126 +167,27 @@ export default function HostPage() {
     );
   }
 
+  // Step 2+: setup / in-game / results — rendered top-to-bottom.
   return (
     <div style={{ padding: 16 }}>
-      {/* Header row: spacer (left) + centered title + room code (right) */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: 12,
-        }}
-      >
-        {/* Left: Close button */}
-        {roomState && hosted && (
-          <button
-            onClick={() =>
-              closeRoomAction(socket, effectiveRoomCode, setStatus)
-            }
-            style={{
-              padding: "8px 12px",
-              backgroundColor: COLORS.actionDanger,
-              color: COLORS.actionDangerText,
-              border: "none",
-              borderRadius: 4,
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-            title="Close room"
-            aria-label="Close room"
-          >
-            CLOSE
-          </button>
-        )}
-
-        {/* Left spacer to keep the title truly centered */}
-        <div style={{ width: 60 }} />
-
-        {/* Center title */}
-        <div
-          style={{
-            flex: 1,
-            textAlign: "center",
-            fontSize: 34,
-            fontWeight: 900,
-            lineHeight: 1.1,
-          }}
-        >
-          {selectedGameKey === "infiltration"
-            ? "Infiltration"
-            : selectedGameKey === "odd_one_out"
-              ? "Odd One Out"
-              : gameKey === "infiltration"
-                ? "Infiltration"
-                : "Odd One Out"}
-        </div>
-
-        {/* Right: Room code block (two lines) */}
-        <div
-          style={{
-            width: 160,
-            padding: 10,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 8,
-          }}
-        >
-          <div
-            style={{ fontWeight: 700, marginBottom: 6, textAlign: "center" }}
-          >
-            Room Code
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              justifyContent: "flex-end",
-              alignItems: "center",
-            }}
-          >
-            <div
-              title="Room code"
-              style={{
-                width: 120, // shrink the code display
-                fontSize: 20,
-                letterSpacing: 5,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: 6,
-                padding: "6px 8px",
-                fontWeight: 800,
-                textAlign: "center",
-                background: COLORS.backgroundLight,
-                color: COLORS.textDark,
-                userSelect: "text", // lets people highlight it
-              }}
-            >
-              {roomState?.roomCode ?? roomCode ?? "----"}
-            </div>
-
-            <button
-              onClick={() => {
-                copyRoomCodeToClipboard(effectiveRoomCode, () => {
-                  setStatus(`Copied ${effectiveRoomCode} to clipboard`);
-                  setTimeout(() => setStatus(""), 2500);
-                });
-              }}
-              disabled={!effectiveRoomCode}
-              style={{ padding: "6px 10px" }}
-              title="Copy room code"
-              aria-label="Copy room code"
-            >
-              COPY
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* ── Header: close · title · room code ── */}
+      <HostHeader
+        showClose={!!roomState && hosted}
+        gameTitle={gameTitle}
+        roomCode={effectiveRoomCode || "----"}
+        onClose={() => closeRoomAction(socket, effectiveRoomCode, setStatus)}
+        onCopy={() =>
+          copyRoomCodeToClipboard(effectiveRoomCode, () => {
+            setStatus(`Copied ${effectiveRoomCode} to clipboard`);
+            setTimeout(() => setStatus(""), 2500);
+          })
+        }
+      />
 
       <div>
-        {/* Big game title */}
+        {/* ── Infiltration: character toggle grid + validation ── */}
         <div style={{ padding: 12 }}>
-          {(selectedGameKey === "infiltration" ||
-            roomState?.settings.gameKey === "infiltration") && (
+          {isInfiltration && (
             <InfiltrationOptionsPanel
               enabledRoleIds={enabledRoleIds}
               setEnabledRoleIds={setEnabledRoleIds}
@@ -398,79 +197,16 @@ export default function HostPage() {
               socket={socket}
             />
           )}
-          {(selectedGameKey === "infiltration" ||
-            roomState?.settings.gameKey === "infiltration") &&
-            roomState && (
-              <div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    padding: 8,
-                    backgroundColor:
-                      enabledRoleIds.size === roomState.players.length + 3
-                        ? COLORS.success
-                        : COLORS.warning,
-                    border:
-                      enabledRoleIds.size === roomState.players.length + 3
-                        ? `1px solid ${COLORS.borderLight}`
-                        : `1px solid ${COLORS.border}`,
-                    borderRadius: 4,
-                    color:
-                      enabledRoleIds.size === roomState.players.length + 3
-                        ? COLORS.primaryLight
-                        : COLORS.textSecondary,
-                    fontSize: 14,
-                  }}
-                >
-                  <strong>Characters Required:</strong>{" "}
-                  {roomState.players.length + 3} ({roomState.players.length}{" "}
-                  players + 3 center roles)
-                  <br />
-                  <strong>Characters Selected:</strong> {enabledRoleIds.size}
-                  {enabledRoleIds.size === roomState.players.length + 3
-                    ? " ✓"
-                    : " ✗"}
-                </div>
-                {/* Infiltrator team validation */}
-                {(() => {
-                  const selectedChars = roles.filter((r) =>
-                    enabledRoleIds.has(r.id),
-                  );
-                  const infiltratorCount = selectedChars.filter(
-                    (c) => c.team === "infiltrator",
-                  ).length;
-                  const numPlayers = roomState.players.length;
-                  const isValid =
-                    infiltratorCount > 0 && infiltratorCount < numPlayers;
-
-                  return (
-                    <div
-                      style={{
-                        marginTop: 8,
-                        padding: 8,
-                        backgroundColor: isValid ? COLORS.success : COLORS.warning,
-                        border: isValid
-                          ? `1px solid ${COLORS.borderLight}`
-                          : `1px solid ${COLORS.border}`,
-                        borderRadius: 4,
-                        color: isValid ? COLORS.primaryLight : COLORS.textSecondary,
-                        fontSize: 14,
-                      }}
-                    >
-                      <strong>Infiltrator Team:</strong>{" "}
-                      {isValid ? "✓ Valid" : "✗ Invalid"}
-                      {infiltratorCount === 0 && <> (at least one required)</>}
-                      {infiltratorCount >= numPlayers && (
-                        <> (must be less than {numPlayers} players)</>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+          {isInfiltration && roomState && (
+            <CharacterValidationPanel
+              playerCount={roomState.players.length}
+              enabledRoleIds={enabledRoleIds}
+              roles={roles}
+            />
+          )}
         </div>
 
-        {/* Core controls */}
+        {/* ── Core controls: start / reset / next round buttons ── */}
         {roomState && (
           <GameControlsPanel
             roomState={roomState}
@@ -479,7 +215,7 @@ export default function HostPage() {
           />
         )}
 
-        {/* Game panel */}
+        {/* ── In-game display: timer, submission progress ── */}
         {roomState?.game.started && (
           <HostGameDisplayPanel
             roomState={roomState}
@@ -489,7 +225,7 @@ export default function HostPage() {
           />
         )}
 
-        {/* Results panel */}
+        {/* ── Results: vote tallies per target ── */}
         {roomState?.game.phase === "results" && (
           <HostResultsPanel
             roomState={roomState}
@@ -498,12 +234,15 @@ export default function HostPage() {
           />
         )}
 
-        {/* Room State panel */}
+        {/* ── Lobby settings: round duration, max players ── */}
         {roomState && (
           <div
-            style={{ padding: 12, border: `1px solid ${COLORS.border}`, borderRadius: 8 }}
+            style={{
+              padding: 12,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 8,
+            }}
           >
-            {/* Lobby settings now live in room state */}
             {!roomState.game.started && (
               <LobbySettingsPanel
                 roundSeconds={roundSeconds}
@@ -515,11 +254,10 @@ export default function HostPage() {
                 socket={socket}
               />
             )}
-
-            {/* Infiltration options moved to top-level panel under game title */}
           </div>
         )}
-        {/* Players panel (separate and collapsible) */}
+
+        {/* ── Players list (collapsible) ── */}
         {roomState && (
           <HostPlayersPanel
             roomState={roomState}
@@ -530,6 +268,7 @@ export default function HostPage() {
           />
         )}
 
+        {/* ── Status bar ── */}
         <div style={{ marginTop: 16 }}>
           <strong>Status:</strong> {status || "(none)"}
         </div>

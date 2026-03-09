@@ -52,12 +52,3 @@ export const ERROR_EVENTS = {
   FORBIDDEN: "error:forbidden",
   BAD_REQUEST: "error:badRequest",
 } as const;
-
-// Consolidated event map for easy access
-export const SOCKET_EVENTS = {
-  ...ROOM_EVENTS,
-  ...PLAYER_EVENTS,
-  ...GAME_EVENTS,
-  ...POWER_EVENTS,
-  ...ERROR_EVENTS,
-} as const;

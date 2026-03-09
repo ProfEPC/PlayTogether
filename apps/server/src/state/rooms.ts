@@ -8,7 +8,7 @@ export const rooms = new Map<string, RoomState>();
 export function createRoomHosted(
   roomCode: string,
   hostSocketId: string,
-  gameKey: GameKey
+  gameKey: GameKey,
 ): RoomState {
   const code = normalizeRoomCode(roomCode);
   const existing = rooms.get(code);
@@ -50,12 +50,9 @@ export function createRoomHosted(
 
       gameOptions: {
         infiltration: {
-          allowNoInfiltrator: true,
-          revealVotes: true,
-          numInfiltrators: 2,
-          enabledRoleIds: [0, 1, 2], // All roles: thief, hacker, engineer
+          selectedCharacters: [],
         },
-        odd_one_out: { revealVotes: true, numOddOnes: 2 },
+        odd_one_out: { numOddOnes: 2 },
       },
     },
 

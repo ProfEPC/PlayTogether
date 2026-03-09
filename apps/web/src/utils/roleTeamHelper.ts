@@ -3,7 +3,7 @@ import type { Player } from "../types/room";
 /**
  * Determine which team a role belongs to
  * Infiltrator = infiltrator team
- * Everything else (civilian, thief, hacker, engineer) = villager team
+ * Everything else = villager team
  */
 export function getRoleTeam(role: string): "infiltrator" | "villager" {
   return role === "infiltrator" ? "infiltrator" : "villager";

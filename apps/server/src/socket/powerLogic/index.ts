@@ -8,18 +8,8 @@
  * - utilities.ts: Utility functions (recording, resetting)
  */
 
-// Validation
-export {
-  isPlayerRevealed,
-  isPlayerProtected,
-  getTargetsForPower,
-} from "./validation";
-
-// Prompting
-export { promptPlayerForPower } from "./prompting";
-
 // Execution (unified system)
 export { executeCharacterPower } from "./execution";
 
 // Utilities
-export { recordPowerUsage, resetPlayerPowers } from "./utilities";
+export { resetPlayerPowers } from "./utilities";

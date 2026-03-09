@@ -13,7 +13,7 @@ export interface GameTheme {
 
   //* Team terminology customization
   teamTerms: {
-    infiltratorSingular: string; //* "Infiltrator", "Spy", "Hacker"
+    infiltratorSingular: string; //* "Infiltrator", "Spy", "Mole"
     infiltratorPlural: string;
     villagerSingular: string; //* "Villager", "Employee", "Security"
     villagerPlural: string;
