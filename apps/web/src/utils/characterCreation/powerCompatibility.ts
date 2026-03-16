@@ -5,9 +5,8 @@
  * meshing rules defined in data/power_compatibility_rules.md.
  *
  * Main exports:
- * - canMeshPowers(power1, power2): Check if two powers can coexist
- * - canAddPowerToCharacter(newPower, existingPowers): Validate adding a new power to a character
- * - getPowerCompatibilityError(power1, power2): Get descriptive error message
+ * - canMeshPowersWithTiming(power1, power2, timing): Check if two powers can coexist
+ * - getPowerCompatibilityError(power1, power2, timing): Get descriptive error message
  */
 
 import type { InfiltrationPower } from "../../constants/infiltrationPowers";
@@ -137,51 +136,7 @@ export function canMeshPowersWithTiming(
   if (p2TwoXVote && isLearnOrRevealPower(power1) && isPostSwap) {
     return false; // twoXVote group + post-swap learn/reveal = incompatible
   }
-  // if (p1Suicidal XOR p2Suicidal) return false;
-
   // All checks passed
-  return true;
-}
-
-/**
- * Backward compatibility wrapper for canMeshPowers without timing info.
- * Note: This cannot check post-swap restrictions accurately without timing data.
- * Use canMeshPowersWithTiming for full validation.
- */
-export function canMeshPowers(
-  power1: InfiltrationPower | null | undefined,
-  power2: InfiltrationPower | null | undefined,
-): boolean {
-  return canMeshPowersWithTiming(power1, power2, null);
-}
-
-/**
- * Check if a new power can be added to a character given existing powers with timing info.
- *
- * This validates that the new power is compatible with ALL existing powers in the character,
- * taking into account timing information for Learn/Reveal powers.
- *
- * @param newPower - The power being added
- * @param existingPowerSlots - Array of power slots with timing info (can contain nulls)
- * @returns true if new power can be added, false if it conflicts with existing powers
- */
-export function canAddPowerToCharacter(
-  newPower: InfiltrationPower | null | undefined,
-  existingPowerSlots: Array<{
-    power: InfiltrationPower | null;
-    timing?: string | null;
-  }>,
-): boolean {
-  if (!newPower) return true;
-
-  for (const slot of existingPowerSlots) {
-    if (!slot.power) continue;
-
-    if (!canMeshPowersWithTiming(newPower, slot.power, slot.timing)) {
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -261,34 +216,4 @@ export function getPowerCompatibilityError(
 
   // Fallback (should not reach here if logic is correct)
   return `"${power1Name}" is incompatible with "${power2Name}". Check the power compatibility rules for details.`;
-}
-
-/**
- * Get all incompatibilities for a given power in a character context.
- *
- * Useful for showing which powers are "forbidden" when a user selects a power
- * with compatibility constraints.
- *
- * @param power - The power to analyze
- * @param existingPowers - Existing powers in the character
- * @returns Array of error messages (empty if no conflicts)
- */
-export function getCharacterCompatibilityErrors(
-  power: InfiltrationPower | null | undefined,
-  existingPowers: (InfiltrationPower | null | undefined)[],
-): string[] {
-  if (!power) return [];
-
-  const errors: string[] = [];
-
-  for (const existingPower of existingPowers) {
-    if (!existingPower) continue;
-
-    const error = getPowerCompatibilityError(power, existingPower);
-    if (error && !errors.includes(error)) {
-      errors.push(error);
-    }
-  }
-
-  return errors;
 }

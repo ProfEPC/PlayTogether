@@ -1,20 +1,20 @@
 import { Socket } from "socket.io-client";
 import { normalizeRoomCode } from "../../utils/shared/roomCodeNormalize";
-import type { RoleConfig } from "../../types/room";
+import type { CharacterConfig } from "../../types/room";
 
 interface InfiltrationOptionsPanelProps {
-  enabledRoleIds: Set<number>;
-  setEnabledRoleIds: (ids: Set<number>) => void;
-  roles: (RoleConfig & { team?: "innocent" | "infiltrator" })[];
+  enabledCharacterIds: Set<number>;
+  setEnabledCharacterIds: (ids: Set<number>) => void;
+  characters: (CharacterConfig & { team?: "innocent" | "infiltrator" })[];
   lobbyLocked: boolean;
   roomCode: string;
   socket: Socket;
 }
 
 export function InfiltrationOptionsPanel({
-  enabledRoleIds,
-  setEnabledRoleIds,
-  roles,
+  enabledCharacterIds,
+  setEnabledCharacterIds,
+  characters,
   lobbyLocked,
   roomCode,
   socket,
@@ -33,7 +33,7 @@ export function InfiltrationOptionsPanel({
       <div style={{ fontWeight: 700, marginBottom: 8 }}>
         Infiltration Options
       </div>
-      {!roles || roles.length === 0 ? (
+      {!characters || characters.length === 0 ? (
         <div style={{ opacity: 0.6 }}>Loading characters...</div>
       ) : (
         <div
@@ -43,33 +43,33 @@ export function InfiltrationOptionsPanel({
             gap: 12,
           }}
         >
-          {/* Character roles from saved characters */}
-          {roles.map((role) => {
-            const checked = enabledRoleIds.has(role.id);
-            const isInfiltrator = role.team === "infiltrator";
+          {/* Saved characters */}
+          {characters.map((char) => {
+            const checked = enabledCharacterIds.has(char.id);
+            const isInfiltrator = char.team === "infiltrator";
 
             return (
               <button
-                key={role.id}
+                key={char.id}
                 disabled={lobbyLocked}
                 onClick={() => {
-                  const next = new Set(enabledRoleIds);
-                  if (checked) next.delete(role.id);
-                  else next.add(role.id);
+                  const next = new Set(enabledCharacterIds);
+                  if (checked) next.delete(char.id);
+                  else next.add(char.id);
 
-                  setEnabledRoleIds(next);
+                  setEnabledCharacterIds(next);
 
                   // Map enabled IDs back to character names
-                  const selectedCharacters = roles
-                    .filter((r) => next.has(r.id))
-                    .map((r) => r.title);
+                  const selectedCharacters = characters
+                    .filter((c) => next.has(c.id))
+                    .map((c) => c.title);
 
                   socket.emit("game:setInfiltrationOptions", {
                     roomCode: effectiveRoomCode,
                     selectedCharacters,
                   });
                 }}
-                title={role.description ?? ""}
+                title={char.description ?? ""}
                 style={{
                   padding: 12,
                   border: checked ? "3px solid #2196F3" : "1px solid #999",
@@ -88,7 +88,7 @@ export function InfiltrationOptionsPanel({
                   outline: "none",
                 }}
               >
-                {role.title}
+                {char.title}
               </button>
             );
           })}

@@ -1,11 +1,11 @@
 import type { CSSProperties, FC } from "react";
 import { COLORS } from "../../constants/colors";
-import type { RoleConfig } from "../../types/room";
+import type { CharacterConfig } from "../../types/room";
 
 interface CharacterValidationPanelProps {
   playerCount: number;
-  enabledRoleIds: Set<number>;
-  roles: (RoleConfig & { team?: "innocent" | "infiltrator" })[];
+  enabledCharacterIds: Set<number>;
+  characters: (CharacterConfig & { team?: "innocent" | "infiltrator" })[];
 }
 
 /* ── tiny status dot ──────────────────────────────────────────────── */
@@ -39,15 +39,15 @@ const chipStyle: CSSProperties = {
  */
 export const CharacterValidationPanel: FC<CharacterValidationPanelProps> = ({
   playerCount,
-  enabledRoleIds,
-  roles,
+  enabledCharacterIds,
+  characters,
 }) => {
   const MIN_PLAYERS = 3; // matches GAME_RULES.infiltration.minPlayers
   const effectivePlayers = Math.max(playerCount, MIN_PLAYERS);
   const requiredCount = effectivePlayers + 3;
-  const countValid = enabledRoleIds.size === requiredCount;
+  const countValid = enabledCharacterIds.size === requiredCount;
 
-  const selectedChars = roles.filter((r) => enabledRoleIds.has(r.id));
+  const selectedChars = characters.filter((c) => enabledCharacterIds.has(c.id));
   const infiltratorCount = selectedChars.filter(
     (c) => c.team === "infiltrator",
   ).length;
@@ -71,7 +71,7 @@ export const CharacterValidationPanel: FC<CharacterValidationPanelProps> = ({
       {/* Selected / required count */}
       <div style={chipStyle}>
         <span style={dot(countValid)} />
-        Characters {enabledRoleIds.size}/{requiredCount} ({playerCount}+3)
+        Characters {enabledCharacterIds.size}/{requiredCount} ({playerCount}+3)
       </div>
 
       {/* Infiltrator team balance */}

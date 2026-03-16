@@ -48,7 +48,6 @@ export function PowerSlotEditor({
   blockers: BlockerMessage[];
   onChange: (updates: Record<string, unknown>) => void;
   onRemove: () => void;
-  hasCharacterModifiers: boolean;
   otherPowerSlots: PowerSlot[];
 }) {
   const [isExpanded, setIsExpanded] = useState(true);

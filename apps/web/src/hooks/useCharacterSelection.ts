@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { loadCharacters } from "../lib/characterPersistence";
-import type { RoomState, RoleConfig } from "../types/room";
+import type { RoomState, CharacterConfig } from "../types/room";
 
 interface SavedCharacter {
   id: string | number;
@@ -9,18 +9,18 @@ interface SavedCharacter {
 }
 
 /**
- * Manages character loading, role conversion, and selection state for Infiltration.
+ * Manages character loading, conversion, and selection state for Infiltration.
  * Characters are loaded from the API when the selected game is "infiltration".
- * Selection state (enabledRoleIds) is initialized from the server's room state.
+ * Selection state (enabledCharacterIds) is initialized from the server's room state.
  */
-export function useCharacterRoles(
+export function useCharacterSelection(
   selectedGameKey: string,
   roomState: RoomState | null,
 ) {
   const [savedCharacters, setSavedCharacters] = useState<SavedCharacter[]>([]);
 
-  // Convert saved characters to the RoleConfig shape used by UI components
-  const roles = useMemo(
+  // Convert saved characters to the CharacterConfig shape used by UI components
+  const characters = useMemo(
     () =>
       savedCharacters.map((char, idx) => ({
         id: idx,
@@ -28,7 +28,7 @@ export function useCharacterRoles(
         title: char.name,
         description: char.data?.description || "Custom character",
         team: char.data?.team || undefined,
-      })) as (RoleConfig & { team?: "innocent" | "infiltrator" })[],
+      })) as (CharacterConfig & { team?: "innocent" | "infiltrator" })[],
     [savedCharacters],
   );
 
@@ -50,7 +50,7 @@ export function useCharacterRoles(
   }, [selectedGameKey]);
 
   // Which characters are currently toggled on (local UI state)
-  const [enabledRoleIds, setEnabledRoleIds] = useState<Set<number>>(
+  const [enabledCharacterIds, setEnabledCharacterIds] = useState<Set<number>>(
     () => new Set(),
   );
 
@@ -58,17 +58,19 @@ export function useCharacterRoles(
   useEffect(() => {
     if (!roomState || roomState.settings.gameKey !== "infiltration") return;
 
-    // Only set on initial load (when enabledRoleIds is empty)
-    if (enabledRoleIds.size === 0 && roles.length > 0) {
+    // Only set on initial load (when enabledCharacterIds is empty)
+    if (enabledCharacterIds.size === 0 && characters.length > 0) {
       const opts = roomState.settings.gameOptions?.infiltration;
       const serverChars = opts?.selectedCharacters ?? [];
       const ids = new Set(
-        roles.filter((r) => serverChars.includes(r.title)).map((r) => r.id),
+        characters
+          .filter((c) => serverChars.includes(c.title))
+          .map((c) => c.id),
       );
-      if (ids.size > 0) setEnabledRoleIds(ids);
+      if (ids.size > 0) setEnabledCharacterIds(ids);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomState?.roomCode, roles.length]);
+  }, [roomState?.roomCode, characters.length]);
 
-  return { roles, enabledRoleIds, setEnabledRoleIds };
+  return { characters, enabledCharacterIds, setEnabledCharacterIds };
 }

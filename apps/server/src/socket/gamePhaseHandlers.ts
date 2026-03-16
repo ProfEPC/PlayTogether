@@ -47,7 +47,7 @@ export function beginMayhem(io: Server, code: string, room: RoomState) {
  * 3. Assign one character to each player in order
  * 4. Fetch character data from database (includes powers, description, team)
  * 5. Send character assignment to each player privately via socket
- * 6. Store remaining characters as center roles (unused)
+ * 6. Create NPC players for unused characters
  *
  * ! NOTE: System now uses ONLY character-based assignment (no legacy role abstraction)
  */

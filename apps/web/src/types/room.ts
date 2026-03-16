@@ -16,7 +16,7 @@ export type GamePhase = InfiltrationGamePhase | OddOneOutGamePhase;
 
 export type InfiltrationTeam = "infiltrator" | "innocent";
 
-export type RoleConfig = {
+export type CharacterConfig = {
   id: number;
   key: string;
   title: string;

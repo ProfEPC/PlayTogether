@@ -16,7 +16,7 @@ import { useAppStore } from "../state/useAppStore";
 import { socket } from "../lib/socket";
 import { useNow } from "../hooks/useNow";
 import { useHostSocket } from "../hooks/useHostSocket";
-import { useCharacterRoles } from "../hooks/useCharacterRoles";
+import { useCharacterSelection } from "../hooks/useCharacterSelection";
 import { useVoteGroups } from "../hooks/useVoteGroups";
 import { closeRoomAction } from "../utils/host/roomActions";
 import { copyRoomCodeToClipboard } from "../utils/shared/roomCodeClipboard";
@@ -55,9 +55,9 @@ export default function HostPage() {
     setHostStep("selectGame");
   });
 
-  // useCharacterRoles: loads characters from API when infiltration is
-  //   selected, converts them to roles, and manages the toggle selection.
-  const { roles, enabledRoleIds, setEnabledRoleIds } = useCharacterRoles(
+  // useCharacterSelection: loads characters from API when infiltration is
+  //   selected, converts them to CharacterConfig, and manages the toggle selection.
+  const { characters, enabledCharacterIds, setEnabledCharacterIds } = useCharacterSelection(
     selectedGameKey as string,
     roomState,
   );
@@ -190,9 +190,9 @@ export default function HostPage() {
           <div style={{ padding: 12 }}>
             {isInfiltration && (
               <InfiltrationOptionsPanel
-                enabledRoleIds={enabledRoleIds}
-                setEnabledRoleIds={setEnabledRoleIds}
-                roles={roles}
+                enabledCharacterIds={enabledCharacterIds}
+                setEnabledCharacterIds={setEnabledCharacterIds}
+                characters={characters}
                 lobbyLocked={lobbyLocked}
                 roomCode={effectiveRoomCode}
                 socket={socket}
@@ -201,8 +201,8 @@ export default function HostPage() {
             {isInfiltration && roomState && (
               <CharacterValidationPanel
                 playerCount={roomState.players.length}
-                enabledRoleIds={enabledRoleIds}
-                roles={roles}
+                enabledCharacterIds={enabledCharacterIds}
+                characters={characters}
               />
             )}
           </div>

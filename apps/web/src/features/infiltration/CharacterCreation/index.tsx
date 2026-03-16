@@ -64,25 +64,6 @@ export default function CharacterCreation() {
     return null;
   })();
 
-  /**
-   * Check if any power slot has a unique win condition (Deathwish or Oracle)
-   */
-  const hasWinCondition = (): boolean => !!winConditionPower;
-
-  /**
-   * Get the win condition power if one exists
-   */
-  const getWinConditionPower = (): {
-    powerName: string;
-    description: string;
-  } | null =>
-    winConditionPower
-      ? {
-          powerName: winConditionPower.powerName,
-          description: winConditionPower.description,
-        }
-      : null;
-
   // ============ Handlers ============
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,15 +153,6 @@ export default function CharacterCreation() {
   const slotBlockers = (slotNumber: number) =>
     blockers.filter((b) => b.slotNumber === slotNumber);
 
-  /**
-   * Check if character modifiers section is visible
-   */
-  const hasCharacterModifiers = character.powerSlots.some((slot) => {
-    if (slot.powerIndex === null) return false;
-    const power = INFILTRATION_POWERS[slot.powerIndex - 1];
-    return power && power.infected;
-  });
-
   return (
     <div className="character-creation">
       {/* Left Panel: Character Form */}
@@ -201,13 +173,13 @@ export default function CharacterCreation() {
           </div>
 
           {/* Team Selector */}
-          {hasWinCondition() ? (
+          {winConditionPower ? (
             <div className="form-group win-condition-info">
               <div className="win-condition-badge">Unique Win Condition</div>
               <p>
-                <strong>{getWinConditionPower()?.powerName}</strong>
+                <strong>{winConditionPower.powerName}</strong>
               </p>
-              <p>{getWinConditionPower()?.description}</p>
+              <p>{winConditionPower.description}</p>
             </div>
           ) : (
             <div className="form-group team-selector">
@@ -288,22 +260,12 @@ export default function CharacterCreation() {
         </div>
 
         {/* Character Modifiers (Infected Upon Sight) */}
-        {hasCharacterModifiers && (
-          <div className="form-section">
-            <CharacterModifiers
-              character={character}
-              onInfectedUponSightChange={handleInfectedUponSightChange}
-            />
-          </div>
-        )}
-        {!hasCharacterModifiers && (
-          <div>
-            <CharacterModifiers
-              character={character}
-              onInfectedUponSightChange={handleInfectedUponSightChange}
-            />
-          </div>
-        )}
+        <div className="form-section">
+          <CharacterModifiers
+            character={character}
+            onInfectedUponSightChange={handleInfectedUponSightChange}
+          />
+        </div>
 
         {/* Power Slots */}
         <div className="form-section">
@@ -319,7 +281,6 @@ export default function CharacterCreation() {
                 handlePowerSlotChange(index, updates)
               }
               onRemove={() => handleRemoveSlot(index)}
-              hasCharacterModifiers={hasCharacterModifiers}
               otherPowerSlots={character.powerSlots.filter(
                 (_, i) => i !== index,
               )}
@@ -341,12 +302,6 @@ export default function CharacterCreation() {
               + Add Power Slot
             </button>
           )}
-        </div>
-
-        {/* Summary */}
-        <div className="form-section">
-          <h2>JSON Preview</h2>
-          <pre>{JSON.stringify(character, null, 2)}</pre>
         </div>
       </div>
 

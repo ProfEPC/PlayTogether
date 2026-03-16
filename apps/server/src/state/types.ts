@@ -28,10 +28,6 @@ export type PowerSlot = {
   description?: string; // Power description/prompt text from character creation
 };
 
-export type CharacterPowers = {
-  slots: PowerSlot[];
-};
-
 export type Player = {
   socketId: string;
   name: string;
@@ -160,7 +156,7 @@ export type RoomState = {
   updatedAt: number;
 };
 
-export type RoleConfig = {
+export type CharacterConfig = {
   id: number;
   key: string;
   title: string;
