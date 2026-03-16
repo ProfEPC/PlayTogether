@@ -22,9 +22,9 @@ export const ROOM_EVENTS = {
 // Player events
 export const PLAYER_EVENTS = {
   SET_READY: "player:setReady",
-  ACK_ROLE: "player:ackRole",
+  ACK_CHARACTER: "player:ackCharacter",
   ACK_MAYHEM: "player:ackMayhem",
-  ROLE: "player:role",
+  CHARACTER: "player:character",
 } as const;
 
 // Game events

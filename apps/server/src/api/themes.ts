@@ -12,8 +12,8 @@ interface GameTheme {
   teamTerms: {
     infiltratorSingular: string;
     infiltratorPlural: string;
-    villagerSingular: string;
-    villagerPlural: string;
+    innocentSingular: string;
+    innocentPlural: string;
   };
   phaseText: {
     revealPrompt: string;
@@ -26,16 +26,14 @@ interface GameTheme {
     mayhem: string;
     voting: string;
   };
-  cardTerms: {
-    centerCardSingular: string;
-    centerCardPlural: string;
-    vaultCardSingular: string;
-    vaultCardPlural: string;
+  characterTerms: {
+    npcSingular: string;
+    npcPlural: string;
   };
   playerTerms: {
     playerOuted: string;
     infiltratorWinText: string;
-    villagersWinText: string;
+    innocentsWinText: string;
   };
   uiLabels?: Record<string, string>;
   powerTerms?: Record<string, string>;
@@ -95,7 +93,7 @@ router.post("/", (req: Request, res: Response) => {
       teamTerms,
       phaseText,
       phaseNames,
-      cardTerms,
+      characterTerms,
       playerTerms,
       uiLabels,
       powerTerms,
@@ -108,7 +106,7 @@ router.post("/", (req: Request, res: Response) => {
       !teamTerms ||
       !phaseText ||
       !phaseNames ||
-      !cardTerms ||
+      !characterTerms ||
       !playerTerms
     ) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -130,7 +128,7 @@ router.post("/", (req: Request, res: Response) => {
       teamTerms,
       phaseText,
       phaseNames,
-      cardTerms,
+      characterTerms,
       playerTerms,
       uiLabels,
       powerTerms,

@@ -5,7 +5,7 @@ import type { RoleConfig } from "../../types/room";
 interface InfiltrationOptionsPanelProps {
   enabledRoleIds: Set<number>;
   setEnabledRoleIds: (ids: Set<number>) => void;
-  roles: (RoleConfig & { team?: "villager" | "infiltrator" })[];
+  roles: (RoleConfig & { team?: "innocent" | "infiltrator" })[];
   lobbyLocked: boolean;
   roomCode: string;
   socket: Socket;

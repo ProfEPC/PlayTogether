@@ -63,7 +63,7 @@ export function HostResultsPanel({
       </div>
 
       {/* Final role assignments and unused roles */}
-      {roomState.players.some((p) => p.role) && (
+      {roomState.players.some((p) => p.team) && (
         <div style={{ marginTop: 12 }}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>
             All roles in this game
@@ -73,12 +73,12 @@ export function HostResultsPanel({
               const roleMap: Record<string, string[]> = {};
               // Add assigned roles
               roomState.players.forEach((p) => {
-                const role = p.role || "unknown";
+                const role = p.team || "unknown";
                 if (!roleMap[role]) roleMap[role] = [];
                 roleMap[role].push(p.name);
               });
               // Add unused roles
-              (roomState.game.unusedRoles || []).forEach((role) => {
+              (roomState.game.unusedTeams || []).forEach((role) => {
                 if (!roleMap[role]) roleMap[role] = [];
                 roleMap[role].push("unused");
               });

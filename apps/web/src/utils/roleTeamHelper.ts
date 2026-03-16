@@ -3,28 +3,26 @@ import type { Player } from "../types/room";
 /**
  * Determine which team a role belongs to
  * Infiltrator = infiltrator team
- * Everything else = villager team
+ * Everything else = innocent team
  */
-export function getRoleTeam(role: string): "infiltrator" | "villager" {
-  return role === "infiltrator" ? "infiltrator" : "villager";
+export function getTeam(role: string): "infiltrator" | "innocent" {
+  return role === "infiltrator" ? "infiltrator" : "innocent";
 }
 
 /**
- * Check if a role is on the villager team
+ * Check if a role is on the innocent team
  */
-export function isVillagerRole(role: string): boolean {
-  return getRoleTeam(role) === "villager";
+export function isInnocent(role: string): boolean {
+  return getTeam(role) === "innocent";
 }
 
 /**
- * Filter center players to only show those with villager team roles
+ * Filter NPC players to only show those with innocent team roles
  */
-export function getVillagerCenterPlayers(
-  players: Player[] | undefined,
-): Player[] {
+export function getInnocentNPCs(players: Player[] | undefined): Player[] {
   if (!players) return [];
 
   return players.filter(
-    (player) => player.isCenter && player.role && isVillagerRole(player.role),
+    (player) => player.isNPC && player.team && isInnocent(player.team),
   );
 }

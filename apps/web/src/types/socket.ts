@@ -1,4 +1,4 @@
-import type { RoomState, GameKey, InfiltrationRole } from "./room";
+import type { RoomState, GameKey, InfiltrationTeam } from "./room";
 
 export type RoomHostedPayload = { roomCode: string; socketId: string };
 export type RoomJoinedPayload = { roomCode: string; socketId: string };
@@ -36,7 +36,7 @@ export type ClientToServerEvents = {
   "game:nextRound": (p: { roomCode: string }) => void;
 
   "player:ackMayhem": (p: { roomCode: string }) => void;
-  "player:ackRole": (p: { roomCode: string; seen: boolean }) => void;
+  "player:ackCharacter": (p: { roomCode: string; seen: boolean }) => void;
   "player:setReady": (p: { roomCode: string }) => void;
   "player:usePower": (p: {
     roomCode: string;
@@ -48,7 +48,7 @@ export type ClientToServerEvents = {
     roomCode: string;
     powerName: string;
     targetPlayers?: string[];
-    targetCenter?: number[];
+    targetNPCs?: number[];
   }) => void;
 
   "room:setMaxPlayers": (p: { roomCode: string; maxPlayers: number }) => void;
@@ -63,7 +63,7 @@ export type ServerToClientEvents = {
   "room:left": (p: { roomCode: string }) => void;
   "room:playerJoined": (p: PlayerJoinedPayload) => void;
   "room:state": (state: RoomState) => void;
-  "player:role": (p: { role: InfiltrationRole }) => void;
+  "player:character": (p: { team: InfiltrationTeam }) => void;
 
   "power:result": (p: {
     type: string;
@@ -72,7 +72,7 @@ export type ServerToClientEvents = {
       powerName: string;
       targetPlayer?: string;
       targetPlayerName?: string;
-      targetCenter?: number;
+      targetNPC?: number;
       learned: string;
       learnedAt: number;
       item?: string;
@@ -88,7 +88,7 @@ export type ServerToClientEvents = {
       powerName: string;
       targetPlayer?: string;
       targetPlayerName?: string;
-      targetCenter?: number;
+      targetNPC?: number;
       learned: string;
       learnedAt: number;
       item: string;

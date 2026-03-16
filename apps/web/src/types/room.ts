@@ -14,7 +14,7 @@ export type OddOneOutGamePhase =
   | "results";
 export type GamePhase = InfiltrationGamePhase | OddOneOutGamePhase;
 
-export type InfiltrationRole = "infiltrator" | "civilian";
+export type InfiltrationTeam = "infiltrator" | "innocent";
 
 export type RoleConfig = {
   id: number;
@@ -23,7 +23,7 @@ export type RoleConfig = {
   description?: string;
 };
 
-export type Submission = {
+export type Vote = {
   value: string;
   submittedAt: number;
 };
@@ -40,7 +40,7 @@ export type PowerSlot = {
 export type Character = {
   name: string;
   description: string;
-  team?: "villager" | "infiltrator";
+  team?: "innocent" | "infiltrator";
   powers: PowerSlot[];
 };
 
@@ -48,7 +48,7 @@ export type LearnRecord = {
   powerName: string;
   targetPlayer?: string;
   targetPlayerName?: string;
-  targetCenter?: number;
+  targetNPC?: number;
   learned: string;
   learnedAt: number;
   item?: string;
@@ -62,13 +62,13 @@ export type Player = {
   connectedAt: number;
   lastSeenAt: number;
 
-  // Center card flag
-  isCenter?: boolean; // Is this player representing a center card?
+  // NPC flag
+  isNPC?: boolean; // Is this player representing an NPC?
 
   // Per-player game state
-  role?: InfiltrationRole; // Player's assigned role
-  submission?: Submission; // Player's vote submission
-  roleAcknowledged?: boolean; // Has player acknowledged their role?
+  team?: InfiltrationTeam; // Player's assigned team
+  vote?: Vote; // Player's vote
+  characterAcknowledged?: boolean; // Has player acknowledged their character?
   mayhemAcknowledged?: boolean; // Has player acknowledged completing mayhem actions?
   usedPower?: boolean; // Has player used their special power this round?
   powerUsed?: boolean; // Has player used a character power this game?
@@ -77,10 +77,10 @@ export type Player = {
   character?: Character;
   learnsThisGame?: LearnRecord[];
 
-  // NEW: Power state and effects (game phase specific)
-  roleRevealed?: boolean; // Has this player's role been publicly revealed?
+  // Power state and effects (game phase specific)
+  characterRevealed?: boolean; // Has this player's character been publicly revealed?
   protected?: boolean; // Is this player currently protected/shielded from actions?
-  actedThisRound?: boolean; // Has this player's role already acted in mayhem phase?
+  actedThisRound?: boolean; // Has this player already acted in mayhem phase?
 };
 
 export type GameOptionsByKey = {
@@ -100,8 +100,8 @@ export type GameState = {
   endsAt: number | null;
   gameId: string | null;
 
-  // Unused roles from the initial pool
-  unusedRoles?: Array<InfiltrationRole>;
+  // Unused teams from the initial pool
+  unusedTeams?: Array<InfiltrationTeam>;
 
   // Redacted summaries of power usage for display in-room
   powerSummary?: Array<{
@@ -112,8 +112,8 @@ export type GameState = {
     at: number;
   }>;
 
-  // Winner for the round (infiltration: 'crew' | 'infiltrators' | 'none')
-  winner?: "crew" | "infiltrators" | "none";
+  // Winner for the round (infiltration: 'innocents' | 'infiltrators' | 'none')
+  winner?: "innocents" | "infiltrators" | "none";
 };
 
 export type RoomSettings = {
@@ -136,7 +136,8 @@ export type RoomSettings = {
 export type RoomState = {
   roomCode: string;
   hostSocketId: string | null;
-  players: Player[];
+  players: Player[]; // All players including NPCs during game
+  playerCount: number; // Number of players (excludes NPCs)
   locked: boolean;
   pending: PendingJoin[];
   game: GameState;

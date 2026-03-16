@@ -1,0 +1,113 @@
+/* ───────────────────────────────────────────────────
+ * HostPlayerCard — per-player card shown during game
+ * ─────────────────────────────────────────────────── */
+
+.host-player-card {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+/* Team-coloured left border once revealed */
+.host-player-card--infiltrator {
+  border-left: 4px solid #c0392b;
+}
+.host-player-card--innocent {
+  border-left: 4px solid #27ae60;
+}
+.host-player-card--hidden {
+  border-left: 4px solid #bbb;
+}
+
+/* ── Header row: name + status badge ── */
+.host-player-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.host-player-card__name {
+  font-weight: 700;
+  font-size: 0.95em;
+}
+
+.host-player-card__badge {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.host-player-card__badge--ack {
+  background: #d4edda;
+  color: #155724;
+}
+.host-player-card__badge--waiting {
+  background: #f8f9fa;
+  color: #666;
+}
+.host-player-card__badge--voted {
+  background: #cce5ff;
+  color: #004085;
+}
+.host-player-card__badge--acted {
+  background: #fff3cd;
+  color: #856404;
+}
+.host-player-card__badge--npc {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+/* ── Character / team info ── */
+.host-player-card__character {
+  font-size: 0.85em;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.host-player-card__character-hidden {
+  color: #999;
+  font-style: italic;
+}
+
+.host-player-card__player-name {
+  font-size: 0.8em;
+  color: #666;
+  font-weight: 400;
+}
+
+.host-player-card__team {
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.host-player-card__team--infiltrator {
+  color: #c0392b;
+}
+.host-player-card__team--innocent {
+  color: #27ae60;
+}
+
+/* ── Vote display ── */
+.host-player-card__vote {
+  font-size: 0.8em;
+  opacity: 0.85;
+}
+
+/* ── Grid layout for all cards ── */
+.host-player-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}

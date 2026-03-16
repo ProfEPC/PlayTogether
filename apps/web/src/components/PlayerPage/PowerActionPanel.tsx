@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import type { RoomState, Character } from "../../types/room";
-import { getVillagerCenterPlayers } from "../../utils/roleTeamHelper";
+import { getInnocentNPCs } from "../../utils/roleTeamHelper";
 import {
   getSelectedCount,
   getDescriptionWithQuantity,
@@ -26,7 +26,7 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
     selectedTargets,
     isSubmitting,
     handleSelectPlayer,
-    handleSelectCenter,
+    handleSelectNPC,
     handleRandom,
     handleSubmit,
   } = usePowerTargetSelection(0);
@@ -60,13 +60,13 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
             Select {fullPowerDef.item ? `${fullPowerDef.item}s` : "Players"}
           </h4>
           <div className="button-grid">
-            {/* Role Spotlight (index 20): Show villager players + villager center roles */}
+            {/* Role Spotlight (index 20): Show innocent players + innocent NPC roles */}
             {fullPowerDef.index === 20 ? (
               <>
                 {validation.roomState.players
                   .filter(
                     (p) =>
-                      p.character?.team === "villager" &&
+                      p.character?.team === "innocent" &&
                       p.socketId !== mySocketId,
                   )
                   .map((player) => {
@@ -84,7 +84,7 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
                       </button>
                     );
                   })}
-                {getVillagerCenterPlayers(validation.roomState.players).map(
+                {getInnocentNPCs(validation.roomState.players).map(
                   (player) => {
                     const isSelected = selectedTargets.players.includes(
                       player.socketId,
@@ -126,23 +126,23 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
         </div>
       )}
 
-      {fullPowerDef.where === "Center" && (
-        <div className="center-targets">
+      {fullPowerDef.where === "NPC" && (
+        <div className="npc-targets">
           <h4>
             Select{" "}
-            {fullPowerDef.item ? `${fullPowerDef.item}s` : "Center Roles"}
+            {fullPowerDef.item ? `${fullPowerDef.item}s` : "NPC Roles"}
           </h4>
           <div className="button-grid">
-            {[1, 2, 3].map((centerNum) => {
-              const isSelected = selectedTargets.centers.includes(centerNum);
+            {[1, 2, 3].map((npcNum) => {
+              const isSelected = selectedTargets.npcs.includes(npcNum);
               return (
                 <button
-                  key={`center-${centerNum}`}
-                  className={`center-button ${isSelected ? "selected" : ""}`}
-                  onClick={() => handleSelectCenter(centerNum)}
+                  key={`npc-${npcNum}`}
+                  className={`npc-button ${isSelected ? "selected" : ""}`}
+                  onClick={() => handleSelectNPC(npcNum)}
                   disabled={isSubmitting}
                 >
-                  Center {centerNum}
+                  NPC {npcNum}
                 </button>
               );
             })}

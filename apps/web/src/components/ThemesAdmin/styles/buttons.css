@@ -1,0 +1,47 @@
+/**
+ * ThemesAdmin — action buttons (save, edit, cancel, delete)
+ */
+
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.save-button,
+.edit-button {
+  flex: 1;
+  padding: 0.75rem;
+  background: #1e5a96;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.save-button:hover,
+.edit-button:hover {
+  background: #173f6b;
+}
+
+.cancel-button,
+.delete-button {
+  flex: 1;
+  padding: 0.75rem;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.cancel-button:hover,
+.delete-button:hover {
+  background: #c82333;
+}

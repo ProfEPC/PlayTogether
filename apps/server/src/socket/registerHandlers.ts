@@ -18,7 +18,7 @@ import { registerLifecycleHandlers } from "./handlers/lifecycleHandlers";
  * - gameControlHandlers:   Start, reset, next round
  * - gameConfigHandlers:    Game selection, duration, max players, options
  * - playerPhaseHandlers:   Ready toggle, role ack, mayhem ack
- * - playerPowerHandlers:   Power submission
+ * - playerPowerHandlers:   Power usage
  * - lifecycleHandlers:     Connect / disconnect
  */
 export function registerSocketHandlers(io: Server) {

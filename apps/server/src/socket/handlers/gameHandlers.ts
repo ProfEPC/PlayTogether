@@ -21,10 +21,10 @@ export function registerGameHandlers(io: Server, socket: Socket) {
 }
 
 /**
- * Register submission handlers — kept for API compatibility.
+ * Register vote handlers — kept for API compatibility.
  * playerPowerHandlers is already registered in registerSocketHandlers,
  * so this is intentionally a no-op to avoid duplicate listeners.
  */
 export function registerSubmissionHandlers(_io: Server, _socket: Socket) {
-  // no-op — power submission is registered via registerSocketHandlers
+  // no-op — power vote is registered via registerSocketHandlers
 }

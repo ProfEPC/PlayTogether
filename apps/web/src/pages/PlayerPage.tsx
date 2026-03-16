@@ -62,7 +62,7 @@ export default function PlayerPage() {
   const [myCharacter, setMyCharacter] = useState<{
     name: string;
     description: string;
-    team?: "villager" | "infiltrator";
+    team?: "innocent" | "infiltrator";
   } | null>(null);
 
   // Game timer countdown - updates every 500ms during mayhem/voting phases
@@ -80,33 +80,39 @@ export default function PlayerPage() {
     null,
   );
 
-  // Voting phase state - voteOptions includes all players plus "No Infiltrator" option
+  // Voting phase state - voteOptions includes human players plus "No Infiltrator" option
+  // NPCs are not valid vote targets
   const voteOptions = useMemo(() => {
     if (!roomState) return [] as { id: string; label: string }[];
-    const playerOptions = roomState.players.map((p) => ({
-      id: p.socketId,
-      label: p.name,
-    }));
+    const playerOptions = roomState.players
+      .filter((p) => !p.isNPC)
+      .map((p) => ({
+        id: p.socketId,
+        label: p.name,
+      }));
     return [...playerOptions, { id: "none", label: "No Infiltrator" }];
   }, [roomState]);
 
   // Vote grouping for results display - shows who voted for each player/option
+  // NPCs are excluded — they don't vote and aren't vote targets
   const voteGroups = useMemo(() => {
     if (!roomState)
       return [] as { targetId: string; label: string; voters: string[] }[];
-    const groups = roomState.players.map((p) => ({
-      targetId: p.socketId,
-      label: p.name,
-      voters: [] as string[],
-    }));
+    const groups = roomState.players
+      .filter((p) => !p.isNPC)
+      .map((p) => ({
+        targetId: p.socketId,
+        label: p.name,
+        voters: [] as string[],
+      }));
     groups.push({ targetId: "none", label: "No Infiltrator", voters: [] });
     return groups;
   }, [roomState]);
 
   // Player's vote selection and submission state
-  type Submission = { value: string };
+  type Vote = { value: string };
   const [selectedVote, setSelectedVote] = useState<string | null>(null);
-  const [mySubmission, setMySubmission] = useState<Submission | null>(null);
+  const [myVote, setMyVote] = useState<Vote | null>(null);
 
   // UI state for copy button feedback
   const [copiedRoomCode, setCopiedRoomCode] = useState(false);
@@ -136,10 +142,11 @@ export default function PlayerPage() {
     onPowerResult: (payload) => {
       // Handle character power learns (new format)
       if (payload.learns && payload.learns.length > 0) {
-        const learnTexts = payload.learns.map(
-          (learn) =>
-            `${learn.targetPlayerName || `Center ${learn.targetCenter}`} is ${learn.learned}`,
-        );
+        const learnTexts = payload.learns.map((learn) => {
+          const name = learn.targetPlayerName || "Unknown";
+          const where = learn.where ? ` (${learn.where})` : "";
+          return `${name}${where} is ${learn.learned}`;
+        });
         setLearnedInfo(learnTexts.join(", "));
       }
       // Handle old-style power results
@@ -333,11 +340,7 @@ export default function PlayerPage() {
             roomState={roomState}
             voteOptions={voteOptions}
             selectedVote={selectedVote}
-            mySubmission={
-              mySubmission
-                ? { value: mySubmission.value, submittedAt: 0 }
-                : null
-            }
+            myVote={myVote ? { value: myVote.value, submittedAt: 0 } : null}
             gameId={roomState.game.gameId}
             secondsLeft={secondsLeft}
             onSelectVote={setSelectedVote}
@@ -347,7 +350,7 @@ export default function PlayerPage() {
                 roomState,
                 selectedVote,
                 setStatus,
-                setMySubmission,
+                setMyVote,
               )
             }
           />

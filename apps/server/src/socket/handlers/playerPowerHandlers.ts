@@ -1,6 +1,6 @@
 /**
  * Player Power Handlers
- * Handles power submission events during mayhem: game:submitPower
+ * Handles power usage events during mayhem: game:submitPower
  */
 
 import type { Server, Socket } from "socket.io";
@@ -21,12 +21,12 @@ export function registerPlayerPowerHandlers(io: Server, socket: Socket) {
       roomCode,
       powerName,
       targetPlayers,
-      targetCenter,
+      targetNPCs,
     }: {
       roomCode: string;
       powerName: string;
       targetPlayers?: string[];
-      targetCenter?: string[];
+      targetNPCs?: string[];
     }) => {
       const room = validateRoom(roomCode);
       if (!room) return;
@@ -96,8 +96,8 @@ export function registerPlayerPowerHandlers(io: Server, socket: Socket) {
 
       console.log(`[PowerHandler] Power validation PASSED, executing...`);
 
-      //* Combine player and center targets into a single array of player IDs
-      const allTargets = [...(targetPlayers || []), ...(targetCenter || [])];
+      //* Combine player and NPC targets into a single array of player IDs
+      const allTargets = [...(targetPlayers || []), ...(targetNPCs || [])];
 
       //* Execute the power (handles both Learn and Reveal based on powerSlot.type)
       executeCharacterPower(io, room, player, powerName, allTargets, powerSlot);

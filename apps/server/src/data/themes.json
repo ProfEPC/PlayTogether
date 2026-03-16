@@ -6,8 +6,8 @@
     "teamTerms": {
       "infiltratorSingular": "Alien",
       "infiltratorPlural": "Aliens",
-      "villagerSingular": "Crew",
-      "villagerPlural": "Crew"
+      "innocentSingular": "Crew",
+      "innocentPlural": "Crew"
     },
     "phaseText": {
       "revealPrompt": "Briefing complete: acknowledge when you've reviewed your role.",

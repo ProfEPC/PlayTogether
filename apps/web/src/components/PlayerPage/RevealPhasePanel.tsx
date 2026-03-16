@@ -10,7 +10,7 @@ interface RevealPhasePanelProps {
   myCharacter: {
     name: string;
     description: string;
-    team?: "villager" | "infiltrator";
+    team?: "innocent" | "infiltrator";
   } | null;
   setStatus: (status: string) => void;
 }
@@ -44,15 +44,15 @@ export const RevealPhasePanel: FC<RevealPhasePanelProps> = ({
           onClick={() =>
             acknowledgeRoleAction(socket, roomState, null, setStatus)
           }
-          disabled={!character || !!myPlayer?.roleAcknowledged}
+          disabled={!character || !!myPlayer?.characterAcknowledged}
         >
           I have seen my character
         </button>
       </div>
       <div style={{ opacity: 0.8 }}>
         Acknowledged:{" "}
-        {roomState?.players.filter((p) => p.roleAcknowledged).length}/
-        {roomState?.players.length}
+        {roomState?.players.filter((p) => p.characterAcknowledged).length}/
+        {roomState?.playerCount}
       </div>
     </div>
   );

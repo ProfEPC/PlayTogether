@@ -101,47 +101,51 @@ export function HostPlayersPanel({
 
       {!playersCollapsed && (
         <ul style={{ paddingLeft: 18, margin: "8px 0 0 0" }}>
-          {roomState.players.map((p) => (
-            <li
-              key={p.socketId}
-              style={{
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-                padding: "6px 0",
-              }}
-            >
-              <span>
-                {p.name}{" "}
-                <span style={{ opacity: 0.6 }}>({p.socketId.slice(0, 6)})</span>
-                <span style={{ marginLeft: 8, opacity: 0.8 }}>
-                  {roomState.game.started ? (
-                    p.roleAcknowledged ? (
-                      <strong style={{ color: "green" }}>Acknowledged</strong>
-                    ) : (
-                      <span style={{ color: "#666" }}>Not Acknowledged</span>
-                    )
-                  ) : p.ready ? (
-                    <strong style={{ color: "green" }}>ready</strong>
-                  ) : (
-                    <span style={{ color: "#666" }}>not ready</span>
-                  )}
-                </span>
-              </span>
-
-              <button
-                onClick={() =>
-                  socket.emit("room:kick", {
-                    roomCode: roomState.roomCode,
-                    targetSocketId: p.socketId,
-                  })
-                }
-                style={{ marginLeft: "auto" }}
+          {roomState.players
+            .filter((p) => !p.isNPC)
+            .map((p) => (
+              <li
+                key={p.socketId}
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  padding: "6px 0",
+                }}
               >
-                Kick
-              </button>
-            </li>
-          ))}
+                <span>
+                  {p.name}{" "}
+                  <span style={{ opacity: 0.6 }}>
+                    ({p.socketId.slice(0, 6)})
+                  </span>
+                  <span style={{ marginLeft: 8, opacity: 0.8 }}>
+                    {roomState.game.started ? (
+                      p.characterAcknowledged ? (
+                        <strong style={{ color: "green" }}>Acknowledged</strong>
+                      ) : (
+                        <span style={{ color: "#666" }}>Not Acknowledged</span>
+                      )
+                    ) : p.ready ? (
+                      <strong style={{ color: "green" }}>ready</strong>
+                    ) : (
+                      <span style={{ color: "#666" }}>not ready</span>
+                    )}
+                  </span>
+                </span>
+
+                <button
+                  onClick={() =>
+                    socket.emit("room:kick", {
+                      roomCode: roomState.roomCode,
+                      targetSocketId: p.socketId,
+                    })
+                  }
+                  style={{ marginLeft: "auto" }}
+                >
+                  Kick
+                </button>
+              </li>
+            ))}
         </ul>
       )}
       {/* Pending join requests */}

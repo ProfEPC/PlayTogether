@@ -32,7 +32,7 @@ export interface PowerSlot {
 export interface CharacterInCreation {
   name: string;
   description: string;
-  team: "villager" | "infiltrator" | null; // null if unique win condition
+  team: "innocent" | "infiltrator" | null; // null if unique win condition
   infectedUponSight: boolean; // Character-level modifier (only available when a power with infected property is chosen)
   powerSlots: PowerSlot[]; // 0-3 slots
   theme?: string; // ? Theme identifier for content organization (e.g., "debug", "coop_office", "heist")

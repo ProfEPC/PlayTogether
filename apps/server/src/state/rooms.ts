@@ -30,7 +30,7 @@ export function createRoomHosted(
 
       endsAt: null,
       gameId: null,
-      unusedRoles: [],
+      unusedTeams: [],
       winner: undefined,
     },
 

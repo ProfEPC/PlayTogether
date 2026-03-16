@@ -2,7 +2,7 @@
  * Learn Powers (indices 1-16)
  *
  * Powers that allow players to discover information about other players,
- * the center, or game state. These are generally low-complexity information-gathering abilities.
+ * NPCs, or game state. These are generally low-complexity information-gathering abilities.
  */
 
 import type { InfiltrationPower } from "./types";
@@ -28,15 +28,15 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     vault: false,
     complexity: 2,
   },
-  /** [2] Vault Peek - Learn # Center's Roles | Item: Role, Where: Center, Min: 1, Max: 3, Infected, Complexity: 2 */
+  /** [2] Vault Peek - Learn # NPC's Roles | Item: Role, Where: NPC, Min: 1, Max: 3, Infected, Complexity: 2 */
   {
     index: 2,
     initiative: "10 90",
     powerName: "Vault Peek",
-    description: "Learn # Center's Roles",
+    description: "Learn # NPC's Roles",
     type: "Learn",
     item: "Role",
-    where: "Center",
+    where: "NPC",
     min: 1,
     max: 3,
     fixedAction: false,
@@ -88,15 +88,15 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     vault: false,
     complexity: 2,
   },
-  /** [5] Vault Allegiance - Learn # Center's Teams | Item: Team, Where: Center, Min: 1, Max: 3, Infected, Complexity: 2 */
+  /** [5] Vault Allegiance - Learn # NPC's Teams | Item: Team, Where: NPC, Min: 1, Max: 3, Infected, Complexity: 2 */
   {
     index: 5,
     initiative: "10 90",
     powerName: "Vault Allegiance",
-    description: "Learn # Center's Teams",
+    description: "Learn # NPC's Teams",
     type: "Learn",
     item: "Team",
-    where: "Center",
+    where: "NPC",
     min: 1,
     max: 3,
     fixedAction: false,
@@ -268,12 +268,12 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     vault: false,
     complexity: 2,
   },
-  /** [14] Who's Missing - Learn up to # role are Center | Item: Amount, Where: Role, Min: 1, Max: 99, Infected, Complexity: 2 */
+  /** [14] Who's Missing - Learn up to # role are NPC | Item: Amount, Where: Role, Min: 1, Max: 99, Infected, Complexity: 2 */
   {
     index: 14,
     initiative: "10 90",
     powerName: "Who's Missing",
-    description: "Learn up to # role are Center",
+    description: "Learn up to # role are NPC",
     type: "Learn",
     item: "Amount",
     where: "Role",
@@ -288,12 +288,12 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     vault: false,
     complexity: 2,
   },
-  /** [15] Absentee Ballot - Learn up to # Team are Center | Item: Amount, Where: Association, Min: 1, Max: 3, Infected, Complexity: 2 */
+  /** [15] Absentee Ballot - Learn up to # Team are NPC | Item: Amount, Where: Association, Min: 1, Max: 3, Infected, Complexity: 2 */
   {
     index: 15,
     initiative: "10 90",
     powerName: "Absentee Ballot",
-    description: "Learn up to # Team are Center",
+    description: "Learn up to # Team are NPC",
     type: "Learn",
     item: "Amount",
     where: "Association",

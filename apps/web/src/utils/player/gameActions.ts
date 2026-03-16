@@ -4,7 +4,7 @@
  */
 
 import type { Socket } from "socket.io-client";
-import type { RoomState, InfiltrationTeam } from "../../types/room";
+import type { RoomState } from "../../types/room";
 
 /**
  * Submit a vote for the voting phase
@@ -35,13 +35,11 @@ export function submitVoteAction(
  * Acknowledge that the player has seen their assigned character
  * @param socket - Socket.io client instance
  * @param roomState - Current room state
- * @param myTeam - The player's assigned team (deprecated, not used)
  * @param onStatusUpdate - Callback to update status message
  */
 export function acknowledgeRoleAction(
   socket: Socket,
   roomState: RoomState | null,
-  myTeam: InfiltrationTeam | null,
   onStatusUpdate: (status: string) => void,
 ) {
   if (!roomState) return;

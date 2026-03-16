@@ -6,10 +6,9 @@
 import type { Server, Socket } from "socket.io";
 import { GAME_RULES } from "../../state/gameRules";
 import type { RoomState } from "../../state/types";
-import { emitRoomState, endRound } from "../roomActions";
+import { emitRoomState, endRound, clearPhaseTimer } from "../roomActions";
 import { beginRoleReveal, beginMayhem } from "../gamePhaseHandlers";
 import { GAME_EVENTS, ERROR_EVENTS } from "../../constants/socketEvents";
-import { resetPlayerPowers } from "../powerLogic/index";
 import {
   validateRoom,
   validateIsHost,
@@ -46,11 +45,11 @@ export function registerGameControlHandlers(io: Server, socket: Socket) {
     if (room.settings.gameKey === "infiltration") {
       const selectedCharacters =
         room.settings.gameOptions.infiltration?.selectedCharacters || [];
-      const requiredCharacters = room.players.length + 3; // 3 center roles
+      const requiredCharacters = room.players.length + 3; // 3 NPCs
 
       if (selectedCharacters.length !== requiredCharacters) {
         socket.emit(ERROR_EVENTS.BAD_REQUEST, {
-          message: `Need exactly ${requiredCharacters} characters selected (${room.players.length} players + 3 center). You have ${selectedCharacters.length}.`,
+          message: `Need exactly ${requiredCharacters} characters selected (${room.players.length} players + 3 NPCs). You have ${selectedCharacters.length}.`,
         });
         return;
       }
@@ -72,21 +71,45 @@ export function registerGameControlHandlers(io: Server, socket: Socket) {
 
     if (!validateIsHost(socket, room)) return;
 
+    //* Cancel any running phase timer
+    clearPhaseTimer(room.roomCode);
+
     room.locked = false;
+
+    //* Remove NPC players added during character reveal
+    room.players = room.players.filter((p) => !p.isNPC);
+
+    //* Clear all per-player game state
+    room.players.forEach((p) => {
+      p.vote = undefined;
+      p.team = undefined;
+      p.characterAcknowledged = undefined;
+      p.mayhemAcknowledged = undefined;
+      p.character = undefined;
+      p.usedPower = undefined;
+      p.characterRevealed = undefined;
+      p.protected = undefined;
+      p.blocked = undefined;
+      p.swapped = undefined;
+      p.actedThisRound = undefined;
+      p.powerUsed = undefined;
+      p.learnsThisGame = undefined;
+      p.ready = false;
+    });
+
+    //* Reset game state back to lobby
     room.game.started = false;
     room.game.phase = "lobby";
     room.game.endsAt = null;
     room.game.gameId = null;
     room.game.winner = undefined;
-    room.players.forEach((p: any) => {
-      p.submission = undefined;
-      p.role = undefined;
-      p.roleAcknowledged = undefined;
-      p.mayhemAcknowledged = undefined;
-    });
-
-    //* Reset all powers
-    resetPlayerPowers(room);
+    room.game.prompt = undefined;
+    room.game._teams = undefined;
+    room.game.votes = undefined;
+    room.game.mayhemAck = undefined;
+    room.game.usedPowers = undefined;
+    room.game.powerSummary = undefined;
+    room.game.unusedTeams = undefined;
 
     emitRoomState(io, room.roomCode);
   });

@@ -6,8 +6,8 @@
     "teamTerms": {
       "infiltratorSingular": "Infiltrator",
       "infiltratorPlural": "Infiltrators",
-      "villagerSingular": "Villager",
-      "villagerPlural": "Villagers"
+      "innocentSingular": "Innocent",
+      "innocentPlural": "Innocents"
     },
     "phaseText": {
       "revealPrompt": "Your role has been revealed!",
@@ -20,16 +20,14 @@
       "mayhem": "Mayhem",
       "voting": "Voting"
     },
-    "cardTerms": {
-      "centerCardSingular": "Center Card",
-      "centerCardPlural": "Center Cards",
-      "vaultCardSingular": "Vault Card",
-      "vaultCardPlural": "Vault Cards"
+    "characterTerms": {
+      "npcSingular": "NPC",
+      "npcPlural": "NPCs"
     },
     "playerTerms": {
       "playerOuted": "Player outed as {role}",
       "infiltratorWinText": "Infiltrators win!",
-      "villagersWinText": "Villagers win!"
+      "innocentsWinText": "Innocents win!"
     },
     "createdAt": "2024-01-01T00:00:00Z",
     "updatedAt": "2024-01-01T00:00:00Z"
@@ -41,8 +39,8 @@
     "teamTerms": {
       "infiltratorSingular": "Corporate Spy",
       "infiltratorPlural": "Corporate Spies",
-      "villagerSingular": "Employee",
-      "villagerPlural": "Employees"
+      "innocentSingular": "Employee",
+      "innocentPlural": "Employees"
     },
     "phaseText": {
       "revealPrompt": "Your corporate role has been revealed!",
@@ -55,16 +53,14 @@
       "mayhem": "Infiltration",
       "voting": "Accusation"
     },
-    "cardTerms": {
-      "centerCardSingular": "Safe",
-      "centerCardPlural": "Safes",
-      "vaultCardSingular": "Vault File",
-      "vaultCardPlural": "Vault Files"
+    "characterTerms": {
+      "npcSingular": "Safe",
+      "npcPlural": "Safes"
     },
     "playerTerms": {
       "playerOuted": "{role} exposed!",
       "infiltratorWinText": "Spies escaped with the data!",
-      "villagersWinText": "Spies caught!"
+      "innocentsWinText": "Spies caught!"
     },
     "createdAt": "2024-01-01T00:00:00Z",
     "updatedAt": "2024-01-01T00:00:00Z"
@@ -76,8 +72,8 @@
     "teamTerms": {
       "infiltratorSingular": "Thief",
       "infiltratorPlural": "Thieves",
-      "villagerSingular": "Guard",
-      "villagerPlural": "Guards"
+      "innocentSingular": "Guard",
+      "innocentPlural": "Guards"
     },
     "phaseText": {
       "revealPrompt": "Your position in this heist has been revealed!",
@@ -90,16 +86,14 @@
       "mayhem": "Heist",
       "voting": "Accusation"
     },
-    "cardTerms": {
-      "centerCardSingular": "Treasure",
-      "centerCardPlural": "Treasures",
-      "vaultCardSingular": "Loot",
-      "vaultCardPlural": "Loot"
+    "characterTerms": {
+      "npcSingular": "Treasure",
+      "npcPlural": "Treasures"
     },
     "playerTerms": {
       "playerOuted": "{role} compromised!",
       "infiltratorWinText": "Thieves made off with the goods!",
-      "villagersWinText": "Thieves captured!"
+      "innocentsWinText": "Thieves captured!"
     },
     "createdAt": "2024-01-01T00:00:00Z",
     "updatedAt": "2024-01-01T00:00:00Z"

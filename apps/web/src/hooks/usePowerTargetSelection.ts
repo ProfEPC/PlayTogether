@@ -2,9 +2,9 @@ import { useState } from "react";
 import type { RoomState } from "../types/room";
 import {
   togglePlayerTarget,
-  toggleCenterTarget,
+  toggleNPCTarget,
   getRandomPlayerTargets,
-  getRandomCenterTargets,
+  getRandomNPCTargets,
   submitPowerAction,
   type SelectedTargets,
 } from "../utils/powerActionHelpers";
@@ -14,7 +14,7 @@ export interface UsePowerTargetSelectionReturn {
   isSubmitting: boolean;
   selected: number;
   handleSelectPlayer: (socketId: string) => void;
-  handleSelectCenter: (centerNum: number) => void;
+  handleSelectNPC: (npcNum: number) => void;
   handleRandom: (
     roomState: RoomState,
     mySocketId: string | undefined,
@@ -36,7 +36,7 @@ export function usePowerTargetSelection(
 ): UsePowerTargetSelectionReturn {
   const [selectedTargets, setSelectedTargets] = useState<SelectedTargets>({
     players: [],
-    centers: [],
+    npcs: [],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,9 +47,9 @@ export function usePowerTargetSelection(
     );
   };
 
-  const handleSelectCenter = (centerNum: number) => {
+  const handleSelectNPC = (npcNum: number) => {
     setSelectedTargets(
-      toggleCenterTarget(centerNum, selectedTargets, actualQuantity),
+      toggleNPCTarget(npcNum, selectedTargets, actualQuantity),
     );
   };
 
@@ -69,11 +69,11 @@ export function usePowerTargetSelection(
         ...selectedTargets,
         players: randomPlayers,
       });
-    } else if (powerWhere === "Center") {
-      const randomCenters = getRandomCenterTargets(actualQuantity);
+    } else if (powerWhere === "NPC") {
+      const randomNPCs = getRandomNPCTargets(actualQuantity);
       setSelectedTargets({
         ...selectedTargets,
-        centers: randomCenters,
+        npcs: randomNPCs,
       });
     }
   };
@@ -94,9 +94,9 @@ export function usePowerTargetSelection(
   return {
     selectedTargets,
     isSubmitting,
-    selected: selectedTargets.players.length + selectedTargets.centers.length,
+    selected: selectedTargets.players.length + selectedTargets.npcs.length,
     handleSelectPlayer,
-    handleSelectCenter,
+    handleSelectNPC,
     handleRandom,
     handleSubmit,
   };

@@ -5,7 +5,7 @@ import type { RoleConfig } from "../../types/room";
 interface CharacterValidationPanelProps {
   playerCount: number;
   enabledRoleIds: Set<number>;
-  roles: (RoleConfig & { team?: "villager" | "infiltrator" })[];
+  roles: (RoleConfig & { team?: "innocent" | "infiltrator" })[];
 }
 
 /* ── tiny status dot ──────────────────────────────────────────────── */

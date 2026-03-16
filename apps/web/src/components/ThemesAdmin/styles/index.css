@@ -1,0 +1,11 @@
+/**
+ * ThemesAdmin styles — barrel import
+ *
+ * Aggregates all partials so consumers only need one import:
+ *   import "./styles/index.css";
+ */
+@import "./layout.css";
+@import "./message.css";
+@import "./themesList.css";
+@import "./themeEditor.css";
+@import "./buttons.css";

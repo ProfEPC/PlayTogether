@@ -10,7 +10,8 @@ export const GAMES: GameDefinition[] = [
   {
     key: "infiltration",
     title: "Infiltration",
-    description: "Social deduction with roles like infiltrator, civilian, and special powers",
+    description:
+      "Social deduction with roles like infiltrator, innocent, and special powers",
   },
   {
     key: "odd_one_out",

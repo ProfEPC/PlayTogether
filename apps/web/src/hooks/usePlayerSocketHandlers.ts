@@ -14,7 +14,7 @@ interface UsePlayerSocketHandlersProps {
     role: {
       name: string;
       description: string;
-      team?: "villager" | "infiltrator";
+      team?: "innocent" | "infiltrator";
     };
   }) => void;
   onPowerResult: (payload: {
@@ -24,7 +24,7 @@ interface UsePlayerSocketHandlersProps {
       powerName: string;
       targetPlayer?: string;
       targetPlayerName?: string;
-      targetCenter?: number;
+      targetNPC?: number;
       learned: string;
       learnedAt: number;
       item?: string;
@@ -72,7 +72,7 @@ export function usePlayerSocketHandlers(props: UsePlayerSocketHandlersProps) {
         powerName: string;
         targetPlayer?: string;
         targetPlayerName?: string;
-        targetCenter?: number;
+        targetNPC?: number;
         learned: string;
         learnedAt: number;
         item?: string;
@@ -98,12 +98,12 @@ export function usePlayerSocketHandlers(props: UsePlayerSocketHandlersProps) {
     socket.on("room:joinDenied", (payload) => {
       propsRef.current.onJoinDenied?.(payload);
     });
-    socket.on("player:role", (payload: unknown) => {
+    socket.on("player:character", (payload: unknown) => {
       const rolePayload = payload as {
         role: {
           name: string;
           description: string;
-          team?: "villager" | "infiltrator";
+          team?: "innocent" | "infiltrator";
         };
       };
       if (rolePayload.role) {
@@ -121,7 +121,7 @@ export function usePlayerSocketHandlers(props: UsePlayerSocketHandlersProps) {
           powerName: string;
           targetPlayer?: string;
           targetPlayerName?: string;
-          targetCenter?: number;
+          targetNPC?: number;
           learned: string;
           learnedAt: number;
           item?: string;
@@ -129,6 +129,12 @@ export function usePlayerSocketHandlers(props: UsePlayerSocketHandlersProps) {
         }>;
       };
       console.log("[Client] Reveal broadcast received:", revealPayload);
+      //* Surface reveal results to the UI — treat like a power result
+      propsRef.current.onPowerResult({
+        type: "reveal",
+        powerName: revealPayload.powerName,
+        learns: revealPayload.learns,
+      });
     });
 
     // * Debug: log all events
@@ -146,7 +152,7 @@ export function usePlayerSocketHandlers(props: UsePlayerSocketHandlersProps) {
       socket.off("disconnect", onDisconnect);
       socket.off("room:state", onState);
       socket.off("room:joinDenied");
-      socket.off("player:role");
+      socket.off("player:character");
       socket.off("power:result", onPower);
       socket.off("power:prompt", onPowerPrompt);
       socket.off("reveal:broadcast");

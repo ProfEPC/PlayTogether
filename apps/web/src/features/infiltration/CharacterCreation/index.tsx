@@ -95,7 +95,7 @@ export default function CharacterCreation() {
     setCharacter({ ...character, description: e.target.value });
   };
 
-  const handleTeamChange = (team: "villager" | "infiltrator") => {
+  const handleTeamChange = (team: "innocent" | "infiltrator") => {
     setCharacter({ ...character, team });
   };
 
@@ -214,10 +214,10 @@ export default function CharacterCreation() {
               <label>Team:</label>
               <div className="team-buttons">
                 <button
-                  className={`team-button ${character.team === "villager" ? "active" : ""}`}
-                  onClick={() => handleTeamChange("villager")}
+                  className={`team-button ${character.team === "innocent" ? "active" : ""}`}
+                  onClick={() => handleTeamChange("innocent")}
                 >
-                  Villager
+                  Innocent
                 </button>
                 <button
                   className={`team-button ${character.team === "infiltrator" ? "active" : ""}`}

@@ -13,8 +13,8 @@ export const DEBUG_THEME: GameTheme = {
   teamTerms: {
     infiltratorSingular: "Infiltrator",
     infiltratorPlural: "Infiltrators",
-    villagerSingular: "Villager",
-    villagerPlural: "Villagers",
+    innocentSingular: "Innocent",
+    innocentPlural: "Innocents",
   },
   phaseText: {
     revealPrompt: "Role reveal: acknowledge when you've seen your role.",
@@ -27,16 +27,14 @@ export const DEBUG_THEME: GameTheme = {
     mayhem: "Mayhem",
     voting: "Voting",
   },
-  cardTerms: {
-    centerCardSingular: "Center Card",
-    centerCardPlural: "Center Cards",
-    vaultCardSingular: "Vault Card",
-    vaultCardPlural: "Vault Cards",
+  characterTerms: {
+    npcSingular: "NPC",
+    npcPlural: "NPCs",
   },
   playerTerms: {
     playerOuted: "Player outed as {role}",
     infiltratorWinText: "Infiltrators win!",
-    villagersWinText: "Villagers win!",
+    innocentsWinText: "Innocents win!",
   },
 };
 
@@ -48,8 +46,8 @@ export const COOP_OFFICE_THEME: GameTheme = {
   teamTerms: {
     infiltratorSingular: "Corporate Spy",
     infiltratorPlural: "Corporate Spies",
-    villagerSingular: "Employee",
-    villagerPlural: "Employees",
+    innocentSingular: "Employee",
+    innocentPlural: "Employees",
   },
   phaseText: {
     revealPrompt:
@@ -64,16 +62,14 @@ export const COOP_OFFICE_THEME: GameTheme = {
     mayhem: "Infiltration",
     voting: "Accusation",
   },
-  cardTerms: {
-    centerCardSingular: "Safe",
-    centerCardPlural: "Safes",
-    vaultCardSingular: "Vault File",
-    vaultCardPlural: "Vault Files",
+  characterTerms: {
+    npcSingular: "Safe",
+    npcPlural: "Safes",
   },
   playerTerms: {
     playerOuted: "{role} exposed!",
     infiltratorWinText: "Spies escaped with the data!",
-    villagersWinText: "Spies caught!",
+    innocentsWinText: "Spies caught!",
   },
 };
 
@@ -85,8 +81,8 @@ export const HEIST_THEME: GameTheme = {
   teamTerms: {
     infiltratorSingular: "Thief",
     infiltratorPlural: "Thieves",
-    villagerSingular: "Guard",
-    villagerPlural: "Guards",
+    innocentSingular: "Guard",
+    innocentPlural: "Guards",
   },
   phaseText: {
     revealPrompt:
@@ -100,16 +96,14 @@ export const HEIST_THEME: GameTheme = {
     mayhem: "Heist",
     voting: "Accusation",
   },
-  cardTerms: {
-    centerCardSingular: "Treasure",
-    centerCardPlural: "Treasures",
-    vaultCardSingular: "Loot",
-    vaultCardPlural: "Loot",
+  characterTerms: {
+    npcSingular: "Treasure",
+    npcPlural: "Treasures",
   },
   playerTerms: {
     playerOuted: "{role} compromised!",
     infiltratorWinText: "Thieves made off with the goods!",
-    villagersWinText: "Thieves captured!",
+    innocentsWinText: "Thieves captured!",
   },
 };
 

@@ -3,7 +3,7 @@ import type { RoomState } from "../types/room";
 
 export interface SelectedTargets {
   players: string[];
-  centers: number[];
+  npcs: number[];
 }
 
 /**
@@ -38,33 +38,33 @@ export function togglePlayerTarget(
 }
 
 /**
- * Toggle a center target in/out of selection
+ * Toggle an NPC target in/out of selection
  */
-export function toggleCenterTarget(
-  centerNum: number,
+export function toggleNPCTarget(
+  npcNum: number,
   selectedTargets: SelectedTargets,
   actualQuantity: number,
 ): SelectedTargets {
-  const centerTargets = selectedTargets.centers;
+  const npcTargets = selectedTargets.npcs;
 
-  if (centerTargets.includes(centerNum)) {
+  if (npcTargets.includes(npcNum)) {
     return {
       ...selectedTargets,
-      centers: centerTargets.filter((c) => c !== centerNum),
+      npcs: npcTargets.filter((c) => c !== npcNum),
     };
   }
 
-  if (centerTargets.length < actualQuantity) {
+  if (npcTargets.length < actualQuantity) {
     return {
       ...selectedTargets,
-      centers: [...centerTargets, centerNum],
+      npcs: [...npcTargets, npcNum],
     };
   }
 
   // At capacity, replace oldest with new
   return {
     ...selectedTargets,
-    centers: [...centerTargets.slice(1), centerNum],
+    npcs: [...npcTargets.slice(1), npcNum],
   };
 }
 
@@ -84,11 +84,11 @@ export function getRandomPlayerTargets(
 }
 
 /**
- * Generate random center targets
+ * Generate random NPC targets
  */
-export function getRandomCenterTargets(quantity: number): number[] {
-  const availableCenters = [1, 2, 3];
-  return availableCenters.sort(() => Math.random() - 0.5).slice(0, quantity);
+export function getRandomNPCTargets(quantity: number): number[] {
+  const availableNPCs = [1, 2, 3];
+  return availableNPCs.sort(() => Math.random() - 0.5).slice(0, quantity);
 }
 
 /**
@@ -102,14 +102,13 @@ export async function submitPowerAction(
 ): Promise<void> {
   const targetPlayers =
     powerWhere === "Player" ? selectedTargets.players : undefined;
-  const targetCenter =
-    powerWhere === "Center" ? selectedTargets.centers : undefined;
+  const targetNPCs = powerWhere === "NPC" ? selectedTargets.npcs : undefined;
 
   socket.emit("game:submitPower", {
     roomCode,
     powerName,
     targetPlayers,
-    targetCenter,
+    targetNPCs,
   });
 }
 
@@ -117,7 +116,7 @@ export async function submitPowerAction(
  * Get total number of selected targets
  */
 export function getSelectedCount(selectedTargets: SelectedTargets): number {
-  return selectedTargets.players.length + selectedTargets.centers.length;
+  return selectedTargets.players.length + selectedTargets.npcs.length;
 }
 
 /**

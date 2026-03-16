@@ -1,5 +1,6 @@
 import type { Server } from "socket.io";
-import type { InfiltrationRole, RoomState } from "../state/types";
+import type { InfiltrationTeam, RoomState } from "../state/types";
+import { NUM_NPCS } from "../state/gameRules";
 import { emitRoomState, endRound, startPhaseTimer } from "./roomActions";
 import { logger } from "../utils/logger";
 import { GAME_PHASES } from "../constants/roles";
@@ -18,7 +19,7 @@ function makeGameId() {
 /**
  * * Begin the mayhem phase where players can use character powers
  * - Sets game started flag and phase to "mayhem"
- * - Initializes empty submissions and acknowledgments
+ * - Initializes empty votes and acknowledgments
  * - No timer: waits for all players to acknowledge completion
  */
 export function beginMayhem(io: Server, code: string, room: RoomState) {
@@ -26,7 +27,7 @@ export function beginMayhem(io: Server, code: string, room: RoomState) {
   room.game.phase = GAME_PHASES.MAYHEM;
   room.game.prompt =
     "MAYHEM ROUND: Take your actions and acknowledge when done.";
-  room.game.submissions = {};
+  room.game.votes = {};
   room.game.mayhemAck = {};
   //* Track which players have used their special powers this round
   room.game.usedPowers = room.game.usedPowers || {};
@@ -98,9 +99,13 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
       player.character = {
         name: characterData.name,
         description: characterData.description || "",
-        team: characterData.team as "villager" | "infiltrator" | undefined,
+        team: characterData.team as "innocent" | "infiltrator" | undefined,
         powers,
       };
+
+      //* Derive infiltration team from character team
+      player.team =
+        characterData.team === "infiltrator" ? "infiltrator" : "innocent";
       console.log(
         `Assigned character "${characterName}" with ${powers.length} powers to player ${player.name}`,
       );
@@ -109,22 +114,25 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
     }
 
     //! Send private character assignment to each player
-    io.to(player.socketId).emit(PLAYER_EVENTS.ROLE, {
+    io.to(player.socketId).emit(PLAYER_EVENTS.CHARACTER, {
       character: player.character,
     });
   }
 
-  //* Create center players for unused characters
-  const centerCharacterNames = shuffledPool.slice(numPlayers);
-  let centerIndex = 0;
-  for (const charName of centerCharacterNames) {
+  //* Create NPC players for unused characters
+  const npcCharacterNames = shuffledPool.slice(
+    numPlayers,
+    numPlayers + NUM_NPCS,
+  );
+  let npcIndex = 0;
+  for (const charName of npcCharacterNames) {
     const charData = getCharacterByName(charName) as any;
     if (charData) {
-      //* Create a synthetic player for the center card
-      const centerPlayer: any = {
-        socketId: `center_${centerIndex}`, //* Fake socket ID for center cards
-        name: `Center ${centerIndex + 1}`,
-        isCenter: true,
+      //* Create a synthetic player for the NPC
+      const npcPlayer: any = {
+        socketId: `npc_${npcIndex}`, //* Fake socket ID for NPCs
+        name: `NPC ${npcIndex + 1}`,
+        isNPC: true,
         ready: true,
         connectedAt: Date.now(),
         lastSeenAt: Date.now(),
@@ -134,17 +142,21 @@ export function beginRoleReveal(io: Server, code: string, room: RoomState) {
           team: charData.team,
           powers: charData.powers || [],
         },
-        role: charData.role as InfiltrationRole,
+        //* Derive team from character data
+        team: (charData.team === "infiltrator"
+          ? "infiltrator"
+          : "innocent") as InfiltrationTeam,
       };
-      room.players.push(centerPlayer);
-      centerIndex++;
+      room.players.push(npcPlayer);
+      npcIndex++;
     }
   }
-  console.log(`Created ${centerIndex} center card players`);
+  console.log(`Created ${npcIndex} NPC players`);
 
   //* Transition to reveal phase where players acknowledge character assignments
   room.game.phase = GAME_PHASES.REVEAL;
-  room.game.prompt = "Role reveal: acknowledge when you've seen your role.";
+  room.game.prompt =
+    "Character reveal: acknowledge when you've seen your character.";
 
   emitRoomState(io, code);
 }
@@ -164,7 +176,7 @@ export function beginVoting(io: Server, code: string, room: RoomState) {
 
   room.game.prompt = "VOTE: Who is the infiltrator? (or choose No Infiltrator)";
 
-  room.game.submissions = {}; //* Reset vote submissions
+  room.game.votes = {}; //* Reset votes
   room.game.endsAt = Date.now() + room.settings.roundDurationMs;
 
   //* Clear previous results/winner for the upcoming round

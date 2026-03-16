@@ -17,8 +17,10 @@ export function useVoteGroups(roomState: RoomState | null): VoteGroup[] {
 
     const groups = new Map<string, VoteGroup>();
 
-    // Initialize a bucket for each player + a "no infiltrator" option
+    // Initialize a bucket for each human player + a "no infiltrator" option
+    // NPCs are excluded — they are not vote targets
     for (const p of roomState.players) {
+      if (p.isNPC) continue;
       groups.set(p.socketId, {
         targetId: p.socketId,
         label: p.name,
@@ -31,10 +33,10 @@ export function useVoteGroups(roomState: RoomState | null): VoteGroup[] {
       voters: [],
     });
 
-    // Fill voters into their chosen bucket
+    // Fill voters into their chosen bucket (only human players vote)
     for (const voter of roomState.players) {
-      if (!voter.submission) continue;
-      const g = groups.get(voter.submission.value);
+      if (voter.isNPC || !voter.vote) continue;
+      const g = groups.get(voter.vote.value);
       if (!g) continue;
       g.voters.push(voter.name);
     }

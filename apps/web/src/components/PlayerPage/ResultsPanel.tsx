@@ -20,11 +20,11 @@ export const ResultsPanel: FC<ResultsPanelProps> = ({
 
   const roleMap: Record<string, string[]> = {};
   roomState.players.forEach((p) => {
-    const role = p.role || "unknown";
+    const role = p.team || "unknown";
     if (!roleMap[role]) roleMap[role] = [];
     roleMap[role].push(p.name);
   });
-  (roomState.game.unusedRoles || []).forEach((role) => {
+  (roomState.game.unusedTeams || []).forEach((role) => {
     if (!roleMap[role]) roleMap[role] = [];
     roleMap[role].push("unused");
   });
@@ -37,11 +37,11 @@ export const ResultsPanel: FC<ResultsPanelProps> = ({
       {roomState.game.winner && (
         <div style={{ marginBottom: 8, fontWeight: 700 }}>
           Winner:{" "}
-          {roomState.game.winner === "crew"
-            ? "Crew (Players)"
+          {roomState.game.winner === "innocents"
+            ? "Innocents (Players)"
             : roomState.game.winner === "infiltrators"
-            ? "Infiltrators"
-            : "No winner"}
+              ? "Infiltrators"
+              : "No winner"}
         </div>
       )}
 
@@ -86,7 +86,7 @@ export const ResultsPanel: FC<ResultsPanelProps> = ({
       </div>
 
       {/* Final role assignments including unused roles */}
-      {roomState.players.some((p) => p.role) && (
+      {roomState.players.some((p) => p.team) && (
         <div style={{ marginTop: 12 }}>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>
             All roles in this game

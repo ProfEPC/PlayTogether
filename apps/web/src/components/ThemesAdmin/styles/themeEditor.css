@@ -1,0 +1,88 @@
+/**
+ * ThemesAdmin — right panel: editor form, inputs, sections
+ */
+
+.theme-editor-panel {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 2rem;
+  max-height: 800px;
+  overflow-y: auto;
+}
+
+.theme-editor-panel h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #1a1a1a;
+}
+
+.no-selection {
+  text-align: center;
+  color: #999;
+  padding: 3rem 1rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1a1a1a;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1e5a96;
+  box-shadow: 0 0 0 2px rgba(30, 90, 150, 0.1);
+}
+
+.form-group input:disabled {
+  background: #f5f5f5;
+  color: #999;
+}
+
+.form-group small {
+  display: block;
+  color: #999;
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.view-text {
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  color: #1a1a1a;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.section {
+  background: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #1e5a96;
+}
+
+.section h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+}

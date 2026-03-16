@@ -8,7 +8,7 @@
  * Flow:
  *   1. "selectGame" step  →  <GameSelectionScreen />   (pick a game & host)
  *   2. "setup" step       →  header + lobby panels     (configure & wait)
- *   3. game started        →  in-game display panels   (timer, submissions)
+ *   3. game started        →  in-game display panels   (timer, votes)
  *   4. results phase       →  results panel            (vote tallies)
  */
 import { useEffect, useState } from "react";
@@ -125,8 +125,8 @@ export default function HostPage() {
   // Player count label: "4 of 8" in lobby, just "4" during a game.
   const playersLabel = roomState
     ? roomState.game.started
-      ? `${roomState.players.length}`
-      : `${roomState.players.length} of ${roomState.settings.maxPlayers}`
+      ? `${roomState.playerCount}`
+      : `${roomState.playerCount} of ${roomState.settings.maxPlayers}`
     : "";
 
   // Countdown timer — null when no active round.
@@ -136,9 +136,9 @@ export default function HostPage() {
 
   // Voting progress indicators.
   const submittedCount = roomState
-    ? roomState.players.filter((p) => p.submission !== undefined).length
+    ? roomState.players.filter((p) => p.vote !== undefined).length
     : 0;
-  const totalPlayers = roomState ? roomState.players.length : 0;
+  const totalPlayers = roomState?.playerCount ?? 0;
 
   // Human-readable game title for the header.
   const gameTitle =
@@ -185,26 +185,28 @@ export default function HostPage() {
       />
 
       <div>
-        {/* ── Infiltration: character toggle grid + validation ── */}
-        <div style={{ padding: 12 }}>
-          {isInfiltration && (
-            <InfiltrationOptionsPanel
-              enabledRoleIds={enabledRoleIds}
-              setEnabledRoleIds={setEnabledRoleIds}
-              roles={roles}
-              lobbyLocked={lobbyLocked}
-              roomCode={effectiveRoomCode}
-              socket={socket}
-            />
-          )}
-          {isInfiltration && roomState && (
-            <CharacterValidationPanel
-              playerCount={roomState.players.length}
-              enabledRoleIds={enabledRoleIds}
-              roles={roles}
-            />
-          )}
-        </div>
+        {/* ── Infiltration: character toggle grid + validation (lobby only) ── */}
+        {!roomState?.game.started && (
+          <div style={{ padding: 12 }}>
+            {isInfiltration && (
+              <InfiltrationOptionsPanel
+                enabledRoleIds={enabledRoleIds}
+                setEnabledRoleIds={setEnabledRoleIds}
+                roles={roles}
+                lobbyLocked={lobbyLocked}
+                roomCode={effectiveRoomCode}
+                socket={socket}
+              />
+            )}
+            {isInfiltration && roomState && (
+              <CharacterValidationPanel
+                playerCount={roomState.players.length}
+                enabledRoleIds={enabledRoleIds}
+                roles={roles}
+              />
+            )}
+          </div>
+        )}
 
         {/* ── Core controls: start / reset / next round buttons ── */}
         {roomState && (
@@ -215,7 +217,7 @@ export default function HostPage() {
           />
         )}
 
-        {/* ── In-game display: timer, submission progress ── */}
+        {/* ── In-game display: timer, vote progress ── */}
         {roomState?.game.started && (
           <HostGameDisplayPanel
             roomState={roomState}
@@ -234,8 +236,8 @@ export default function HostPage() {
           />
         )}
 
-        {/* ── Lobby settings: round duration, max players ── */}
-        {roomState && (
+        {/* ── Lobby settings: round duration, max players (lobby only) ── */}
+        {roomState && !roomState.game.started && (
           <div
             style={{
               padding: 12,
@@ -243,22 +245,20 @@ export default function HostPage() {
               borderRadius: 8,
             }}
           >
-            {!roomState.game.started && (
-              <LobbySettingsPanel
-                roundSeconds={roundSeconds}
-                setRoundSeconds={setRoundSeconds}
-                maxPlayers={maxPlayers}
-                setMaxPlayers={setMaxPlayers}
-                lobbyLocked={lobbyLocked}
-                roomCode={roomState.roomCode}
-                socket={socket}
-              />
-            )}
+            <LobbySettingsPanel
+              roundSeconds={roundSeconds}
+              setRoundSeconds={setRoundSeconds}
+              maxPlayers={maxPlayers}
+              setMaxPlayers={setMaxPlayers}
+              lobbyLocked={lobbyLocked}
+              roomCode={roomState.roomCode}
+              socket={socket}
+            />
           </div>
         )}
 
-        {/* ── Players list (collapsible) ── */}
-        {roomState && (
+        {/* ── Players list (lobby only — in-game uses player cards) ── */}
+        {roomState && !roomState.game.started && (
           <HostPlayersPanel
             roomState={roomState}
             playersLabel={playersLabel}

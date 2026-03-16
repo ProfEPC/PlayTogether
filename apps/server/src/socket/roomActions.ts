@@ -7,12 +7,12 @@ import { ROOM_EVENTS } from "../constants/socketEvents";
 import {
   GAME_PHASES,
   GAME_WINNERS,
-  INFILTRATION_ROLES,
+  INFILTRATION_TEAMS,
 } from "../constants/roles";
 
 const phaseTimers = new Map<string, NodeJS.Timeout>();
 
-function clearPhaseTimer(roomCode: string) {
+export function clearPhaseTimer(roomCode: string) {
   const t = phaseTimers.get(roomCode);
   if (t) clearTimeout(t);
   phaseTimers.delete(roomCode);
@@ -25,27 +25,30 @@ export function emitRoomState(io: Server, roomCode: string) {
 
   room.updatedAt = now();
 
+  // Compute counts before building public state
+  const playerCount = room.players.filter((p) => !p.isNPC).length;
+
   // Prepare public room state; expose roles only during reveal and results phases
   const publicRoom = JSON.parse(JSON.stringify(room));
+  publicRoom.playerCount = playerCount;
+
   if (publicRoom.game) {
     if (
       publicRoom.game.phase === GAME_PHASES.REVEAL ||
       publicRoom.game.phase === GAME_PHASES.RESULTS
     ) {
-      // expose the roles from each player for disclosure in reveal/results
-      publicRoom.game.roles = room.players.reduce(
+      // expose the teams from each player for disclosure in reveal/results
+      publicRoom.game.teams = room.players.reduce(
         (acc: Record<string, any>, p) => {
-          if (p.role) acc[p.socketId] = p.role;
+          if (p.team) acc[p.socketId] = p.team;
           return acc;
         },
         {},
       );
-      publicRoom.game.unusedRoles = room.game.unusedRoles || [];
+      publicRoom.game.unusedTeams = room.game.unusedTeams || [];
     }
   }
-  console.log(
-    `[RoomState] Broadcasting to ${code}: ${room.players.length} players`,
-  );
+  console.log(`[RoomState] Broadcasting to ${code}: ${playerCount} players`);
   io.to(code).emit(ROOM_EVENTS.STATE, publicRoom);
 }
 
@@ -100,8 +103,8 @@ export function endRound(io: Server, roomCode: string, reason: string) {
   if (room.settings.gameKey === "infiltration") {
     const counts: Record<string, number> = {};
     for (const p of room.players) {
-      if (p.submission) {
-        counts[p.submission.value] = (counts[p.submission.value] || 0) + 1;
+      if (p.vote) {
+        counts[p.vote.value] = (counts[p.vote.value] || 0) + 1;
       }
     }
 
@@ -118,13 +121,13 @@ export function endRound(io: Server, roomCode: string, reason: string) {
     if (!topId) {
       room.game.winner = "none";
     } else if (topId === "none") {
-      // crew failed to identify an infiltrator
+      // innocents failed to identify an infiltrator
       room.game.winner = GAME_WINNERS.INFILTRATORS;
     } else {
       const topPlayer = room.players.find((p) => p.socketId === topId);
-      const isInfil = topPlayer?.role === INFILTRATION_ROLES.INFILTRATOR;
+      const isInfil = topPlayer?.team === INFILTRATION_TEAMS.INFILTRATOR;
       room.game.winner = isInfil
-        ? GAME_WINNERS.CREW
+        ? GAME_WINNERS.INNOCENTS
         : GAME_WINNERS.INFILTRATORS;
     }
   }

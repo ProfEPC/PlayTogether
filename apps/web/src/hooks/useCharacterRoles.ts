@@ -5,7 +5,7 @@ import type { RoomState, RoleConfig } from "../types/room";
 interface SavedCharacter {
   id: string | number;
   name: string;
-  data?: { description?: string; team?: "villager" | "infiltrator" | null };
+  data?: { description?: string; team?: "innocent" | "infiltrator" | null };
 }
 
 /**
@@ -28,7 +28,7 @@ export function useCharacterRoles(
         title: char.name,
         description: char.data?.description || "Custom character",
         team: char.data?.team || undefined,
-      })) as (RoleConfig & { team?: "villager" | "infiltrator" })[],
+      })) as (RoleConfig & { team?: "innocent" | "infiltrator" })[],
     [savedCharacters],
   );
 

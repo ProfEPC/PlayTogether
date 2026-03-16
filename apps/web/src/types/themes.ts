@@ -15,8 +15,8 @@ export interface GameTheme {
   teamTerms: {
     infiltratorSingular: string; //* "Infiltrator", "Spy", "Mole"
     infiltratorPlural: string;
-    villagerSingular: string; //* "Villager", "Employee", "Security"
-    villagerPlural: string;
+    innocentSingular: string; //* "Innocent", "Employee", "Security"
+    innocentPlural: string;
   };
 
   //* Phase prompts and UI text
@@ -34,19 +34,17 @@ export interface GameTheme {
     voting: string; //* "Voting" or "Accusation"
   };
 
-  //* Card terminology customization
-  cardTerms: {
-    centerCardSingular: string; //* "Center Card", "Vault", "Safe"
-    centerCardPlural: string;
-    vaultCardSingular: string; //* "Vault Card" (used in center as well)
-    vaultCardPlural: string;
+  //* NPC terminology customization
+  characterTerms: {
+    npcSingular: string; //* "NPC", "Vault", "Safe"
+    npcPlural: string;
   };
 
   //* Player reference and outcomes
   playerTerms: {
     playerOuted: string; //* "Player outed as {role}" or "Agent exposed"
     infiltratorWinText: string; //* "Infiltrators win!"
-    villagersWinText: string; //* "Villagers win!"
+    innocentsWinText: string; //* "Innocents win!"
   };
 
   //* Power terminology (if powers need theme-specific names)

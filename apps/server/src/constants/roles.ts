@@ -4,10 +4,10 @@
  * Character-specific powers are defined in the character data, not here.
  */
 
-// Base role names (team assignment)
-export const INFILTRATION_ROLES = {
+// Base team names (team assignment)
+export const INFILTRATION_TEAMS = {
   INFILTRATOR: "infiltrator",
-  CIVILIAN: "civilian",
+  INNOCENT: "innocent",
 } as const;
 
 // Power prompt types
@@ -19,7 +19,7 @@ export const POWER_PROMPT_TYPES = {
 
 // Game outcome winners
 export const GAME_WINNERS = {
-  CREW: "crew",
+  INNOCENTS: "innocents",
   INFILTRATORS: "infiltrators",
   NONE: "none",
 } as const;

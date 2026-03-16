@@ -6,10 +6,10 @@ import type { Player, RoomState } from "../../state/types";
 import { POWER_PROMPT_TYPES } from "../../constants/roles";
 
 /**
- * Check if a player is currently revealed (their role has been publicly shown).
+ * Check if a player is currently revealed (their character has been publicly shown).
  */
 export function isPlayerRevealed(player: Player): boolean {
-  return player.roleRevealed === true;
+  return player.characterRevealed === true;
 }
 
 /**
@@ -31,10 +31,10 @@ export function getTargetsForPower(
 ) {
   if (powerType === POWER_PROMPT_TYPES.VIEW_UNUSED) {
     // Offer unused role indices as targets
-    const unused = room.game.unusedRoles || [];
+    const unused = room.game.unusedTeams || [];
     return unused.map((_: any, idx: number) => ({
       id: String(idx),
-      label: `Unused role #${idx}`,
+      label: `Unused team #${idx}`,
     }));
   }
 

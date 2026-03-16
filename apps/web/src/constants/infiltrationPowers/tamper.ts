@@ -1,7 +1,7 @@
 /**
  * Tamper Powers (indices 38-44)
  *
- * Powers that interfere with voting and player submissions.
+ * Powers that interfere with voting and player votes.
  * These are high-impact powers that directly affect the voting phase.
  */
 

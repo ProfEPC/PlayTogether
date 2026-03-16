@@ -36,7 +36,7 @@
 }
 
 .player-button,
-.center-button {
+.npc-button {
   padding: 8px 12px;
   border: 2px solid #b3d9e8;
   background: #fff;
@@ -48,20 +48,20 @@
 }
 
 .player-button:hover:not(:disabled),
-.center-button:hover:not(:disabled) {
+.npc-button:hover:not(:disabled) {
   background: #d1e8f1;
   border-color: #0c4e6e;
 }
 
 .player-button.selected,
-.center-button.selected {
+.npc-button.selected {
   background: #0c4e6e;
   color: #fff;
   border-color: #0c4e6e;
 }
 
 .player-button:disabled,
-.center-button:disabled {
+.npc-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

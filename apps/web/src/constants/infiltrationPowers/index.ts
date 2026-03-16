@@ -5,7 +5,7 @@
  * Organized by power type for better maintainability.
  *
  * Power Categories:
- * - Learn (16 powers): Information gathering about players and center
+ * - Learn (16 powers): Information gathering about players and NPCs
  * - Reveal (4 powers): Publicly exposing role information
  * - Swap (7 powers): Modifying role and team assignments
  * - Condition (2 powers): Alternative win conditions

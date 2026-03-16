@@ -1,12 +1,12 @@
 import type { FC } from "react";
-import type { Submission, RoomState } from "../../types/room";
+import type { Vote, RoomState } from "../../types/room";
 import { COLORS } from "../../constants/colors";
 
 interface VotingPanelProps {
   roomState: RoomState | null;
   voteOptions: Array<{ id: string; label: string }>;
   selectedVote: string | null;
-  mySubmission: Submission | null;
+  myVote: Vote | null;
   gameId: string | null;
   secondsLeft: number;
   onSelectVote: (voteId: string) => void;
@@ -17,7 +17,7 @@ export const VotingPanel: FC<VotingPanelProps> = ({
   roomState,
   voteOptions,
   selectedVote,
-  mySubmission,
+  myVote,
   gameId,
   secondsLeft,
   onSelectVote,
@@ -47,7 +47,7 @@ export const VotingPanel: FC<VotingPanelProps> = ({
     {/* Voting header with submission status */}
     <div style={{ marginBottom: 8 }}>
       <strong>Vote</strong>
-      {mySubmission && (
+      {myVote && (
         <span style={{ marginLeft: 8, opacity: 0.7 }}>submitted ✅</span>
       )}
     </div>
@@ -64,7 +64,7 @@ export const VotingPanel: FC<VotingPanelProps> = ({
             name="vote"
             value={opt.id}
             checked={selectedVote === opt.id}
-            disabled={!!mySubmission}
+            disabled={!!myVote}
             onChange={() => onSelectVote(opt.id)}
           />
           <span>{opt.label}</span>
@@ -75,14 +75,14 @@ export const VotingPanel: FC<VotingPanelProps> = ({
     {/* Submit vote button - disabled after submission */}
     <button
       onClick={onSubmit}
-      disabled={!gameId || !!mySubmission}
+      disabled={!gameId || !!myVote}
       style={{ marginTop: 10 }}
     >
       Submit Vote
     </button>
 
     {/* Display revealed information from powers */}
-    {roomState?.players.some((p) => p.roleRevealed) && (
+    {roomState?.players.some((p) => p.characterRevealed) && (
       <div
         style={{
           marginTop: 12,
@@ -96,10 +96,10 @@ export const VotingPanel: FC<VotingPanelProps> = ({
         <strong>Revealed Roles:</strong>
         <ul style={{ marginTop: 4, paddingLeft: 20 }}>
           {roomState?.players
-            .filter((p) => p.roleRevealed)
+            .filter((p) => p.characterRevealed)
             .map((p) => (
               <li key={p.socketId}>
-                <strong>{p.name}</strong> is {p.role}
+                <strong>{p.name}</strong> is {p.team}
                 {p.character?.name && ` (${p.character.name})`}
               </li>
             ))}

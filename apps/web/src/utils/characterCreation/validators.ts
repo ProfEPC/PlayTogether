@@ -172,12 +172,12 @@ export function getDisambiguationPrompt(powers: InfiltrationPower[]): {
   // Learn, Amount, Role: Player vs Center
   if (key === "Learn|Amount|Role") {
     const playerPower = p1.description.includes("Players") ? p1 : p2;
-    const centerPower = p1.description.includes("Center") ? p1 : p2;
+    const npcPower = p1.description.includes("NPC") ? p1 : p2;
     return {
       prompt: "Target for learning roles:",
       choices: [
         { power: playerPower, label: "Players" },
-        { power: centerPower, label: "Center" },
+        { power: npcPower, label: "NPC" },
       ],
     };
   }
@@ -185,12 +185,12 @@ export function getDisambiguationPrompt(powers: InfiltrationPower[]): {
   // Learn, Amount, Association: Player vs Center
   if (key === "Learn|Amount|Association") {
     const playerPower = p1.description.includes("Players") ? p1 : p2;
-    const centerPower = p1.description.includes("Center") ? p1 : p2;
+    const npcPower = p1.description.includes("NPC") ? p1 : p2;
     return {
       prompt: "Target for learning teams:",
       choices: [
         { power: playerPower, label: "Players" },
-        { power: centerPower, label: "Center" },
+        { power: npcPower, label: "NPC" },
       ],
     };
   }

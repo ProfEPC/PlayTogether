@@ -28,15 +28,15 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     vault: true,
     complexity: 3,
   },
-  /** [18] Open Vault - Reveal # Center Role | Item: Role, Where: Center, Min: 1, Max: 3, Infected, AllowRandom, Complexity: 3 */
+  /** [18] Open Vault - Reveal # NPC Role | Item: Role, Where: NPC, Min: 1, Max: 3, Infected, AllowRandom, Complexity: 3 */
   {
     index: 18,
     initiative: "5 95",
     powerName: "Open Vault",
-    description: "Reveal # Center Role",
+    description: "Reveal # NPC Role",
     type: "Reveal",
     item: "Role",
-    where: "Center",
+    where: "NPC",
     min: 1,
     max: 3,
     fixedAction: false,
@@ -68,12 +68,12 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     vault: false,
     complexity: 1,
   },
-  /** [20] Role Spotlight - Reveal # villagers | Item: Role, Where: Player, Min: 1, Max: 5, FixedAction, Infected, Complexity: 3 */
+  /** [20] Role Spotlight - Reveal # innocents | Item: Role, Where: Player, Min: 1, Max: 5, FixedAction, Infected, Complexity: 3 */
   {
     index: 20,
     initiative: "5 95",
     powerName: "Role Spotlight",
-    description: "Reveal # villagers",
+    description: "Reveal # innocents",
     type: "Reveal",
     item: "Role",
     where: "Player",

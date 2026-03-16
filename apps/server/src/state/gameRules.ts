@@ -1,5 +1,8 @@
 import type { GameKey, RoomSettings } from "./types";
 
+/** Number of NPCs dealt face-down (always 3 for infiltration). */
+export const NUM_NPCS = 3;
+
 export const GAME_RULES: Record<
   GameKey,
   { minPlayers: number; maxPlayersCap: number }
