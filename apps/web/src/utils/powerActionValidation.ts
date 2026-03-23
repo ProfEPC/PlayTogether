@@ -55,7 +55,7 @@ export function validatePowerAction(
   }
 
   // Power must have a valid definition
-  const fullPowerDef = INFILTRATION_POWERS[activePower.powerIndex - 1];
+  const fullPowerDef = INFILTRATION_POWERS.find(p => p.index === activePower.powerIndex);
   if (!fullPowerDef) {
     return null;
   }

@@ -20,11 +20,13 @@ export interface UsePowerTargetSelectionReturn {
     mySocketId: string | undefined,
     powerWhere: string,
     actualQuantity: number,
+    targetScope?: string,
   ) => void;
   handleSubmit: (
     roomCode: string,
     powerName: string,
     powerWhere: string,
+    targetScope?: string,
   ) => Promise<void>;
 }
 
@@ -42,14 +44,14 @@ export function usePowerTargetSelection(
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSelectPlayer = (socketId: string) => {
-    setSelectedTargets(
-      togglePlayerTarget(socketId, selectedTargets, actualQuantity),
+    setSelectedTargets((prev) =>
+      togglePlayerTarget(socketId, prev, actualQuantity),
     );
   };
 
   const handleSelectNPC = (npcNum: number) => {
-    setSelectedTargets(
-      toggleNPCTarget(npcNum, selectedTargets, actualQuantity),
+    setSelectedTargets((prev) =>
+      toggleNPCTarget(npcNum, prev, actualQuantity),
     );
   };
 
@@ -58,8 +60,20 @@ export function usePowerTargetSelection(
     mySocketId: string | undefined,
     powerWhere: string,
     actualQuantity: number,
+    targetScope?: string,
   ) => {
-    if (powerWhere === "Player") {
+    if (targetScope === "Players and NPC") {
+      // Split quantity between random players and NPCs
+      const npcCount = Math.min(Math.floor(actualQuantity / 2), 3);
+      const playerCount = actualQuantity - npcCount;
+      const randomPlayers = getRandomPlayerTargets(
+        roomState,
+        mySocketId,
+        playerCount,
+      );
+      const randomNPCs = getRandomNPCTargets(npcCount);
+      setSelectedTargets({ players: randomPlayers, npcs: randomNPCs });
+    } else if (powerWhere === "Player") {
       const randomPlayers = getRandomPlayerTargets(
         roomState,
         mySocketId,
@@ -82,10 +96,11 @@ export function usePowerTargetSelection(
     roomCode: string,
     powerName: string,
     powerWhere: string,
+    targetScope?: string,
   ) => {
     setIsSubmitting(true);
     try {
-      await submitPowerAction(roomCode, powerName, powerWhere, selectedTargets);
+      await submitPowerAction(roomCode, powerName, powerWhere, selectedTargets, targetScope);
     } finally {
       setIsSubmitting(false);
     }

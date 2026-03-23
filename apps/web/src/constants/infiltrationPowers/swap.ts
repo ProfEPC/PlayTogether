@@ -8,12 +8,12 @@
 import type { InfiltrationPower } from "./types";
 
 export const SWAP_POWERS: InfiltrationPower[] = [
-  /** [21] Role Swap - Swap Two Players Roles | Item: Role, Where: Player, Qty: 2, FixedInit, AllowRandom, Vault, Complexity: 2 */
+  /** [21] Role Swap - Swap Two Roles | Item: Role, Where: Player, Qty: 2, FixedInit, AllowRandom, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 21,
     initiative: "50",
     powerName: "Role Swap",
-    description: "Swap Two Players Roles",
+    description: "Swap Two Roles",
     type: "Swap",
     item: "Role",
     where: "Player",
@@ -25,16 +25,16 @@ export const SWAP_POWERS: InfiltrationPower[] = [
     lookPostAction: false,
     doPower: false,
     allowRandom: true,
-    vault: true,
-    vaultName: "Vault Swap",
+    vault: false,
     complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
-  /** [22] Self Swap - Swap One Players Role With Own Role | Item: Role, Where: Player, Qty: 1, FixedInit, LookPostAction, DoPower, AllowRandom, Vault, Complexity: 2 */
+  /** [22] Self Swap - Swap A Role With Own Role | Item: Role, Where: Player, Qty: 1, FixedInit, LookPostAction, DoPower, AllowRandom, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 22,
     initiative: "50",
     powerName: "Self Swap",
-    description: "Swap One Players Role With Own Role",
+    description: "Swap A Role With Own Role",
     type: "Swap",
     item: "Role",
     where: "Player",
@@ -46,16 +46,16 @@ export const SWAP_POWERS: InfiltrationPower[] = [
     lookPostAction: true,
     doPower: true,
     allowRandom: true,
-    vault: true,
-    vaultName: "Vault Trade-In",
+    vault: false,
     complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
-  /** [23] Swap Role Team - Swap A Player's Role and Team | Item: Role Team, Where: Player, Qty: 2, FixedInit, AllowRandom, Vault, Complexity: 2 */
+  /** [23] Swap Role Team - Swap A Role and Team | Item: Role Team, Where: Player, Qty: 2, FixedInit, AllowRandom, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 23,
     initiative: "50",
     powerName: "Swap Role Team",
-    description: "Swap A Player's Role and Team",
+    description: "Swap A Role and Team",
     type: "Swap",
     item: "Role Team",
     where: "Player",
@@ -67,9 +67,9 @@ export const SWAP_POWERS: InfiltrationPower[] = [
     lookPostAction: false,
     doPower: false,
     allowRandom: true,
-    vault: true,
-    vaultName: "Vault Trade-Out",
+    vault: false,
     complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
   /** [24] Swap Reversal - Swap # Swaps of Roles | Item: Role, Where: Reversal, Min: 1, Max: 5, FixedAction, FixedInit, Complexity: 3 */
   {
@@ -89,15 +89,14 @@ export const SWAP_POWERS: InfiltrationPower[] = [
     doPower: false,
     allowRandom: false,
     vault: false,
-    vaultName: "Vault Reversal",
     complexity: 3,
   },
-  /** [25] Team Exchange - Swap Own Team With Another Player | Item: Team, Where: Self, Qty: 1, FixedInit, LookPostAction, DoPower, AllowRandom, Vault, Complexity: 2 */
+  /** [25] Team Exchange - Swap Own Team With Another | Item: Team, Where: Self, Qty: 1, FixedInit, LookPostAction, DoPower, AllowRandom, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 25,
     initiative: "50",
     powerName: "Team Exchange",
-    description: "Swap Own Team With Another Player",
+    description: "Swap Own Team With Another",
     type: "Swap",
     item: "Team",
     where: "Self",
@@ -109,11 +108,11 @@ export const SWAP_POWERS: InfiltrationPower[] = [
     lookPostAction: true,
     doPower: true,
     allowRandom: true,
-    vault: true,
-    vaultName: "Vault Exchange",
+    vault: false,
     complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
-  /** [26] Recruit - Swap another's Team to your own | Item: Team, Where: Self, Qty: 1, FixedInit, AllowRandom, Vault, Complexity: 3 */
+  /** [26] Recruit - Swap another's Team to your own | Item: Team, Where: Self, Qty: 1, FixedInit, AllowRandom, Complexity: 3, TargetScopes: Players/NPC/Both */
   {
     index: 26,
     initiative: "50",
@@ -130,16 +129,16 @@ export const SWAP_POWERS: InfiltrationPower[] = [
     lookPostAction: false,
     doPower: false,
     allowRandom: true,
-    vault: true,
-    vaultName: "Vault Recruit",
+    vault: false,
     complexity: 3,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
-  /** [27] Team Shuffle - Swap Two Players Teams | Item: Team, Where: Player Player, Qty: 2, FixedInit, AllowRandom, Vault, Complexity: 2 */
+  /** [27] Team Shuffle - Swap Two Teams | Item: Team, Where: Player Player, Qty: 2, FixedInit, AllowRandom, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 27,
     initiative: "50",
     powerName: "Team Shuffle",
-    description: "Swap Two Players Teams",
+    description: "Swap Two Teams",
     type: "Swap",
     item: "Team",
     where: "Player Player",
@@ -151,8 +150,8 @@ export const SWAP_POWERS: InfiltrationPower[] = [
     lookPostAction: false,
     doPower: false,
     allowRandom: true,
-    vault: true,
-    vaultName: "Vault Shuffle",
+    vault: false,
     complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
 ];

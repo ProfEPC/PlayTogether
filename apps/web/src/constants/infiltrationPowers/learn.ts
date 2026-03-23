@@ -1,19 +1,20 @@
 /**
- * Learn Powers (indices 1-16)
+ * Learn Powers (indices 1, 3-4, 6-13, 16)
  *
  * Powers that allow players to discover information about other players,
  * NPCs, or game state. These are generally low-complexity information-gathering abilities.
+ * Powers with targetScopes can target Players, NPCs, or both (selected during character creation).
  */
 
 import type { InfiltrationPower } from "./types";
 
 export const LEARN_POWERS: InfiltrationPower[] = [
-  /** [1] Role Peek - Learn # Player's Roles | Item: Role, Where: Player, Min: 1, Max: 3, Infected, Complexity: 2 */
+  /** [1] Role Peek - Learn # Roles | Item: Role, Where: Player, Min: 1, Max: 3, Infected, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 1,
     initiative: "10 90",
     powerName: "Role Peek",
-    description: "Learn # Player's Roles",
+    description: "Learn # Roles",
     type: "Learn",
     item: "Role",
     where: "Player",
@@ -27,26 +28,7 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     allowRandom: false,
     vault: false,
     complexity: 2,
-  },
-  /** [2] Vault Peek - Learn # NPC's Roles | Item: Role, Where: NPC, Min: 1, Max: 3, Infected, Complexity: 2 */
-  {
-    index: 2,
-    initiative: "10 90",
-    powerName: "Vault Peek",
-    description: "Learn # NPC's Roles",
-    type: "Learn",
-    item: "Role",
-    where: "NPC",
-    min: 1,
-    max: 3,
-    fixedAction: false,
-    fixedInitiative: false,
-    infected: true,
-    lookPostAction: false,
-    doPower: false,
-    allowRandom: false,
-    vault: false,
-    complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
   /** [3] Last Look - Learn Own Role at the End | Item: Role, Where: Self, Qty: 1, FixedAction, FixedInit, Complexity: 1 */
   {
@@ -68,12 +50,12 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     vault: false,
     complexity: 1,
   },
-  /** [4] Allegiance Check - Learn # Player's Teams | Item: Team, Where: Player, Min: 1, Max: 3, Infected, Complexity: 2 */
+  /** [4] Allegiance Check - Learn # Teams | Item: Team, Where: Player, Min: 1, Max: 3, Infected, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 4,
     initiative: "10 90",
     powerName: "Allegiance Check",
-    description: "Learn # Player's Teams",
+    description: "Learn # Teams",
     type: "Learn",
     item: "Team",
     where: "Player",
@@ -87,26 +69,7 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     allowRandom: false,
     vault: false,
     complexity: 2,
-  },
-  /** [5] Vault Allegiance - Learn # NPC's Teams | Item: Team, Where: NPC, Min: 1, Max: 3, Infected, Complexity: 2 */
-  {
-    index: 5,
-    initiative: "10 90",
-    powerName: "Vault Allegiance",
-    description: "Learn # NPC's Teams",
-    type: "Learn",
-    item: "Team",
-    where: "NPC",
-    min: 1,
-    max: 3,
-    fixedAction: false,
-    fixedInitiative: false,
-    infected: true,
-    lookPostAction: false,
-    doPower: false,
-    allowRandom: false,
-    vault: false,
-    complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
   /** [6] Roll Rolecall - Learn # Players With Role | Item: Players, Where: Role, Min: 1, Max: 99, Complexity: 3 */
   {
@@ -228,12 +191,12 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     vault: false,
     complexity: 3,
   },
-  /** [12] Role Tally - Learn up to # role are Players | Item: Amount, Where: Role, Min: 1, Max: 99, Infected, Complexity: 2 */
+  /** [12] Role Tally - Learn up to # of a Role | Item: Amount, Where: Role, Min: 1, Max: 99, Infected, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 12,
     initiative: "10 90",
     powerName: "Role Tally",
-    description: "Learn up to # role are Players",
+    description: "Learn up to # of a Role",
     type: "Learn",
     item: "Amount",
     where: "Role",
@@ -247,13 +210,14 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     allowRandom: false,
     vault: false,
     complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
-  /** [13] Team Tally - Learn up to # Team are Players | Item: Amount, Where: Association, Min: 1, Max: 3, Infected, Complexity: 2 */
+  /** [13] Team Tally - Learn up to # of a Team | Item: Amount, Where: Association, Min: 1, Max: 3, Infected, Complexity: 2, TargetScopes: Players/NPC/Both */
   {
     index: 13,
     initiative: "10 90",
     powerName: "Team Tally",
-    description: "Learn up to # Team are Players",
+    description: "Learn up to # of a Team",
     type: "Learn",
     item: "Amount",
     where: "Association",
@@ -267,46 +231,7 @@ export const LEARN_POWERS: InfiltrationPower[] = [
     allowRandom: false,
     vault: false,
     complexity: 2,
-  },
-  /** [14] Who's Missing - Learn up to # role are NPC | Item: Amount, Where: Role, Min: 1, Max: 99, Infected, Complexity: 2 */
-  {
-    index: 14,
-    initiative: "10 90",
-    powerName: "Who's Missing",
-    description: "Learn up to # role are NPC",
-    type: "Learn",
-    item: "Amount",
-    where: "Role",
-    min: 1,
-    max: 99,
-    fixedAction: false,
-    fixedInitiative: false,
-    infected: true,
-    lookPostAction: false,
-    doPower: false,
-    allowRandom: false,
-    vault: false,
-    complexity: 2,
-  },
-  /** [15] Absentee Ballot - Learn up to # Team are NPC | Item: Amount, Where: Association, Min: 1, Max: 3, Infected, Complexity: 2 */
-  {
-    index: 15,
-    initiative: "10 90",
-    powerName: "Absentee Ballot",
-    description: "Learn up to # Team are NPC",
-    type: "Learn",
-    item: "Amount",
-    where: "Association",
-    min: 1,
-    max: 3,
-    fixedAction: false,
-    fixedInitiative: false,
-    infected: true,
-    lookPostAction: false,
-    doPower: false,
-    allowRandom: false,
-    vault: false,
-    complexity: 2,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
   /** [16] Sixth Sense - Learn if # Players Were Moved | Item: Status, Where: Player, Min: 1, Max: 99, Infected, Complexity: 2 */
   {

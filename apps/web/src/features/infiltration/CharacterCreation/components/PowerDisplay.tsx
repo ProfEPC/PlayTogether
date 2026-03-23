@@ -55,41 +55,12 @@ export function PowerDisplay({
       ? selectedPower.description.replace(/#/g, amount)
       : selectedPower.description.replace(/#/g, "1");
 
-    // For Swap powers, reorder descriptions and handle vault variant
+    // For Swap powers, reorder descriptions
     if (selectedPower.type === "Swap") {
-      // First reorder: Own Role first, then other role
+      // Reorder: Own Role first, then other role
       displayDescription = displayDescription.replace(
         /Swap One Players Role With Own Role/gi,
         "Swap Own Role With One Players Role",
-      );
-
-      // If vault is selected, replace with vault variants
-      if (selectedPower.vault && toggles.vault) {
-        displayDescription = displayDescription
-          .replace(
-            /Swap Two Players Roles/gi,
-            "Swap One Players Role With One Vault Role",
-          )
-          .replace(
-            /Swap Own Role With One Players Role/gi,
-            "Swap Own Role With One Vault Role",
-          )
-          .replace(
-            /Swap Own Team With Another Player/gi,
-            "Swap Own Team With One Vault Role",
-          )
-          .replace(
-            /Swap Two Players Teams/gi,
-            "Swap One Players Team With One Vault Role",
-          );
-      }
-    }
-
-    // Add vault notation if applicable and selected
-    if (selectedPower.vault && toggles.vault) {
-      displayDescription = displayDescription.replace(
-        /\(can use Vault\)/gi,
-        "(use vault)",
       );
     }
 
@@ -114,9 +85,7 @@ export function PowerDisplay({
       <div className="power-info highlighted">
         <div className="power-name-header">
           <p className="power-name">
-            {selectedPower.vault && toggles.vault && selectedPower.vaultName
-              ? selectedPower.vaultName
-              : selectedPower.powerName}
+            {selectedPower.powerName}
           </p>
           {onExpandToggle && (
             <button

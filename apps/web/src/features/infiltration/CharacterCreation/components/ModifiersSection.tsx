@@ -10,7 +10,6 @@ interface ModifiersSectionProps {
 
 function hasApplicableModifiers(power: InfiltrationPower): boolean {
   return !!(
-    power.vault ||
     isToggleApplicable(power, "lookPostAction") ||
     isToggleApplicable(power, "doPower")
   );
@@ -65,14 +64,6 @@ export function ModifiersSection({
   return (
     <div className="toggles-section">
       <h4>Modifiers</h4>
-      {selectedPower.vault && (
-        <ToggleRow
-          name="Swap with Vault?"
-          checked={toggles.vault || false}
-          applicable={true}
-          onChange={(checked) => onToggleChange("vault", checked)}
-        />
-      )}
       {lookPostActionApplicable && (
         <ToggleRow
           name="Learn Self After Swap?"

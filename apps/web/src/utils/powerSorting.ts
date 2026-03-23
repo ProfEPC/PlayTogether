@@ -36,7 +36,7 @@ export function getSortedPowerIndices(powerSlots: PowerSlot[]): number[] {
         return { index, typePriority: 999, timingPriority: 0 };
       }
 
-      const power = INFILTRATION_POWERS[slot.powerIndex - 1];
+      const power = INFILTRATION_POWERS.find(p => p.index === slot.powerIndex);
       if (!power) {
         return { index, typePriority: 999, timingPriority: 0 };
       }

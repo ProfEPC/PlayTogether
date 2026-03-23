@@ -19,6 +19,7 @@ import { DisambiguationSelector } from "./components/DisambiguationSelector";
 import { AmountSelector } from "./components/AmountSelector";
 import { TimingSelector } from "./components/TimingSelector";
 import { ModifiersSection } from "./components/ModifiersSection";
+import { TargetScopeSelector } from "./components/TargetScopeSelector";
 
 /**
  * Empty character context used for cascading filter dropdown calculations.
@@ -68,7 +69,7 @@ export function PowerSlotEditor({
     // Check this power against all other powers in the character
     for (const otherSlot of otherPowerSlots) {
       if (otherSlot.powerIndex === null) continue;
-      const otherPower = INFILTRATION_POWERS[otherSlot.powerIndex - 1];
+      const otherPower = INFILTRATION_POWERS.find(p => p.index === otherSlot.powerIndex);
       if (!otherPower) continue;
 
       const error = getPowerCompatibilityError(
@@ -250,6 +251,7 @@ export function PowerSlotEditor({
                 powerIndex: null,
                 timing: null,
                 toggles: {},
+                targetScope: undefined,
               })
             }
             onItemChange={(item) =>
@@ -259,6 +261,7 @@ export function PowerSlotEditor({
                 powerIndex: null,
                 timing: null,
                 toggles: {},
+                targetScope: undefined,
               })
             }
             onWhereChange={(where) =>
@@ -267,6 +270,7 @@ export function PowerSlotEditor({
                 powerIndex: null,
                 timing: null,
                 toggles: {},
+                targetScope: undefined,
               })
             }
           />
@@ -281,8 +285,18 @@ export function PowerSlotEditor({
                 onChange({
                   powerIndex,
                   toggles: {},
+                  targetScope: undefined,
                 })
               }
+            />
+          )}
+
+          {/* Target Scope Selector — shown when power can target Players, NPCs, or both */}
+          {selectedPower?.targetScopes && selectedPower.targetScopes.length > 0 && (
+            <TargetScopeSelector
+              targetScopes={selectedPower.targetScopes}
+              selectedScope={slot.targetScope}
+              onScopeChange={(scope) => onChange({ targetScope: scope })}
             />
           )}
 

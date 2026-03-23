@@ -15,8 +15,8 @@ export function getPowerByIndex(
   index: number | null,
   powers: InfiltrationPower[] = INFILTRATION_POWERS,
 ): InfiltrationPower | null {
-  if (index === null || index < 1 || index > powers.length) return null;
-  return powers[index - 1];
+  if (index === null) return null;
+  return powers.find(p => p.index === index) || null;
 }
 
 /**
@@ -58,5 +58,6 @@ export function createEmptySlot(): PowerSlot {
     amount: null,
     toggles: {},
     timing: null,
+    targetScope: undefined,
   };
 }

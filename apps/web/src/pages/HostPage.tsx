@@ -57,10 +57,8 @@ export default function HostPage() {
 
   // useCharacterSelection: loads characters from API when infiltration is
   //   selected, converts them to CharacterConfig, and manages the toggle selection.
-  const { characters, enabledCharacterIds, setEnabledCharacterIds } = useCharacterSelection(
-    selectedGameKey as string,
-    roomState,
-  );
+  const { characters, enabledCharacterIds, setEnabledCharacterIds } =
+    useCharacterSelection(selectedGameKey as string, roomState);
 
   // useVoteGroups: computes per-target vote tallies for the results panel.
   const voteGroups = useVoteGroups(roomState);

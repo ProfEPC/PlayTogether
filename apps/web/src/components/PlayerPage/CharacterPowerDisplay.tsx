@@ -31,7 +31,7 @@ export const CharacterPowerDisplay: FC<CharacterPowerDisplayProps> = ({
           <strong>Powers:</strong>
           {character.powers.map((power: PowerSlot, idx: number) => {
             if (power.powerIndex === null) return null;
-            const powerDef = INFILTRATION_POWERS[power.powerIndex - 1];
+            const powerDef = INFILTRATION_POWERS.find(p => p.index === power.powerIndex);
             const description = powerDef?.description
               ? powerDef.description.replace(/#/g, String(power.quantity || 1))
               : "";

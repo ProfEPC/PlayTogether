@@ -77,7 +77,7 @@ export function getRandomPlayerTargets(
   quantity: number,
 ): string[] {
   const otherPlayers = roomState.players.filter(
-    (p) => p.socketId !== mySocketId,
+    (p) => p.socketId !== mySocketId && !p.isNPC,
   );
   const shuffled = [...otherPlayers].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, quantity).map((p) => p.socketId);
@@ -99,10 +99,14 @@ export async function submitPowerAction(
   powerName: string,
   powerWhere: string,
   selectedTargets: SelectedTargets,
+  targetScope?: string,
 ): Promise<void> {
+  // For "Players and NPC" scope, always send both player and NPC targets
+  const sendBoth = targetScope === "Players and NPC";
   const targetPlayers =
-    powerWhere === "Player" ? selectedTargets.players : undefined;
-  const targetNPCs = powerWhere === "NPC" ? selectedTargets.npcs : undefined;
+    sendBoth || powerWhere === "Player" ? selectedTargets.players : undefined;
+  const targetNPCs =
+    sendBoth || powerWhere === "NPC" ? selectedTargets.npcs : undefined;
 
   socket.emit("game:submitPower", {
     roomCode,

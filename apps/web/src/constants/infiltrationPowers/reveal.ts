@@ -1,19 +1,20 @@
 /**
- * Reveal Powers (indices 17-20)
+ * Reveal Powers (indices 17, 19-20)
  *
  * Powers that publicly reveal role information to all players.
  * These are higher-stakes powers that expose information to the whole game.
+ * Powers with targetScopes can target Players, NPCs, or both (selected during character creation).
  */
 
 import type { InfiltrationPower } from "./types";
 
 export const REVEAL_POWERS: InfiltrationPower[] = [
-  /** [17] Expose Role - Reveal # Player Role | Item: Role, Where: Player, Min: 1, Max: 3, Infected, AllowRandom, Complexity: 3 */
+  /** [17] Expose Role - Reveal # Roles | Item: Role, Where: Player, Min: 1, Max: 3, Infected, AllowRandom, Complexity: 3, TargetScopes: Players/NPC/Both */
   {
     index: 17,
     initiative: "5 95",
     powerName: "Expose Role",
-    description: "Reveal # Player Role",
+    description: "Reveal # Roles",
     type: "Reveal",
     item: "Role",
     where: "Player",
@@ -25,28 +26,9 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     lookPostAction: false,
     doPower: true,
     allowRandom: true,
-    vault: true,
-    complexity: 3,
-  },
-  /** [18] Open Vault - Reveal # NPC Role | Item: Role, Where: NPC, Min: 1, Max: 3, Infected, AllowRandom, Complexity: 3 */
-  {
-    index: 18,
-    initiative: "5 95",
-    powerName: "Open Vault",
-    description: "Reveal # NPC Role",
-    type: "Reveal",
-    item: "Role",
-    where: "NPC",
-    min: 1,
-    max: 3,
-    fixedAction: false,
-    fixedInitiative: false,
-    infected: true,
-    lookPostAction: false,
-    doPower: true,
-    allowRandom: true,
     vault: false,
     complexity: 3,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
   /** [19] Face Reveal - Reveal self | Item: Role, Where: Self, Qty: 1, FixedAction, Infected, Complexity: 1 */
   {
@@ -68,7 +50,7 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     vault: false,
     complexity: 1,
   },
-  /** [20] Role Spotlight - Reveal # innocents | Item: Role, Where: Player, Min: 1, Max: 5, FixedAction, Infected, Complexity: 3 */
+  /** [20] Role Spotlight - Reveal # innocents | Item: Role, Where: Player, Min: 1, Max: 5, FixedAction, Infected, Complexity: 3, TargetScopes: Players/NPC/Both */
   {
     index: 20,
     initiative: "5 95",
@@ -85,7 +67,8 @@ export const REVEAL_POWERS: InfiltrationPower[] = [
     lookPostAction: false,
     doPower: true,
     allowRandom: true,
-    vault: true,
+    vault: false,
     complexity: 3,
+    targetScopes: ["Players Only", "NPC Only", "Players and NPC"],
   },
 ];

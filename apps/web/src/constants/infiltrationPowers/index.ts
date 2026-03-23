@@ -5,18 +5,19 @@
  * Organized by power type for better maintainability.
  *
  * Power Categories:
- * - Learn (16 powers): Information gathering about players and NPCs
- * - Reveal (4 powers): Publicly exposing role information
+ * - Learn (12 powers): Information gathering about players and NPCs
+ * - Reveal (3 powers): Publicly exposing role information
  * - Swap (7 powers): Modifying role and team assignments
  * - Condition (2 powers): Alternative win conditions
  * - Alter (8 powers): Blocking actions, changing priority, protection
  * - Tamper (7 powers): Interfering with voting mechanics
  * - Settings/None (2 powers): Game parameter modification and placeholder
  *
- * Total: 46 powers (index 1-46)
+ * Total: 41 powers
+ * Powers with targetScopes can target Players, NPCs, or both (selected during character creation).
  */
 
-export type { InfiltrationPower } from "./types";
+export type { InfiltrationPower, TargetScope } from "./types";
 
 import { LEARN_POWERS } from "./learn";
 import { REVEAL_POWERS } from "./reveal";

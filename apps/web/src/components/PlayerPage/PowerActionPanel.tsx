@@ -22,6 +22,9 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
   mySocketId,
   character,
 }) => {
+  // Validate before hook so we can pass the real actualQuantity
+  const validation = validatePowerAction(roomState, mySocketId, character);
+
   const {
     selectedTargets,
     isSubmitting,
@@ -29,12 +32,29 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
     handleSelectNPC,
     handleRandom,
     handleSubmit,
-  } = usePowerTargetSelection(0);
+  } = usePowerTargetSelection(validation?.actualQuantity ?? 1);
 
-  const validation = validatePowerAction(roomState, mySocketId, character);
   if (!validation) return null;
 
   const { activePower, fullPowerDef, quantity, actualQuantity } = validation;
+
+  // Determine which target grids to show based on targetScope or fallback to where
+  const targetScope = activePower.targetScope;
+  const showPlayerGrid =
+    targetScope === "Players Only" ||
+    targetScope === "Players and NPC" ||
+    (!targetScope && fullPowerDef.where === "Player");
+  const showNPCGrid =
+    targetScope === "NPC Only" ||
+    targetScope === "Players and NPC" ||
+    (!targetScope && fullPowerDef.where === "NPC");
+
+  // Derive effective "where" for submit/random (for powers without targetScope)
+  const effectiveWhere = targetScope
+    ? targetScope === "NPC Only"
+      ? "NPC"
+      : "Player"
+    : activePower.where || "Player";
 
   const isReady = canSubmit(selectedTargets, isSubmitting);
   const isComplete = isSelectionComplete(selectedTargets, actualQuantity);
@@ -54,7 +74,7 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
       <h3>{fullPowerDef.powerName || "Use Power"}</h3>
       <p>{descriptionWithQuantity || `Select ${quantity} target(s).`}</p>
 
-      {fullPowerDef.where === "Player" && (
+      {showPlayerGrid && (
         <div className="player-targets">
           <h4>
             Select {fullPowerDef.item ? `${fullPowerDef.item}s` : "Players"}
@@ -103,9 +123,9 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
                 )}
               </>
             ) : (
-              /* Other Player-type powers: Show all players */
+              /* Other Player-type powers: Show non-NPC players */
               validation.roomState.players
-                .filter((p) => p.socketId !== mySocketId)
+                .filter((p) => p.socketId !== mySocketId && !p.isNPC)
                 .map((player) => {
                   const isSelected = selectedTargets.players.includes(
                     player.socketId,
@@ -126,7 +146,7 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
         </div>
       )}
 
-      {fullPowerDef.where === "NPC" && (
+      {showNPCGrid && (
         <div className="npc-targets">
           <h4>
             Select{" "}
@@ -157,8 +177,9 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
             handleRandom(
               validation.roomState,
               mySocketId,
-              fullPowerDef.where,
+              effectiveWhere,
               actualQuantity,
+              targetScope,
             )
           }
           disabled={isSubmitting}
@@ -176,7 +197,8 @@ export const PowerActionPanel: FC<PowerActionPanelProps> = ({
             handleSubmit(
               validation.roomState.roomCode,
               `${activePower.item || "Unknown"} Power`,
-              activePower.where || "Player",
+              effectiveWhere,
+              targetScope,
             )
           }
           disabled={!isReady}

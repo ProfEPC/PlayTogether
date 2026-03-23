@@ -4,7 +4,7 @@ import type { InfiltrationPower } from "../constants/infiltrationPowers";
  * Power slot in a character's power selections
  */
 export interface PowerSlot {
-  /** Index of the power (1-46), or null if not yet selected */
+  /** Index of the power, or null if not yet selected */
   powerIndex: number | null;
   /** Cascading dropdown selections */
   type: string | null;
@@ -24,6 +24,8 @@ export interface PowerSlot {
   };
   /** Timing selector (only for Learn/Reveal types) */
   timing: "before" | "after" | null;
+  /** Target scope: Players Only, NPC Only, or Players and NPC (for powers with targetScopes) */
+  targetScope?: "Players Only" | "NPC Only" | "Players and NPC";
 }
 
 /**

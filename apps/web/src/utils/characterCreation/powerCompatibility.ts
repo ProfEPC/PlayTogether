@@ -24,7 +24,7 @@ function isLearnOrRevealPower(power: InfiltrationPower): boolean {
  */
 function isMurdererGroupPower(power: InfiltrationPower): boolean {
   const murdererPowerNames = [
-    "Vault Allegiance",
+    "Allegiance Check",
     "Roll Rolecall",
     "Role Beacon",
     "Team Echo",
@@ -33,8 +33,6 @@ function isMurdererGroupPower(power: InfiltrationPower): boolean {
     "Tactic Tell",
     "Role Tally",
     "Team Tally",
-    "Who's Missing",
-    "Absentee Ballot",
     "Face Reveal",
     "Role Spotlight",
     "Sixth Sense",
@@ -50,7 +48,7 @@ function isPredicterGroupPower(power: InfiltrationPower): boolean {
   // Predicter powers were marked with predicter flag
   // These are Learn/Reveal powers that can use timing selector
   const predicterPowerNames = [
-    "Vault Allegiance",
+    "Allegiance Check",
     "Roll Rolecall",
     "Role Beacon",
     "Team Echo",
@@ -59,8 +57,6 @@ function isPredicterGroupPower(power: InfiltrationPower): boolean {
     "Tactic Tell",
     "Role Tally",
     "Team Tally",
-    "Who's Missing",
-    "Absentee Ballot",
     "Face Reveal",
     "Role Spotlight",
     "Sixth Sense",
@@ -74,7 +70,7 @@ function isPredicterGroupPower(power: InfiltrationPower): boolean {
  */
 function isTwoXVoteGroupPower(power: InfiltrationPower): boolean {
   // twoXVote was only set to true on a couple Learn powers
-  const twoXVotePowerNames = ["Vault Allegiance", "Allegiance Check"];
+  const twoXVotePowerNames = ["Allegiance Check"];
   return twoXVotePowerNames.includes(power.powerName);
 }
 
@@ -87,7 +83,6 @@ function isTwoXVoteGroupPower(power: InfiltrationPower): boolean {
  * - Predicter Group: Cannot mesh with post-swap Learn/Reveal (same rules as murderer). OK with other predicter.
  * - TwoXVote Group: Cannot mesh with post-swap Learn/Reveal (same rules as murderer). OK with other twoXVote.
  * - Infected: NOT a meshing constraint (game mechanic)
- * - Vault: NOT a meshing constraint (toggle modifier)
  *
  * @param power1 - First power to check
  * @param power2 - Second power to check

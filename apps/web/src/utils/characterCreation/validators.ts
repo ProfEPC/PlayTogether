@@ -169,32 +169,6 @@ export function getDisambiguationPrompt(powers: InfiltrationPower[]): {
   const [p1, p2] = powers;
   const key = `${p1.type}|${p1.item}|${p1.where}`;
 
-  // Learn, Amount, Role: Player vs Center
-  if (key === "Learn|Amount|Role") {
-    const playerPower = p1.description.includes("Players") ? p1 : p2;
-    const npcPower = p1.description.includes("NPC") ? p1 : p2;
-    return {
-      prompt: "Target for learning roles:",
-      choices: [
-        { power: playerPower, label: "Players" },
-        { power: npcPower, label: "NPC" },
-      ],
-    };
-  }
-
-  // Learn, Amount, Association: Player vs Center
-  if (key === "Learn|Amount|Association") {
-    const playerPower = p1.description.includes("Players") ? p1 : p2;
-    const npcPower = p1.description.includes("NPC") ? p1 : p2;
-    return {
-      prompt: "Target for learning teams:",
-      choices: [
-        { power: playerPower, label: "Players" },
-        { power: npcPower, label: "NPC" },
-      ],
-    };
-  }
-
   // Swap, Role, Player: Player vs Self
   if (key === "Swap|Role|Player") {
     const playerPower = p1.description.includes("Two Players") ? p1 : p2;

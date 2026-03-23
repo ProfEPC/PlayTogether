@@ -26,7 +26,7 @@ export function registerPlayerPowerHandlers(io: Server, socket: Socket) {
       roomCode: string;
       powerName: string;
       targetPlayers?: string[];
-      targetNPCs?: string[];
+      targetNPCs?: number[];
     }) => {
       const room = validateRoom(roomCode);
       if (!room) return;
@@ -96,8 +96,22 @@ export function registerPlayerPowerHandlers(io: Server, socket: Socket) {
 
       console.log(`[PowerHandler] Power validation PASSED, executing...`);
 
+      //* Map NPC numbers (1-based from client) to actual NPC socketIds in the room
+      const npcSocketIds: string[] = [];
+      if (targetNPCs && targetNPCs.length > 0) {
+        const roomNPCs = room.players.filter((p) => p.isNPC);
+        for (const npcNum of targetNPCs) {
+          const npc = roomNPCs[npcNum - 1]; // Client sends 1-based numbers
+          if (npc) {
+            npcSocketIds.push(npc.socketId);
+          } else {
+            console.log(`[PowerHandler] NPC ${npcNum} not found in room (only ${roomNPCs.length} NPCs)`);
+          }
+        }
+      }
+
       //* Combine player and NPC targets into a single array of player IDs
-      const allTargets = [...(targetPlayers || []), ...(targetNPCs || [])];
+      const allTargets = [...(targetPlayers || []), ...npcSocketIds];
 
       //* Execute the power (handles both Learn and Reveal based on powerSlot.type)
       executeCharacterPower(io, room, player, powerName, allTargets, powerSlot);

@@ -26,6 +26,8 @@ export type PowerSlot = {
   where?: string;
   quantity?: number;
   description?: string; // Power description/prompt text from character creation
+  /** Target scope for powers that can target Players, NPCs, or both */
+  targetScope?: "Players Only" | "NPC Only" | "Players and NPC";
 };
 
 export type Player = {

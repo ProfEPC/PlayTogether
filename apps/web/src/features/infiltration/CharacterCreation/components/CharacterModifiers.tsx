@@ -13,7 +13,7 @@ interface CharacterModifiersProps {
 function hasAnyInfectedPower(character: CharacterInCreation): boolean {
   return character.powerSlots.some((slot) => {
     if (slot.powerIndex === null) return false;
-    const power = INFILTRATION_POWERS[slot.powerIndex - 1];
+    const power = INFILTRATION_POWERS.find(p => p.index === slot.powerIndex);
     return power && power.infected;
   });
 }

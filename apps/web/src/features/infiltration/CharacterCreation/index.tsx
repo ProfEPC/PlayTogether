@@ -56,7 +56,7 @@ export default function CharacterCreation() {
   const winConditionPower = (() => {
     for (const slot of character.powerSlots) {
       if (slot.powerIndex === null) continue;
-      const power = INFILTRATION_POWERS[slot.powerIndex - 1];
+      const power = INFILTRATION_POWERS.find(p => p.index === slot.powerIndex);
       if (power && power.type === "Condition" && power.item === "Win") {
         return power;
       }
