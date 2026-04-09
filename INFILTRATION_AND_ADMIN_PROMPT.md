@@ -561,3 +561,135 @@ Powers with two initiative values (e.g., `"10 90"`) can be configured to run at 
 | 1 | Simple — no targeting, no lookups | No Action, Face Reveal, Deathwish, Double Tap |
 | 2 | Medium — target selection or mid-level interaction | Role Peek, Shield, Nope!, Role Swap, Mute Vote |
 | 3 | High — lookup-heavy, mass effects, timing-sensitive | Roll Rolecall, Action Trace, Role Jam, Swap Reversal, Role Spotlight |
+
+---
+
+## 5. Power Compatibility & Meshing Rules
+
+When a character has multiple power slots, not all combinations are valid. The system must validate compatibility both in the admin character creation UI (client-side warnings) and on the server (reject on save).
+
+### 5.1 Compatibility Flags
+
+Five boolean flags on each power define meshing constraints:
+
+| Flag | Meaning | Game Mechanic |
+|------|---------|---------------|
+| `murderer` | Player's vote also eliminates the target | Secondary elimination on vote |
+| `predicter` | Player wins if their vote target is an infiltrator | Alternate win condition on vote |
+| `twoXVote` | Player's vote counts as two | Double voting weight |
+| `silencer` | Player can silence another's vote | Silenced vote removed from tally |
+| `suicidal` | Player wins if they are voted out | Alternate win condition on elimination |
+
+### 5.2 Core Meshing Rule: Murderer / Predicter / TwoXVote vs. Post-Swap Learn/Reveal
+
+Powers flagged `murderer`, `predicter`, or `twoXVote` **cannot coexist** with any Learn or Reveal power that has `timing: "after"` (post-swap). The reasoning: these flags affect voting outcomes, and post-swap Learn/Reveal gives information that would make the combination overpowered.
+
+```
+IF power1 has (murderer=true OR predicter=true OR twoXVote=true)
+AND power2 is (type=Learn OR type=Reveal) with timing="after"
+→ INCOMPATIBLE
+```
+
+Same check applies in reverse (power2 has the flag, power1 is post-swap Learn/Reveal).
+
+**Pre-swap Learn/Reveal is fine** — `timing: "before"` does not conflict with these flags.
+
+### 5.3 Silencer Rules
+
+Currently defined as **TBD** — implement the flag check infrastructure but allow all silencer combinations for now. When rules are finalized, the validation function just needs an additional clause.
+
+### 5.4 Suicidal Rules
+
+Currently defined as **TBD** — same approach. Allow all suicidal combinations. The flag exists and is tracked, but no rejection logic yet.
+
+### 5.5 Non-Constraint Flags
+
+These are game mechanic flags, **NOT** meshing constraints — they do not restrict which powers can coexist:
+
+| Flag | Purpose |
+|------|---------|
+| `infected` | Triggers infection mechanic when a role is seen (Learn/Reveal). Not a compatibility constraint. |
+| `vault` | Power can target center/NPC cards. Just a behavior toggle. |
+| `lookPostAction` | Player sees their new role after a self-swap. Behavioral. |
+| `doPower` | Player can execute new role's power after seeing it. Behavioral. |
+| `fixedAction` | Power auto-executes with no target choice. Behavioral. |
+| `fixedInitiative` | Initiative can't be altered by other powers. Behavioral. |
+| `allowRandom` | Random target selection is valid. Behavioral. |
+| `selfDestruct` | Power involves swapping own role away. Behavioral. |
+
+### 5.6 Validation Functions
+
+Implement these utilities (shared or server-side):
+
+```typescript
+function canMeshPowers(power1: Power, power2: Power): { valid: boolean; reason?: string } {
+  // Murderer + post-swap Learn/Reveal
+  if (power1.murderer && isPostSwapLearnReveal(power2)) {
+    return { valid: false, reason: "Murderer cannot coexist with post-swap Learn/Reveal" };
+  }
+  if (power2.murderer && isPostSwapLearnReveal(power1)) {
+    return { valid: false, reason: "Murderer cannot coexist with post-swap Learn/Reveal" };
+  }
+
+  // Predicter + post-swap Learn/Reveal
+  if (power1.predicter && isPostSwapLearnReveal(power2)) {
+    return { valid: false, reason: "Predicter cannot coexist with post-swap Learn/Reveal" };
+  }
+  if (power2.predicter && isPostSwapLearnReveal(power1)) {
+    return { valid: false, reason: "Predicter cannot coexist with post-swap Learn/Reveal" };
+  }
+
+  // TwoXVote + post-swap Learn/Reveal
+  if (power1.twoXVote && isPostSwapLearnReveal(power2)) {
+    return { valid: false, reason: "2x Vote cannot coexist with post-swap Learn/Reveal" };
+  }
+  if (power2.twoXVote && isPostSwapLearnReveal(power1)) {
+    return { valid: false, reason: "2x Vote cannot coexist with post-swap Learn/Reveal" };
+  }
+
+  // Silencer: TBD — allow for now
+  // Suicidal: TBD — allow for now
+
+  return { valid: true };
+}
+
+function isPostSwapLearnReveal(power: Power): boolean {
+  return (power.type === "Learn" || power.type === "Reveal") && power.timing === "after";
+}
+
+function validateCharacterPowers(slots: PowerSlot[]): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const resolvedPowers = slots.filter(s => s.powerIndex !== null).map(s => getPowerByIndex(s.powerIndex!));
+
+  for (let i = 0; i < resolvedPowers.length; i++) {
+    for (let j = i + 1; j < resolvedPowers.length; j++) {
+      const result = canMeshPowers(resolvedPowers[i], resolvedPowers[j]);
+      if (!result.valid) {
+        errors.push(result.reason!);
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+```
+
+### 5.7 Where Validation Runs
+
+| Location | When | Action on Failure |
+|----------|------|-------------------|
+| **Admin UI (client)** | On every power slot change | Show warning banner with incompatibility reason. Allow save but with warning. |
+| **Server REST API** | On `POST /api/characters` and `PUT /api/characters/:id` | Return `400` with error messages. Reject save. |
+| **Game start** | When host starts game with selected characters | Emit `error:invalid` if any selected character has invalid power combos. |
+
+### 5.8 Character Complexity Calculation
+
+```typescript
+function getCharacterComplexity(slots: PowerSlot[]): number {
+  return slots
+    .filter(s => s.powerIndex !== null)
+    .reduce((sum, s) => sum + getPowerByIndex(s.powerIndex!).complexity, 0);
+}
+```
+
+Display in the admin UI next to each character. Max theoretical = 9 (three complexity-3 powers). Use for informational purposes — no hard limit enforced yet.
