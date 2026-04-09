@@ -693,3 +693,135 @@ function getCharacterComplexity(slots: PowerSlot[]): number {
 ```
 
 Display in the admin UI next to each character. Max theoretical = 9 (three complexity-3 powers). Use for informational purposes — no hard limit enforced yet.
+
+---
+
+## 6. Infiltration Game — Rules & Flow
+
+Infiltration is a **single-round social deduction game**. Players are secretly assigned characters with teams (innocent vs. infiltrator) and powers. After a mayhem phase where powers are used, players vote on who they think is the infiltrator. The game is always one round — after results, the host can reset to lobby.
+
+### 6.1 Game Phases
+
+| Phase | Duration | Description |
+|-------|----------|-------------|
+| **lobby** | Indefinite | Host selects characters, players join and ready up |
+| **reveal** | Until all players acknowledge | Characters dealt, each player privately sees their character |
+| **mayhem** | Until all players acknowledge | Players use their character powers on targets |
+| **voting** | Configurable timer (default 30s) | Players vote for suspected infiltrator or "No Infiltrator" |
+| **results** | View-only, host advances | Votes tallied, winner announced, all roles shown |
+
+### 6.2 Phase Details
+
+#### Lobby
+
+- Host has already selected Infiltration from the game selector.
+- Host sees a **character toggle grid** — all characters from the active theme. Host toggles on/off which characters to include.
+- Host configures: voting timer duration, max players.
+- Players join, pick avatars, ready up.
+- Host can start when:
+  - All players are ready.
+  - `selectedCharacters.length >= players.length + 3` (enough for players + 3 NPCs).
+  - At least one selected character has `team: "infiltrator"`.
+  - All selected characters share the same theme.
+
+#### Reveal Phase
+
+1. Server shuffles the selected characters.
+2. Deals one character to each player → sets `player.character` and `player.team`.
+3. Remaining characters (exactly 3) become NPCs → created as `Player` objects with `isNPC: true`.
+4. Server emits `player:character` privately to each player with their assigned character (name, description, team, powers).
+5. Each player sees their character card on their device and taps **"Acknowledge"**.
+6. Player sends `player:ackCharacter` → server sets `player.characterAcknowledged = true`.
+7. Phase advances to mayhem when **all** players have acknowledged (no timer — wait for everyone).
+8. Host screen shows which players have acknowledged (checkmarks).
+
+#### Mayhem Phase
+
+1. Server determines which players have actionable powers (type ≠ `None`, type ≠ `Condition`).
+2. For each player with an actionable power, server sends `power:prompt` privately with:
+   - Power name and description
+   - Valid targets (filtered: exclude revealed players, protected players, self where applicable)
+   - Target type (Player, Center/NPC, Role, Self)
+   - Amount (how many targets to select)
+3. Player selects target(s) via button-based UI and submits `power:submit` with `{ targets: string[] }`.
+4. Server executes powers in **initiative order** (Section 4.8):
+   - Priority setting (1) → Priority alteration (2) → Protection (3) → Blocking (4) → Reveal-before (5) → Learn-before (10) → Swap (50) → Swap Reversal (60) → Learn-after (90) → Reveal-after (95)
+5. Players with `fixedAction` powers or `None` powers just tap **"Acknowledge"** (no target selection needed).
+6. After acting, player sends `player:ackMayhem` → server sets `player.mayhemAcknowledged = true`.
+7. Phase advances to voting when **all** players have acknowledged mayhem.
+8. Power results are sent privately via `power:result` to the acting player only. Public reveals go to all via `room:state`.
+
+#### Voting Phase
+
+1. Server starts a timer (configurable, default 30 seconds).
+2. Each player sees a list of all other players (not self) plus a **"No Infiltrator"** option (themed label from theme data).
+3. Player taps a name to vote → sends `game:submit` with `{ value: targetSocketId | "no_infiltrator" }`.
+4. A player can only vote once — second vote attempts are rejected.
+5. **Votes not submitted before timer expires are not counted** (they just don't exist).
+6. Phase can end early if **all** players have voted before the timer expires.
+7. Tamper powers take effect during vote tallying:
+   - **Silenced** players' votes are removed from the tally.
+   - **Duplicate** powers add extra copies of a vote.
+   - **Death Vote**: if the voter's target gets most votes, the Death Vote target is also eliminated.
+   - **2x Vote**: voter's vote counts as two.
+
+#### Results Phase
+
+1. Server tallies votes (after applying tamper effects).
+2. Determines the most-voted player (ties broken by earliest vote timestamp).
+3. Determines winner:
+   - **Innocents win** if the most-voted player is on the infiltrator team.
+   - **Infiltrators win** if "No Infiltrator" got the most votes, OR the most-voted player is on the innocent team.
+   - **No winner** if no votes were cast.
+4. Check condition powers:
+   - **Deathwish**: If the most-voted player has the Deathwish condition, that player wins individually (regardless of team outcome).
+   - **Oracle**: If a player with Oracle voted for someone who is actually an infiltrator, that player wins individually.
+5. Server reveals all characters and teams to all players.
+6. Server emits full results via `room:state` including: vote tallies, winner, all player characters/teams, condition power outcomes.
+7. Host sees a results panel. No timer — host manually resets to lobby when ready.
+
+### 6.3 Win Conditions Summary
+
+| Condition | Who Wins | When |
+|-----------|----------|------|
+| Most-voted player is infiltrator | Innocent team | Normal vote outcome |
+| Most-voted player is innocent | Infiltrator team | Innocents guessed wrong |
+| "No Infiltrator" gets most votes | Infiltrator team | Group failed to identify |
+| No votes cast | No winner | Stalemate |
+| Deathwish player is most-voted | That player (individual) | Overrides team outcome for that player |
+| Oracle player voted for an infiltrator | That player (individual) | Additional individual win alongside team outcome |
+
+### 6.4 Infection Mechanic
+
+When a Learn or Reveal power causes a player to **see** an infiltrator's role (via Role Peek, Expose Role, etc.), the infection mechanic can trigger:
+
+1. Check if the power has `infected: true` in the power table.
+2. Check if the target character has `infectedUponSight: true` in the character data.
+3. If **both** are true, the acting player's team flips to `infiltrator`.
+4. The player is notified privately that their allegiance has changed.
+5. Their win condition now aligns with the infiltrator team.
+
+**Exception**: `Roll Rolecall` (index 6) has `infected: false` — it reveals player counts by role, not actual identities, so it cannot trigger infection.
+
+**Timing**: Infection occurs immediately when the power resolves during mayhem, not at end of phase.
+
+### 6.5 Player Limits (Infiltration-Specific)
+
+| Constraint | Value |
+|-----------|-------|
+| Minimum players | 3 |
+| Maximum players | 8 |
+| NPCs per game | Always exactly 3 |
+| Min selected characters | `players + 3` |
+| Min infiltrator characters | At least 1 among selected |
+
+### 6.6 Host Settings (Infiltration)
+
+```typescript
+interface InfiltrationSettings {
+  selectedCharacters: string[];  // Character IDs toggled on by host
+  votingTimerMs: number;         // Voting phase duration in ms, default 30000
+}
+```
+
+The host configures these during lobby via the character toggle grid and a timer slider. Settings are sent to the server via `game:setInfiltrationOptions`.
