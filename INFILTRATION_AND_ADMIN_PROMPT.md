@@ -446,3 +446,118 @@ apps/server/src/data/powerTable.ts   // parsed + typed version
 ```
 
 Provide a `getPowerByIndex(index: number): Power` helper and a `filterPowers(type?, item?, where?): Power[]` helper for the cascading admin dropdowns.
+
+---
+
+## 4. Power Table Reference
+
+The complete 46-power table. This is the single source of truth for all powers. Store as a typed constant or parsed CSV on the server. The `#` in descriptions is a placeholder for the configured amount.
+
+### 4.1 Learn Powers (Index 1–16)
+
+| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
+|-----|-----------|------|-------------|------|-------|-----|-----|-------|
+| 1 | 10 90 | Role Peek | Learn # Player's Roles | Role | Player | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
+| 2 | 10 90 | Vault Peek | Learn # Center's Roles | Role | Center | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
+| 3 | 10 90 | Last Look | Learn Final Role | Role | Self | 1 | 1 | fixedAction, infected, suicidal, murderer, predicter |
+| 4 | 10 90 | Allegiance Check | Learn # Player's Teams | Team | Player | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
+| 5 | 10 90 | Vault Allegiance | Learn # Center's Teams | Team | Center | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
+| 6 | 10 90 | Roll Rolecall | Learn # Players With Role | Players | Role | 1 | 99 | suicidal, murderer, predicter |
+| 7 | 10 90 | Role Beacon | Learn All Players With Same Role | Players | Role Assoc. | 99 | 99 | fixedAction, infected, suicidal, murderer, predicter |
+| 8 | 10 90 | Team Echo | Learn # Players With Same Team | Players | Team Assoc. | 1 | 99 | fixedAction, infected, suicidal, murderer, predicter |
+| 9 | 90 | Action Trace | Learn # Players Did Action Type | Players | Type | 1 | 99 | fixedInitiative, infected, suicidal, murderer, predicter |
+| 10 | 90 | Action Log | Learn # Players Who Moved/Learned | Players | Action | 1 | 99 | fixedInitiative, infected, suicidal, murderer, predicter |
+| 11 | 10 90 | Tactic Tell | Learn # Player Action Type | Type | Player | 1 | 3 | infected, suicidal, murderer, predicter |
+| 12 | 10 90 | Role Tally | Learn up to # role are Players | Amount | Role | 1 | 99 | infected, suicidal, murderer, predicter |
+| 13 | 10 90 | Team Tally | Learn up to # Team are Players | Amount | Association | 1 | 3 | infected, suicidal, murderer, predicter |
+| 14 | 10 90 | Who's Missing | Learn up to # role are Center | Amount | Role | 1 | 99 | infected, suicidal, murderer, predicter |
+| 15 | 10 90 | Absentee Ballot | Learn up to # Team are Center | Amount | Association | 1 | 3 | infected, suicidal, murderer, predicter |
+| 16 | 90 | Sixth Sense | Learn if # Players Were Moved | Status | Player | 1 | 99 | infected, suicidal, murderer, predicter |
+
+### 4.2 Reveal Powers (Index 17–20)
+
+| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
+|-----|-----------|------|-------------|------|-------|-----|-----|-------|
+| 17 | 5 95 | Expose Role | Reveal # Player Role | Role | Player | 1 | 99 | infected, suicidal, murderer, predicter, allowRandom |
+| 18 | 5 95 | Open Vault | Reveal # Center Role | Role | Center | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
+| 19 | 5 95 | Face Reveal | Reveal self | Role | Self | 1 | 1 | fixedAction, infected, suicidal, murderer, predicter |
+| 20 | 5 95 | Role Spotlight | Reveal # player of role | Role | Role | 1 | 99 | fixedAction, infected, suicidal, murderer, predicter |
+
+### 4.3 Swap Powers (Index 21–27)
+
+| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
+|-----|-----------|------|-------------|------|-------|-----|-----|-------|
+| 21 | 50 | Role Swap | Swap Two Players Roles (can use Vault) | Role | Player | 2 | 2 | fixedInitiative, allowRandom, vault, selfDestruct |
+| 22 | 50 | Self Swap | Swap One Player's Role With Own Role (can use Vault) | Role | Player | 1 | 1 | fixedInitiative, lookPostAction, doPower, allowRandom, vault, selfDestruct |
+| 23 | 50 | Swap Role Team | Swap A Player's Role and Team | Role Team | Player | 2 | 2 | fixedInitiative, allowRandom, vault, selfDestruct |
+| 24 | 60 | Swap Reversal | Swap # Swaps of Roles | Role | Role | 1 | 99 | fixedAction, fixedInitiative |
+| 25 | 50 | Team Exchange | Swap Own Team With Another Player | Team | Self | 1 | 1 | fixedInitiative, lookPostAction, doPower, allowRandom, vault, selfDestruct |
+| 26 | 50 | Recruit | Swap another's Team to your own | Team | Self | 1 | 1 | fixedInitiative, allowRandom, vault, selfDestruct |
+| 27 | 50 | Team Shuffle | Swap Two Players Teams | Team | Player Player | 2 | 2 | fixedInitiative, allowRandom, vault, selfDestruct |
+
+### 4.4 Condition Powers (Index 28–29)
+
+| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
+|-----|-----------|------|-------------|------|-------|-----|-----|-------|
+| 28 | 0 | Deathwish | Wins If Voted Out | Win | Self | 0 | 0 | fixedInitiative, infected |
+| 29 | 0 | Oracle | Wins If Vote Is Infiltrator | Win | Vote | 0 | 0 | fixedInitiative, infected |
+
+### 4.5 Alter Powers (Index 30–37)
+
+| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
+|-----|-----------|------|-------------|------|-------|-----|-----|-------|
+| 30 | 4 | Nope! | Block # Player From Doing Actions | Block | Player | 1 | 99 | fixedInitiative, allowRandom |
+| 31 | 4 | Role Jam | Block # Role From Doing Actions | Block | Role | 1 | 99 | fixedInitiative |
+| 32 | 2 | Priority Warp | Alter # Players Action * Priority | Initiative | Player | 1 | 99 | fixedInitiative, allowRandom |
+| 33 | 2 | Order Rewrite | Alter # Roles Action * Priority | Initiative | Role | 1 | 99 | fixedInitiative |
+| 34 | 1 | Hard Priority | Set # Players Action Priority | Initiative | Player | 1 | 99 | allowRandom |
+| 35 | 1 | Order Rule | Set # Roles Action Priority | Initiative | Role | 1 | 99 | — |
+| 36 | 3 | Shield | Protect # Player From * Actions | Protect | Player | 1 | 99 | fixedInitiative, allowRandom |
+| 37 | 3 | Guard | Protect # * Roles From * Actions | Protect | Role | 1 | 99 | fixedInitiative |
+
+### 4.6 Tamper Powers (Index 38–44)
+
+| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
+|-----|-----------|------|-------------|------|-------|-----|-----|-------|
+| 38 | 0 | Mute Vote | Silence # Player From Voting | Silence | Player | 1 | 99 | fixedInitiative, murderer, allowRandom |
+| 39 | 0 | Vote Jam | Silence # Role From Voting | Silence | Role | 1 | 99 | fixedInitiative, murderer |
+| 40 | 0 | Vote Encore | Duplicate Own Vote | Duplicate | Player | 0 | 0 | fixedAction, fixedInitiative |
+| 41 | 0 | Vote Echo | Duplicate Role Votes | Duplicate | Role | 0 | 0 | fixedAction, fixedInitiative |
+| 42 | 0 | Double Tap | Duplicate Own Vote | Duplicate | Self | 0 | 0 | fixedAction, fixedInitiative |
+| 43 | 0 | Death Vote | Player's Vote Is Killed | Kill | Player | 1 | 1 | fixedAction, fixedInitiative |
+| 44 | 0 | Last Laugh | Player's Vote Is Killed, If Player is Killed | Destruct | Player | 1 | 1 | fixedAction, fixedInitiative |
+
+### 4.7 Settings & None (Index 45–46)
+
+| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
+|-----|-----------|------|-------------|------|-------|-----|-----|-------|
+| 45 | 0 | Time Warp | Shorten or lengthen discussion times | Time | Room | 0 | 99 | fixedAction, fixedInitiative |
+| 46 | 0 | No Action | Has no power, can be modified | NoAction | None | 0 | 0 | fixedAction, fixedInitiative |
+
+### 4.8 Initiative Ordering Rules
+
+Initiative determines when a power executes during the mayhem phase. Lower numbers execute first.
+
+| Initiative | Phase | Powers |
+|-----------|-------|--------|
+| 0 | Voting/passive (not during mayhem) | Conditions, Tamper, Settings, No Action |
+| 1 | Earliest mayhem — hard priority setting | Hard Priority, Order Rule |
+| 2 | Early mayhem — priority alteration | Priority Warp, Order Rewrite |
+| 3 | Early-mid mayhem — protection | Shield, Guard |
+| 4 | Mid mayhem — blocking | Nope!, Role Jam |
+| 5 | Pre-action reveal | Expose Role, Open Vault, Face Reveal, Role Spotlight (early timing) |
+| 10 | Pre-swap learn | All Learn powers (early timing) |
+| 50 | Swap phase | All Swap powers |
+| 60 | Post-swap reversal | Swap Reversal |
+| 90 | Post-swap learn | All Learn powers (late timing), Action Trace, Action Log |
+| 95 | Post-action reveal | Reveal powers (late timing) |
+
+Powers with two initiative values (e.g., `"10 90"`) can be configured to run at either timing via the `timing` field on the power slot: `"before"` = use the lower value, `"after"` = use the higher value.
+
+### 4.9 Complexity Ratings
+
+| Rating | Meaning | Examples |
+|--------|---------|----------|
+| 1 | Simple — no targeting, no lookups | No Action, Face Reveal, Deathwish, Double Tap |
+| 2 | Medium — target selection or mid-level interaction | Role Peek, Shield, Nope!, Role Swap, Mute Vote |
+| 3 | High — lookup-heavy, mass effects, timing-sensitive | Roll Rolecall, Action Trace, Role Jam, Swap Reversal, Role Spotlight |
