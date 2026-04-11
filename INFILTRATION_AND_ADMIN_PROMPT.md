@@ -68,7 +68,8 @@ Server persists to a JSON file (e.g., `data/characters.json`). Each entry:
         "canTargetPlayers": true,
         "canTargetNPCs": false,
         "canTargetSelf": false,
-        "canTargetRole": false
+        "canTargetRole": false,
+        "doPower": false
       }
     ]
   },
@@ -99,8 +100,8 @@ Each power slot uses a series of dependent dropdowns that narrow down to a speci
 3. **Where** — Filters based on Type+Item (e.g., for Learn+Role: `Player`, `Self`)
 4. **Disambiguation** — If multiple powers match the Type+Item+Where combo, show a dropdown of matching power names
 5. **Amount** — Number input clamped to the power's Min/Max range (auto-set and hidden when min === max)
-6. **Target Scope** — Two toggles: `canTargetPlayers`, `canTargetNPCs` (only shown when the power has `targetScopes` in the power table)
-7. **Modifiers** — Checkboxes: `lookPostAction` (only for Swap powers where the power table default is true), `doPower` (only for Reveal/Swap powers where the power table default is true)
+6. **Scope Toggles** — When the power has `targetScopes`, first show a scope dropdown (Players Only / NPC Only / Players and NPC) to set `canTargetPlayers`/`canTargetNPCs` defaults. Then show all four scope booleans that are `true` as toggles — admin can toggle any off.
+7. **Modifiers** — Checkboxes: `lookPostAction` (only for Swap powers where the power table default is true), `doPower` (only for Learn/Reveal/Swap powers where the power table default is true)
 
 When a slot is fully configured, show the resolved power name and description from the power table.
 
@@ -318,7 +319,7 @@ interface Character {
 
 Each character has 1–3 **power slots**. A power slot stores the admin's configuration for one power — which power was selected and how the admin configured its variable fields. All other fields (flags, initiative, description, complexity, etc.) are **resolved at runtime** by looking up the power in the 41-power table via `powerIndex`.
 
-Each power type has its own set of fields. Fields marked _(from power table)_ use the power table value as the default; the admin can override. For types that involve targeting, the scope booleans (`canTargetPlayers`, `canTargetNPCs`, `canTargetSelf`, `canTargetRole`) replace the raw `where` string from the power table — see Section 3.3 for the derivation mapping.
+Each power type has its own set of fields. Fields marked _(from power table)_ use the power table value as the default; the admin can override. For types that involve targeting, the **scope booleans** (`canTargetPlayers`, `canTargetNPCs`, `canTargetSelf`, `canTargetRole`) replace the raw `where` string from the power table — defaults come from the `where` derivation mapping (Section 3.3). All scope booleans that default to `true` appear as toggles in the character creation UI; the admin can toggle any of them off. The saved values determine what the player can target during mayhem. When a power has `targetScopes`, a scope dropdown (Players Only / NPC Only / Players and NPC) sets the `canTargetPlayers` and `canTargetNPCs` defaults before they appear as toggles.
 
 #### Learn — privately discover information about targets
 
@@ -328,8 +329,8 @@ Each power type has its own set of fields. Fields marked _(from power table)_ us
 | **type**             | `"Learn"`               | Power category.                                                                                          |
 | **item**             | string                  | What the power learns — `Role`, `Team`, `Players`, `Amount`, `Status`, `Type`.                           |
 | **amount**           | number                       | How many targets. Admin picks within power's min–max range.                                              |
-| **fixedInitiative**  | boolean _(from power table)_ | Whether the power's initiative is locked and cannot be altered by other powers (e.g., Priority Warp).    |
-| **canTargetPlayers** | boolean                      | Can target player cards. Derived from power's `where`; overridden by admin when power has `targetScopes`.|
+| **fixedInitiative**  | boolean _(from power table)_ | Whether this power's initiative is fixed. When true, runs at its defined initiative. When false, the order can be adjusted in theme settings. |
+| **canTargetPlayers** | boolean                      | Can target player cards. Default from `where`; overridden by `targetScopes` dropdown when present.       |
 | **canTargetNPCs**    | boolean                 | Can target NPC/center cards. Same derivation.                                                            |
 | **canTargetSelf**    | boolean                 | Targets self. True for Last Look (index 3).                                                              |
 | **canTargetRole**    | boolean                 | Targets by role name. True for Roll Rolecall (6), Role Beacon (7), Role Tally (12).                      |
@@ -343,8 +344,8 @@ Each power type has its own set of fields. Fields marked _(from power table)_ us
 | **type**             | `"Reveal"`                   | Power category.                                           |
 | **item**             | string                       | What is revealed — always `Role` for current Reveal powers.|
 | **amount**           | number                       | How many targets.                                                                     |
-| **fixedInitiative**  | boolean _(from power table)_ | Whether the power's initiative is locked and cannot be altered by other powers.        |
-| **canTargetPlayers** | boolean                      | Can target player cards.                                                              |
+| **fixedInitiative**  | boolean _(from power table)_ | Whether this power's initiative is fixed. When true, runs at its defined initiative. When false, the order can be adjusted in theme settings. |
+| **canTargetPlayers** | boolean                      | Can target player cards. Default from `where`; overridden by `targetScopes` dropdown when present.                                           |
 | **canTargetNPCs**    | boolean                      | Can target NPC/center cards.                              |
 | **canTargetSelf**    | boolean                      | Targets self. True for Face Reveal (index 19).            |
 | **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after the reveal. |
@@ -487,7 +488,7 @@ The power table stores a `where` string for each power. When building a PowerSlo
 | `Room`          | false              | false           | false           | false           | Room-wide effect (no targets) |
 | `None`          | false              | false           | false           | false           | No targeting                  |
 
-When a power **does** have `targetScopes`, the admin form overrides `canTargetPlayers` and `canTargetNPCs` — the admin explicitly picks Players Only, NPC Only, or Players and NPC. The `canTargetSelf` and `canTargetRole` booleans are always derived from `where` and are not admin-configurable.
+When a power **does** have `targetScopes`, a scope dropdown (Players Only / NPC Only / Players and NPC) sets the `canTargetPlayers` and `canTargetNPCs` defaults. After all defaults are set, every scope boolean that is `true` appears as a toggle — the admin can turn any of them off. The saved values are what the player can target during mayhem.
 
 Provide helpers for power lookups:
 
