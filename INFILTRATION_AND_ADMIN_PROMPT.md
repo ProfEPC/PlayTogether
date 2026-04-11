@@ -32,7 +32,6 @@ The admin section is a separate route (`/admin`) accessible from the navigation 
 - Top-level tabbed layout with these tabs:
   - **Characters** — Create, edit, delete characters with power slots.
   - **Themes** — Create, edit, delete cosmetic themes.
-  - **Rooms** — Live debug panel for all active rooms.
 
 ### 1.2 Characters Tab
 
@@ -51,7 +50,7 @@ Server persists to `apps/server/data/characters.json`. Each entry:
 
 ```json
 {
-  "id": "1771889203340",
+  "id": 1771889203340,
   "name": "Seer",
   "data": {
     "name": "Seer",
@@ -64,10 +63,10 @@ Server persists to `apps/server/data/characters.json`. Each entry:
         "powerIndex": 1,
         "type": "Learn",
         "item": "Role",
-        "where": "Player",
-        "amount": "1",
-        "toggles": {},
-        "timing": "before"
+        "amount": 1,
+        "timing": "before",
+        "canTargetPlayers": true,
+        "canTargetNPCs": false
       }
     ]
   },
@@ -95,12 +94,11 @@ Each power slot uses a series of dependent dropdowns that narrow down to a speci
 
 1. **Type** — `Learn`, `Reveal`, `Swap`, `Condition`, `Alter`, `Tamper`, `Settings`, `None`
 2. **Item** — Filters based on Type (e.g., for Learn: `Role`, `Team`, `Players`, `Amount`, `Status`, `Type`)
-3. **Where** — Filters based on Type+Item (e.g., for Learn+Role: `Player`, `Center`, `Self`)
-4. **Disambiguation** — If multiple powers match the Type+Item+Where combo, show a dropdown of matching power names
-5. **Amount** — Number input clamped to the power's Min/Max range
-6. **Timing** — `before` or `after` (for Learn/Reveal powers: whether they execute before or after the Swap phase)
-7. **Target Scope** — `Players Only`, `NPC Only`, `Players and NPC` (for powers that target players or center/NPC cards)
-8. **Modifiers/Toggles** — Checkboxes for applicable flags: `lookPostAction`, `doPower`, etc.
+3. **Disambiguation** — If multiple powers match the Type+Item combo, show a dropdown of matching power names
+4. **Amount** — Number input clamped to the power's Min/Max range (omitted for Settings / None)
+5. **Timing** — `before` or `after` (only for Learn / Reveal powers)
+6. **Target Scope** — Two toggles: `canTargetPlayers`, `canTargetNPCs` (only for types that have `TargetScopeFields`: Learn, Reveal, Swap, Alter)
+7. **Modifiers** — Checkboxes for type-specific flags: `lookPostAction` (Swap), `doPower` (Reveal, Swap)
 
 When a slot is fully configured, show the resolved power name and description from the power table.
 
@@ -139,7 +137,7 @@ Server persists to `apps/server/data/themes.json`.
 
 ```typescript
 interface GameTheme {
-  id: string;
+  id: number;
   name: string;
   description: string;
   teamTerms: {
@@ -147,8 +145,6 @@ interface GameTheme {
     infiltratorPlural: string;
     innocentSingular: string; // e.g. "Employee", "Guard"
     innocentPlural: string;
-    specialSingular: string; // e.g. "Lone Wolf", "Wildcard"
-    specialPlural: string;
   };
   phaseText: {
     revealPrompt: string; // Shown during reveal phase
@@ -169,7 +165,6 @@ interface GameTheme {
     playerOuted: string; // e.g. "{role} exposed!" — use {role} placeholder
     infiltratorWinText: string;
     innocentsWinText: string;
-    specialWinText: string; // e.g. "The wildcard achieved their goal!"
   };
   createdAt: string;
   updatedAt: string;
@@ -178,11 +173,11 @@ interface GameTheme {
 
 #### Default Themes to Seed
 
-| ID            | Name             | Infiltrator   | Innocent | Special   | NPC      | Phases                               |
-| ------------- | ---------------- | ------------- | -------- | --------- | -------- | ------------------------------------ |
-| `debug`       | Debug Theme      | Infiltrator   | Innocent | Special   | NPC      | Reveal / Mayhem / Voting             |
-| `coop_office` | Corporate Office | Corporate Spy | Employee | Freelancer | Safe     | Briefing / Infiltration / Accusation |
-| `heist`       | Heist Scenario   | Thief         | Guard    | Lone Wolf | Treasure | Briefing / Heist / Accusation        |
+| ID            | Name             | Infiltrator   | Innocent | NPC      | Phases                               |
+| ------------- | ---------------- | ------------- | -------- | -------- | ------------------------------------ |
+| `debug`       | Debug Theme      | Infiltrator   | Innocent | NPC      | Reveal / Mayhem / Voting             |
+| `coop_office` | Corporate Office | Corporate Spy | Employee | Safe     | Briefing / Infiltration / Accusation |
+| `heist`       | Heist Scenario   | Thief         | Guard    | Treasure | Briefing / Heist / Accusation        |
 
 #### Theme Editor Form
 
@@ -190,68 +185,18 @@ interface GameTheme {
 - Grouped into sections: Team Terms, Phase Text, Phase Names, Character Terms, Player Terms.
 - Live preview panel showing how each term would appear in-game.
 
-### 1.4 Rooms Tab (Debug Panel)
-
-A live monitoring view of all active rooms on the server. Communicates via Socket.IO admin events or a REST polling endpoint.
-
-#### Features
-
-| Feature          | Description                                                                             |
-| ---------------- | --------------------------------------------------------------------------------------- |
-| **Room List**    | Table of all active rooms: room code, player count, game phase, created at              |
-| **Room Detail**  | Click a room → see full `RoomState` as formatted JSON                                   |
-| **Force Close**  | Button to forcibly close any room (emits `room:closed` to all players, cleans up state) |
-| **Export State** | Download the current `RoomState` as a JSON file                                         |
-| **Player List**  | Per-room: all players with connection status, team, character, vote                     |
-| **Live Updates** | Room state auto-refreshes (via socket subscription or 2-second polling)                 |
-
-#### Admin Socket Events or REST
-
-Option A (Socket-based — preferred):
-
-| Event              | Direction | Payload        | Description                   |
-| ------------------ | --------- | -------------- | ----------------------------- |
-| `admin:listRooms`  | C -> S    | `{}`           | Request list of all rooms     |
-| `admin:rooms`      | S -> C    | `RoomState[]`  | Full state of all rooms       |
-| `admin:forceClose` | C -> S    | `{ roomCode }` | Force close a room            |
-| `admin:exportRoom` | C -> S    | `{ roomCode }` | Request room state for export |
-| `admin:roomExport` | S -> C    | `RoomState`    | Room state for download       |
-
-Option B (REST-based — simpler):
-
-| Method | Endpoint                       | Description              |
-| ------ | ------------------------------ | ------------------------ |
-| `GET`  | `/api/admin/rooms`             | List all rooms (summary) |
-| `GET`  | `/api/admin/rooms/:code`       | Full room state          |
-| `POST` | `/api/admin/rooms/:code/close` | Force close room         |
-
-Guard admin endpoints with a simple check (e.g., query param `?key=admin` or just leave unguarded for local dev).
-
-### 1.5 Character Designer Workflow
-
-The admin's character + theme tabs together form a "game designer" workflow:
-
-1. **Create a theme** — Define the cosmetic labels for a game scenario.
-2. **Create characters** — Build characters tagged to that theme, selecting powers from the power table.
-3. **Validate** — The validation panel catches incompatible power combos and shows complexity.
-4. **Test in-game** — Host a room, select Infiltration, choose characters from that theme, and play.
-5. **Iterate** — Return to admin, tweak characters, test again.
-
-Characters are filtered by theme everywhere — in the admin list, in the host's character selection grid during lobby, and in the game itself.
-
 ---
 
 ## 2. Theme System
 
-Themes are a **cosmetic overlay** for the Infiltration game. They change every player-facing label, prompt, and term without altering any game mechanics. The **host selects one or more themes** during lobby setup, which in turn populates the character selection grid with characters from those themes.
+Themes are a **cosmetic overlay** for the Infiltration game. They change every player-facing label, prompt, and term without altering any game mechanics. The **host selects a single theme** during lobby setup, which in turn populates the character selection grid with characters from that theme.
 
 ### 2.1 How Themes Are Selected
 
-1. In the admin panel, every character is tagged with a `theme` ID (e.g., `"debug"`, `"heist"`).
-2. During lobby setup, the host first **selects theme(s)** from a theme picker (dropdown or toggle list of available themes). This determines which characters appear in the character toggle grid.
-3. The character toggle grid is then populated with **all characters belonging to the selected theme(s)**. The host toggles on/off which characters to include.
-4. If multiple themes are selected, characters from all selected themes are shown together in the grid.
-5. The server loads the matching theme data and injects it into the game state so all clients render themed labels. When multiple themes are selected, a primary theme is used for phase labels and prompts.
+1. In the admin panel, every character is tagged with a `theme` ID (e.g., `"aliens"`, `"noir"`).
+2. During lobby setup, the host first **selects a theme** from a theme picker (radio / select list of available themes). This determines which characters appear in the character toggle grid.
+3. The character toggle grid is then populated with **all characters belonging to the selected theme**. The host toggles on/off which characters to include.
+4. The server loads the matching theme data and injects it into the game state so all clients render themed labels.
 
 ### 2.2 Where Themes Apply
 
@@ -262,9 +207,8 @@ Every piece of player-facing text in Infiltration should use theme terms instead
 | "Infiltrator"                | `teamTerms.infiltratorSingular`  | "Alien"                                                |
 | "Infiltrators"               | `teamTerms.infiltratorPlural`    | "Aliens"                                              |
 | "Innocent"                   | `teamTerms.innocentSingular`     | "Crew"                                                |
-| "Innocents"                  | `teamTerms.innocentPlural`       | "Guards"                                               |
-| "Special"                    | `teamTerms.specialSingular`      | "Lone Wolf"                                            |
-| "Specials"                   | `teamTerms.specialPlural`        | "Lone Wolves"                                          |
+| "Innocents"                  | `teamTerms.innocentPlural`       | "Crew"                                               |
+
 | "NPC"                        | `characterTerms.npcSingular`     | "Treasure"                                             |
 | "NPCs"                       | `characterTerms.npcPlural`       | "Treasures"                                            |
 | "Reveal" phase name          | `phaseNames.reveal`              | "Briefing"                                             |
@@ -276,7 +220,6 @@ Every piece of player-facing text in Infiltration should use theme terms instead
 | "No Infiltrator" vote option | `phaseText.noInfiltratorOption`  | "No thief was recruited for this job!"                 |
 | Win text (infiltrators)      | `playerTerms.infiltratorWinText` | "Thieves made off with the goods!"                     |
 | Win text (innocents)         | `playerTerms.innocentsWinText`   | "Thieves captured!"                                    |
-| Win text (special)           | `playerTerms.specialWinText`     | "The lone wolf achieved their goal!"                   |
 | Player outed text            | `playerTerms.playerOuted`        | "{role} compromised!"                                  |
 
 ### 2.3 Theme in the State Model
@@ -291,7 +234,7 @@ When the game starts, the server resolves the active theme and attaches it to th
 }
 ```
 
-The client reads `room.game.gameData.theme` and passes it to all Infiltration UI components. **No component should hardcode "Infiltrator" / "Innocent" / "Special" / "Mayhem" etc.** — always read from theme.
+The client reads `room.game.gameData.theme` and passes it to all Infiltration UI components. **No component should hardcode "Infiltrator" / "Innocent" / "Mayhem" etc.** — always read from theme. The `special` team has no theme overrides; when a special player wins, display their **character name** (e.g., *"The Oracle achieved their win condition!"*).
 
 ### 2.4 Theme Utility Helper
 
@@ -310,11 +253,8 @@ function getTeamLabel(
       ? theme.teamTerms.infiltratorPlural
       : theme.teamTerms.infiltratorSingular;
   }
-  if (team === "special") {
-    return plural
-      ? theme.teamTerms.specialPlural
-      : theme.teamTerms.specialSingular;
-  }
+  // "special" has no theme override — use the literal word or the character name at display time
+  if (team === "special") return plural ? "Specials" : "Special";
   return plural
     ? theme.teamTerms.innocentPlural
     : theme.teamTerms.innocentSingular;
@@ -344,8 +284,8 @@ function getPlayerOutedText(theme: GameTheme, roleName: string): string {
 
 - A character's `theme` field must reference a valid theme ID from `themes.json`.
 - The admin character creation form should only offer themes that exist.
-- During lobby, the host selects theme(s) first. The character grid only shows characters from the selected theme(s), preventing mismatched selections.
-- The server still validates at game-start that all selected characters belong to the selected theme(s). If violated, emit `error:invalid` with message `"All characters must belong to a selected theme"`.
+- During lobby, the host selects a theme first. The character grid only shows characters from the selected theme, preventing mismatched selections.
+- The server still validates at game-start that all selected characters belong to the selected theme. If violated, emit `error:invalid` with message `"All characters must belong to the selected theme"`.
 
 ---
 
@@ -357,8 +297,8 @@ Infiltration uses a **character-based power system** — there are no hardcoded 
 
 ```typescript
 interface Character {
-  id: string; // Unique ID (timestamp-based or UUID)
-  name: string; // Display name (e.g., "Seer", "Robber")
+  id: number; // Unique numeric ID (e.g., Date.now() at creation)
+  name: string; // Display name (e.g., "Pilot", "Engineer")
   data: {
     name: string; // Same as top-level name
     description: string; // Flavor text shown to players
@@ -374,26 +314,103 @@ interface Character {
 
 ### 3.2 Power Slot Data Model
 
-Each power slot references a power from the 41-power table by index, plus configuration:
+Each power slot references a power from the 41-power table by index, plus configuration. The type is a **discriminated union** keyed on the power `type` field — each variant carries only the fields relevant to that power category.
 
 ```typescript
-interface PowerSlot {
-  powerIndex: number | null; // Index into the power table (see INFILTRATION_POWERS), null = empty slot
-  type: string | null; // Power type: Learn, Reveal, Swap, Condition, Alter, Tamper, Settings, None
-  item: string | null; // What the power acts on: Role, Team, Players, Block, etc.
-  where: string | null; // Target scope: Player, Center, Self, Role, etc.
-  amount: string | null; // How many targets (clamped to power's Min–Max)
-  timing: "before" | "after" | null; // Learn/Reveal timing relative to Swap phase
-  targetScope?: "Players Only" | "NPC Only" | "Players and NPC";
-  toggles: {
-    // Modifier flags
-    lookPostAction?: boolean; // Can see own new role after this power changes it
-    doPower?: boolean; // Can execute new role's power after seeing it
-  };
-  // Resolved at runtime from the power table:
-  // description, initiative, min, max, complexity, and all boolean flags
+/** Shared base for all power slot variants */
+interface PowerSlotBase {
+  powerIndex: number; // Index into the power table (see INFILTRATION_POWERS)
+  item: string; // What the power acts on: Role, Team, Players, Block, etc.
 }
+
+/** Target scope — replaces the old `where` string with explicit booleans */
+interface TargetScopeFields {
+  canTargetPlayers: boolean; // Power can target player cards
+  canTargetNPCs: boolean; // Power can target center/NPC cards
+}
+
+/** Learn powers: see a role/team/status before or after swaps */
+interface LearnPowerSlot extends PowerSlotBase, TargetScopeFields {
+  type: "Learn";
+  amount: number; // How many targets (clamped to power's Min–Max)
+  timing: "before" | "after"; // Execute before or after the Swap phase
+}
+
+/** Reveal powers: publicly announce information */
+interface RevealPowerSlot extends PowerSlotBase, TargetScopeFields {
+  type: "Reveal";
+  amount: number;
+  timing: "before" | "after";
+  doPower: boolean; // Can execute new role's power after seeing it
+}
+
+/** Swap powers: exchange roles between targets */
+interface SwapPowerSlot extends PowerSlotBase, TargetScopeFields {
+  type: "Swap";
+  amount: number;
+  lookPostAction: boolean; // Can see own new role after swap
+  doPower: boolean; // Can execute new role's power after swap
+}
+
+/** Condition powers: apply a conditional effect */
+interface ConditionPowerSlot extends PowerSlotBase {
+  type: "Condition";
+  amount: number;
+}
+
+/** Alter powers: modify role, team, or vote properties */
+interface AlterPowerSlot extends PowerSlotBase, TargetScopeFields {
+  type: "Alter";
+  amount: number;
+}
+
+/** Tamper powers: interfere with voting */
+interface TamperPowerSlot extends PowerSlotBase {
+  type: "Tamper";
+  amount: number;
+}
+
+/** Settings powers: change game settings (room-wide, no targets) */
+interface SettingsPowerSlot extends PowerSlotBase {
+  type: "Settings";
+}
+
+/** None powers: no action (placeholder) */
+interface NonePowerSlot extends PowerSlotBase {
+  type: "None";
+}
+
+type PowerSlot =
+  | LearnPowerSlot
+  | RevealPowerSlot
+  | SwapPowerSlot
+  | ConditionPowerSlot
+  | AlterPowerSlot
+  | TamperPowerSlot
+  | SettingsPowerSlot
+  | NonePowerSlot;
 ```
+
+**Why a discriminated union?**
+
+- `Learn` and `Reveal` need `timing`; `Swap` does not.
+- `Swap` and `Reveal` need `lookPostAction` / `doPower`; `Alter` does not.
+- `Settings` and `None` have no targets, amounts, or scope — no extra fields.
+- `Condition` and `Tamper` target players implicitly (no NPC interaction) — no scope fields.
+- The admin form switches sub-forms based on `type`, so the union maps cleanly to the UI.
+
+**Mapping `canTargetPlayers` / `canTargetNPCs` from the existing power table:**
+
+| Old `where` value | `canTargetPlayers` | `canTargetNPCs` |
+| ------------------ | ------------------ | --------------- |
+| `"Player"`         | `true`             | `false`         |
+| `"Center"`         | `false`            | `true`          |
+| `"Self"`           | `true`             | `false`         |
+| `"Role"`           | `true`             | `true`          |
+| `"Type"`           | `true`             | `true`          |
+| `"Reversal"`       | `true`             | `false`         |
+
+When a power has `targetScopes` in the TS constants (e.g., `["Players Only", "NPC Only", "Players and NPC"]`), the admin form shows a toggle for each scope and the host can pick. The booleans above are the defaults.
 
 ### 3.3 The 41-Power Table (Existing TypeScript Constants)
 
@@ -480,9 +497,9 @@ function filterPowers(
 
 ### 3.5 How Characters Are Used in a Game
 
-1. **Host selects theme(s)** — During lobby, the host first picks one or more themes. This populates the character toggle grid with all characters from those themes.
-2. **Host selects characters** — The host sees a toggle grid of characters from the selected theme(s). They toggle on enough characters for all players + 3 NPCs.
-3. **Validation** — Server checks: `selectedCharacters.length >= players.length + 3`. At least one character must have `team: "infiltrator"`. All must belong to the selected theme(s).
+1. **Host selects a theme** — During lobby, the host picks a single theme. This populates the character toggle grid with all characters from that theme.
+2. **Host selects characters** — The host sees a toggle grid of characters from the selected theme. They toggle on enough characters for all players + 3 NPCs.
+3. **Validation** — Server checks: `selectedCharacters.length >= players.length + 3`. At least one character must have `team: "infiltrator"`. All must belong to the selected theme.
 4. **Dealing** — When the game starts, server shuffles selected characters and deals them:
    - Each player gets one character (assigned to `player.character`).
    - The remaining 3 become **NPCs** (center cards). NPCs are virtual players with `isNPC: true`.
@@ -824,15 +841,15 @@ Infiltration is a **single-round social deduction game**. Players are secretly a
 #### Lobby
 
 - Host has already selected Infiltration from the game selector.
-- Host first **selects theme(s)** from a theme picker. This populates the character toggle grid with characters from the selected theme(s).
-- Host sees a **character toggle grid** — all characters from the selected theme(s). Host toggles on/off which characters to include.
+- Host first **selects a theme** from a theme picker. This populates the character toggle grid with characters from the selected theme.
+- Host sees a **character toggle grid** — all characters from the selected theme. Host toggles on/off which characters to include.
 - Host configures: voting timer duration, max players.
 - Players join, pick avatars, ready up.
 - Host can start when:
   - All players are ready.
   - `selectedCharacters.length >= players.length + 3` (enough for players + 3 NPCs).
   - At least one selected character has `team: "infiltrator"`.
-  - All selected characters belong to the selected theme(s).
+  - All selected characters belong to the selected theme.
 
 #### Reveal Phase
 
@@ -931,10 +948,10 @@ When a Learn or Reveal power causes a player to **see** an infiltrator's role (v
 
 ```typescript
 interface InfiltrationSettings {
-  selectedThemes: string[]; // Theme IDs selected by host (populates character grid)
-  selectedCharacters: string[]; // Character IDs toggled on by host
+  selectedTheme: string; // Single theme ID selected by host (populates character grid)
+  selectedCharacters: number[]; // Character IDs toggled on by host
   votingTimerMs: number; // Voting phase duration in ms, default 30000
 }
 ```
 
-The host configures these during lobby: first selecting theme(s), then toggling characters from those themes, and adjusting the timer slider. Settings are sent to the server via `game:setInfiltrationOptions`.
+The host configures these during lobby: first selecting a theme, then toggling characters from that theme, and adjusting the timer slider. Settings are sent to the server via `game:setInfiltrationOptions`.
