@@ -46,37 +46,18 @@ A full character creation and management UI. Characters are persisted to a JSON 
 | `PUT`    | `/api/characters/:id` | Update an existing character                   |
 | `DELETE` | `/api/characters/:id` | Delete a character                             |
 
-Server persists to a JSON file (e.g., `data/characters.json`). Each entry:
+Server persists to a JSON file (e.g., `data/characters.json`). Each entry has:
 
-```json
-{
-  "id": 1771889203340,
-  "name": "Seer",
-  "data": {
-    "name": "Seer",
-    "description": "Sees one player's role",
-    "team": "innocent",
-    "theme": "debug",
-    "infectedUponSight": false,
-    "powerSlots": [
-      {
-        "powerIndex": 1,
-        "type": "Learn",
-        "item": "Role",
-        "amount": 1,
-        "fixedInitiative": false,
-        "canTargetPlayers": true,
-        "canTargetNPCs": false,
-        "canTargetSelf": false,
-        "canTargetRole": false,
-        "doPower": false
-      }
-    ]
-  },
-  "createdAt": "2026-02-23T23:26:43.340Z",
-  "updatedAt": "2026-02-23T23:26:43.340Z"
-}
-```
+- **id** — numeric unique ID (e.g., `Date.now()` at creation)
+- **name** — character display name
+- **data** — object containing:
+  - **name** — same as top-level name
+  - **description** — flavor text shown to players
+  - **team** — `"innocent"`, `"infiltrator"`, or `"special"`
+  - **theme** — theme ID this character belongs to
+  - **infectedUponSight** — boolean; if true, learning this character's role can trigger team infection
+  - **powerSlots** — array of 1–3 power slot objects (see Section 3.2 for per-type fields)
+- **createdAt** / **updatedAt** — ISO timestamp strings
 
 #### Character Creation Form
 
@@ -138,41 +119,16 @@ Server persists to a JSON file (e.g., `data/themes.json`).
 
 #### Theme Data Structure
 
-```typescript
-interface GameTheme {
-  id: number;
-  name: string;
-  description: string;
-  teamTerms: {
-    infiltratorSingular: string; // e.g. "Spy", "Thief"
-    infiltratorPlural: string;
-    innocentSingular: string; // e.g. "Employee", "Guard"
-    innocentPlural: string;
-  };
-  phaseText: {
-    revealPrompt: string; // Shown during reveal phase
-    mayhemPrompt: string; // Shown during mayhem phase
-    votingPrompt: string; // Shown during voting phase
-    noInfiltratorOption: string; // Label for "no infiltrator" vote option
-  };
-  phaseNames: {
-    reveal: string; // e.g. "Briefing"
-    mayhem: string; // e.g. "Heist"
-    voting: string; // e.g. "Accusation"
-  };
-  characterTerms: {
-    npcSingular: string; // e.g. "Safe", "Treasure"
-    npcPlural: string;
-  };
-  playerTerms: {
-    playerOuted: string; // e.g. "{role} exposed!" — use {role} placeholder
-    infiltratorWinText: string;
-    innocentsWinText: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-```
+A theme object contains:
+
+- **id** — numeric unique ID
+- **name** / **description** — display name and description
+- **teamTerms** — object with four strings: `infiltratorSingular`, `infiltratorPlural`, `innocentSingular`, `innocentPlural` (e.g., "Spy" / "Spies" / "Employee" / "Employees")
+- **phaseText** — object with four strings: `revealPrompt`, `mayhemPrompt`, `votingPrompt`, `noInfiltratorOption` — text shown during each phase
+- **phaseNames** — object with three strings: `reveal`, `mayhem`, `voting` — the themed name for each phase (e.g., "Briefing", "Heist", "Accusation")
+- **characterTerms** — object with `npcSingular` and `npcPlural` (e.g., "Safe" / "Safes")
+- **playerTerms** — object with `playerOuted` (use `{role}` placeholder), `infiltratorWinText`, `innocentsWinText`
+- **createdAt** / **updatedAt** — ISO timestamp strings
 
 #### Default Themes to Seed
 
@@ -227,61 +183,16 @@ Every piece of player-facing text in Infiltration should use theme terms instead
 
 ### 2.3 Theme in the State Model
 
-When the game starts, the server resolves the active theme and attaches it to the game state so clients can render it:
-
-```typescript
-// Inside GameState.gameData for infiltration
-{
-  theme: GameTheme; // Full resolved theme object
-  // ... other infiltration game data
-}
-```
-
-The client reads `room.game.gameData.theme` and passes it to all Infiltration UI components. **No component should hardcode "Infiltrator" / "Innocent" / "Mayhem" etc.** — always read from theme. The `special` team has no theme overrides; when a special player wins, display their **character name** (e.g., _"The Oracle achieved their win condition!"_).
+When the game starts, the server resolves the active theme and attaches the full theme object to `GameState.gameData`. The client reads the theme from the room’s game state and passes it to all Infiltration UI components. **No component should hardcode “Infiltrator” / “Innocent” / “Mayhem” etc.** — always read from the theme. The `special` team has no theme overrides; when a special player wins, display their **character name** (e.g., _“The Oracle achieved their win condition!”_).
 
 ### 2.4 Theme Utility Helper
 
-Create a shared utility for resolving themed text:
+Create a shared utility (accessible to both server and client) with helpers for resolving themed text:
 
-```typescript
-// Shared utility — place in a shared package or utils folder accessible to both server and client
-
-function getTeamLabel(
-  theme: GameTheme,
-  team: "innocent" | "infiltrator" | "special",
-  plural = false,
-): string {
-  if (team === "infiltrator") {
-    return plural
-      ? theme.teamTerms.infiltratorPlural
-      : theme.teamTerms.infiltratorSingular;
-  }
-  // "special" has no theme override — use the literal word or the character name at display time
-  if (team === "special") return plural ? "Specials" : "Special";
-  return plural
-    ? theme.teamTerms.innocentPlural
-    : theme.teamTerms.innocentSingular;
-}
-
-function getPhaseName(
-  theme: GameTheme,
-  phase: "reveal" | "mayhem" | "voting",
-): string {
-  return theme.phaseNames[phase];
-}
-
-function getPhasePrompt(
-  theme: GameTheme,
-  phase: "reveal" | "mayhem" | "voting",
-): string {
-  const key = `${phase}Prompt` as keyof GameTheme["phaseText"];
-  return theme.phaseText[key];
-}
-
-function getPlayerOutedText(theme: GameTheme, roleName: string): string {
-  return theme.playerTerms.playerOuted.replace("{role}", roleName);
-}
-```
+- **getTeamLabel(theme, team, plural?)** — Returns the themed label for a team. For `"infiltrator"` and `"innocent"`, look up the singular/plural from `teamTerms`. For `"special"`, return the literal word “Special” (or use the character name at display time).
+- **getPhaseName(theme, phase)** — Returns the themed phase name from `phaseNames`.
+- **getPhasePrompt(theme, phase)** — Returns the themed prompt text from `phaseText`.
+- **getPlayerOutedText(theme, roleName)** — Returns the `playerOuted` template with `{role}` replaced by the actual role name.
 
 ### 2.5 Theme Compatibility Rule
 
@@ -298,22 +209,19 @@ Infiltration uses a **character-based power system** — there are no hardcoded 
 
 ### 3.1 Character Data Model
 
-```typescript
-interface Character {
-  id: number; // Unique numeric ID (e.g., Date.now() at creation)
-  name: string; // Display name (e.g., "Pilot", "Engineer")
-  data: {
-    name: string; // Same as top-level name
-    description: string; // Flavor text shown to players
-    team: "innocent" | "infiltrator" | "special";
-    theme: string; // Theme ID this character belongs to
-    infectedUponSight: boolean; // Can learning this character trigger infection?
-    powerSlots: PowerSlot[]; // 1–3 power slots
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-```
+A **Character** record has the following fields:
+
+- **id** (number) — unique numeric identifier (e.g. timestamp at creation).
+- **name** (string) — display name (e.g. "Pilot", "Engineer").
+- **data** (object) containing:
+  - **name** (string) — same as the top-level name.
+  - **description** (string) — flavor text shown to players.
+  - **team** — one of "innocent", "infiltrator", or "special".
+  - **theme** (string) — the theme ID this character belongs to.
+  - **infectedUponSight** (boolean) — whether learning this character can trigger the infiltrator infection mechanic.
+  - **powerSlots** — an array of 1–3 PowerSlot objects (see Section 3.2).
+- **createdAt** (string) — ISO timestamp.
+- **updatedAt** (string) — ISO timestamp.
 
 ### 3.2 Power Slot Data Model
 
@@ -439,31 +347,29 @@ All 41 powers are fully specified in **Section 4 — Power Table Reference** of 
 
 The `InfiltrationPower` type defines each power:
 
-```typescript
-export type TargetScope = "Players Only" | "NPC Only" | "Players and NPC";
+A **TargetScope** is one of three string values: "Players Only", "NPC Only", or "Players and NPC".
 
-export type InfiltrationPower = {
-  index: number; // Unique power ID (non-contiguous: 1–46, with gaps)
-  initiative: string; // Execution priority. Space-separated (e.g., "10 90"). Lower = earlier.
-  powerName: string; // Display name
-  description: string; // Human-readable description, # = placeholder for amount
-  type: string; // Learn | Reveal | Swap | Condition | Alter | Tamper | Settings | None
-  item: string; // What the power acts on (Role, Team, Block, Win, Silence, etc.)
-  where: string; // Target type (Player, Self, Role, Type, Reversal, etc.)
-  min: number; // Minimum targets/amount
-  max: number; // Maximum targets/amount
-  fixedAction: boolean; // Power auto-executes with no target choice
-  fixedInitiative: boolean; // Initiative cannot be altered by other powers
-  infected: boolean; // Can trigger infiltrator infection mechanic
-  lookPostAction: boolean; // Player sees their new role after a swap changes it
-  doPower: boolean; // Player can execute new role's power after seeing it
-  allowRandom: boolean; // Random target selection is valid
-  vault: boolean; // Power can interact with center/NPC cards
-  vaultName?: string; // Optional vault display name
-  complexity: number; // 1–3 complexity rating
-  targetScopes?: TargetScope[]; // When present, power can target Players, NPCs, or both
-};
-```
+An **InfiltrationPower** record has the following fields:
+
+- **index** (number) — unique power ID. Non-contiguous range 1–46 with gaps at 2, 5, 14, 15, 18.
+- **initiative** (string) — execution priority, space-separated (e.g. "10 90"). Lower numbers execute earlier.
+- **powerName** (string) — display name.
+- **description** (string) — human-readable description; the "#" character is a placeholder for the amount.
+- **type** (string) — one of: Learn, Reveal, Swap, Condition, Alter, Tamper, Settings, None.
+- **item** (string) — what the power acts on (e.g. Role, Team, Block, Win, Silence).
+- **where** (string) — target type (e.g. Player, Self, Role, Type, Reversal).
+- **min** (number) — minimum targets or amount.
+- **max** (number) — maximum targets or amount.
+- **fixedAction** (boolean) — power auto-executes with no target choice.
+- **fixedInitiative** (boolean) — when the admin creates a character, they pick whether the power runs before or after swaps; when true the power runs at its defined initiative and the order cannot be adjusted in theme settings.
+- **infected** (boolean) — can trigger the infiltrator infection mechanic.
+- **lookPostAction** (boolean) — player sees their new role after a swap changes it.
+- **doPower** (boolean) — player can execute the new role's power after seeing it.
+- **allowRandom** (boolean) — random target selection is valid.
+- **vault** (boolean) — power can interact with center / NPC cards.
+- **vaultName** (string, optional) — display name for the vault.
+- **complexity** (number) — 1–3 complexity rating.
+- **targetScopes** (array of TargetScope, optional) — when present, the power can target Players, NPCs, or both.
 
 > **Design note — targetScopes consolidation**: Rather than having 46 separate powers with separate entries for "Player" vs "Center/Vault" variants (e.g., Role Peek vs Vault Peek), the power table **consolidates** these into 41 powers by using `targetScopes`. When a power has `targetScopes`, the admin character creation UI should present a dropdown to choose the scope ("Players Only", "NPC Only", or "Players and NPC"). This scope is saved on the `PowerSlot` and determines valid targets at runtime.
 
@@ -492,24 +398,10 @@ When a power **does** have `targetScopes`, a scope dropdown (Players Only / NPC 
 
 Provide helpers for power lookups:
 
-```typescript
-function getPowerByIndex(index: number): InfiltrationPower | undefined {
-  return INFILTRATION_POWERS.find((p) => p.index === index);
-}
+Provide two helper utilities for working with the power list:
 
-function filterPowers(
-  type?: string,
-  item?: string,
-  where?: string,
-): InfiltrationPower[] {
-  return INFILTRATION_POWERS.filter(
-    (p) =>
-      (!type || p.type === type) &&
-      (!item || p.item === item) &&
-      (!where || p.where === where),
-  );
-}
-```
+1. **getPowerByIndex** — accepts an index number and returns the matching power from the master list, or undefined if not found.
+2. **filterPowers** — accepts optional type, item, and where parameters and returns all powers matching every provided criterion (ignore criteria that are not supplied).
 
 ### 3.4 Power Categories Summary
 
@@ -683,14 +575,7 @@ When a character has multiple power slots, not all combinations are valid. The s
 
 Five boolean flags define meshing constraints. **Add these to the `InfiltrationPower` type (Section 3.3):**
 
-```typescript
-// Add to InfiltrationPower type:
-murderer?: boolean;   // Player's vote also eliminates the target
-predicter?: boolean;  // Player wins if their vote target is an infiltrator
-twoXVote?: boolean;   // Player's vote counts as two
-silencer?: boolean;   // Player can silence another's vote
-suicidal?: boolean;   // Player wins if they are voted out
-```
+Add five optional boolean flags to the InfiltrationPower type. All default to false when omitted. Their meanings are described in the table below.
 
 | Flag        | Meaning                                            | Game Mechanic                          |
 | ----------- | -------------------------------------------------- | -------------------------------------- |
@@ -704,11 +589,7 @@ suicidal?: boolean;   // Player wins if they are voted out
 
 Powers flagged `murderer`, `predicter`, or `twoXVote` **cannot coexist** with any Learn or Reveal power that has `timing: "after"` (post-swap). The reasoning: these flags affect voting outcomes, and post-swap Learn/Reveal gives information that would make the combination overpowered.
 
-```
-IF power1 has (murderer=true OR predicter=true OR twoXVote=true)
-AND power2 is (type=Learn OR type=Reveal) with timing="after"
-→ INCOMPATIBLE
-```
+In other words: if one power has any of murderer, predicter, or twoXVote set to true, and the other power is a Learn or Reveal with fixedInitiative false (i.e. post-swap), the pair is **incompatible**.
 
 Same check applies in reverse (power2 has the flag, power1 is post-swap Learn/Reveal).
 
@@ -741,87 +622,13 @@ These are game mechanic flags defined on `InfiltrationPower` (Section 3.3) — t
 
 Implement these utilities (shared or server-side):
 
-```typescript
-function canMeshPowers(
-  power1: Power,
-  power2: Power,
-): { valid: boolean; reason?: string } {
-  // Murderer + post-swap Learn/Reveal
-  if (power1.murderer && isPostSwapLearnReveal(power2)) {
-    return {
-      valid: false,
-      reason: "Murderer cannot coexist with post-swap Learn/Reveal",
-    };
-  }
-  if (power2.murderer && isPostSwapLearnReveal(power1)) {
-    return {
-      valid: false,
-      reason: "Murderer cannot coexist with post-swap Learn/Reveal",
-    };
-  }
+Implement three utilities:
 
-  // Predicter + post-swap Learn/Reveal
-  if (power1.predicter && isPostSwapLearnReveal(power2)) {
-    return {
-      valid: false,
-      reason: "Predicter cannot coexist with post-swap Learn/Reveal",
-    };
-  }
-  if (power2.predicter && isPostSwapLearnReveal(power1)) {
-    return {
-      valid: false,
-      reason: "Predicter cannot coexist with post-swap Learn/Reveal",
-    };
-  }
+1. **canMeshPowers(power1, power2)** — takes two powers and returns an object with a boolean `valid` and an optional `reason` string. Check every pair-wise combination of the meshing rules described in Sections 5.2–5.5 (murderer, predicter, and twoXVote cannot coexist with a post-swap Learn or Reveal). A post-swap Learn/Reveal is one whose fixedInitiative is false. Silencer and suicidal are allowed for now (TBD). The check must be symmetric (test both directions).
 
-  // TwoXVote + post-swap Learn/Reveal
-  if (power1.twoXVote && isPostSwapLearnReveal(power2)) {
-    return {
-      valid: false,
-      reason: "2x Vote cannot coexist with post-swap Learn/Reveal",
-    };
-  }
-  if (power2.twoXVote && isPostSwapLearnReveal(power1)) {
-    return {
-      valid: false,
-      reason: "2x Vote cannot coexist with post-swap Learn/Reveal",
-    };
-  }
+2. **isPostSwapLearnReveal(power)** — returns true when the power's type is Learn or Reveal and its fixedInitiative is false.
 
-  // Silencer: TBD — allow for now
-  // Suicidal: TBD — allow for now
-
-  return { valid: true };
-}
-
-function isPostSwapLearnReveal(power: Power): boolean {
-  return (
-    (power.type === "Learn" || power.type === "Reveal") &&
-    power.timing === "after"
-  );
-}
-
-function validateCharacterPowers(slots: PowerSlot[]): {
-  valid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-  const resolvedPowers = slots
-    .filter((s) => s.powerIndex !== null)
-    .map((s) => getPowerByIndex(s.powerIndex!));
-
-  for (let i = 0; i < resolvedPowers.length; i++) {
-    for (let j = i + 1; j < resolvedPowers.length; j++) {
-      const result = canMeshPowers(resolvedPowers[i], resolvedPowers[j]);
-      if (!result.valid) {
-        errors.push(result.reason!);
-      }
-    }
-  }
-
-  return { valid: errors.length === 0, errors };
-}
-```
+3. **validateCharacterPowers(slots)** — takes the array of PowerSlot objects from a character, resolves each non-null powerIndex to its power record, then runs canMeshPowers on every distinct pair. Returns an object with a boolean `valid` and an array of `errors` strings (one per incompatible pair found).
 
 ### 5.7 Where Validation Runs
 
@@ -833,13 +640,7 @@ function validateCharacterPowers(slots: PowerSlot[]): {
 
 ### 5.8 Character Complexity Calculation
 
-```typescript
-function getCharacterComplexity(slots: PowerSlot[]): number {
-  return slots
-    .filter((s) => s.powerIndex !== null)
-    .reduce((sum, s) => sum + getPowerByIndex(s.powerIndex!).complexity, 0);
-}
-```
+Implement a **getCharacterComplexity** helper that takes a character's PowerSlot array, filters out null slots, looks up each power's complexity rating, and returns the sum. The maximum theoretical value is 9 (three slots each with complexity 3).
 
 Display in the admin UI next to each character. Max theoretical = 9 (three complexity-3 powers). Use for informational purposes — no hard limit enforced yet.
 
@@ -969,12 +770,10 @@ When a Learn or Reveal power causes a player to **see** an infiltrator's role (v
 
 ### 6.6 Host Settings (Infiltration)
 
-```typescript
-interface InfiltrationSettings {
-  selectedTheme: string; // Single theme ID selected by host (populates character grid)
-  selectedCharacters: number[]; // Character IDs toggled on by host
-  votingTimerMs: number; // Voting phase duration in ms, default 30000
-}
-```
+An **InfiltrationSettings** object has the following fields:
+
+- **selectedTheme** (string) — the single theme ID chosen by the host, which populates the character selection grid.
+- **selectedCharacters** (array of numbers) — character IDs the host has toggled on for this game.
+- **votingTimerMs** (number) — voting phase duration in milliseconds; default is 30 000.
 
 The host configures these during lobby: first selecting a theme, then toggling characters from that theme, and adjusting the timer slider. Settings are sent to the server via `game:setInfiltrationOptions`.
