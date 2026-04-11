@@ -1,6 +1,6 @@
 # PlayTogether — Infiltration Game & Admin Pages Implementation Prompt
 
-> **Context**: This prompt is for an AI coding agent. The target project already has a working room/lobby system, Odd One Out, and Codenames games. Infiltration currently exists only as a placeholder in the game registry (`available: false`). This document specifies everything needed to build the full Infiltration game and its companion Admin pages. The project uses the tech stack and patterns described in `COPILOT_PROMPT.md` — Node + Express + Socket.IO server, React + Vite + Tailwind client, Zustand state, in-memory rooms, no database.
+> **Context**: This prompt is for an AI coding agent. The target project already has a working room/lobby system, Odd One Out, and Mindfield games. Infiltration currently exists only as a placeholder in the game registry (`available: false`). This document specifies everything needed to build the full Infiltration game and its companion Admin pages. The project uses the tech stack and patterns described in `COPILOT_PROMPT.md` — Node + Express + Socket.IO server, React + Vite + Tailwind client, Zustand state, in-memory rooms, no database.
 
 ---
 
@@ -63,10 +63,13 @@ Server persists to a JSON file (e.g., `data/characters.json`). Each entry:
         "powerIndex": 1,
         "type": "Learn",
         "item": "Role",
+        "where": "Player",
         "amount": 1,
         "timing": "before",
         "canTargetPlayers": true,
-        "canTargetNPCs": false
+        "canTargetNPCs": false,
+        "lookPostAction": false,
+        "doPower": false
       }
     ]
   },
@@ -90,15 +93,16 @@ The form has these fields:
 
 #### Power Slot Selector (Cascading Dropdowns)
 
-Each power slot uses a series of dependent dropdowns that narrow down to a specific power from the 46-power table:
+Each power slot uses a series of dependent dropdowns that narrow down to a specific power from the 41-power table:
 
 1. **Type** — `Learn`, `Reveal`, `Swap`, `Condition`, `Alter`, `Tamper`, `Settings`, `None`
 2. **Item** — Filters based on Type (e.g., for Learn: `Role`, `Team`, `Players`, `Amount`, `Status`, `Type`)
-3. **Disambiguation** — If multiple powers match the Type+Item combo, show a dropdown of matching power names
-4. **Amount** — Number input clamped to the power's Min/Max range (omitted for Settings / None)
-5. **Timing** — `before` or `after` (only for Learn / Reveal powers)
-6. **Target Scope** — Two toggles: `canTargetPlayers`, `canTargetNPCs` (only for types that have `TargetScopeFields`: Learn, Reveal, Swap, Alter)
-7. **Modifiers** — Checkboxes for type-specific flags: `lookPostAction` (Swap), `doPower` (Reveal, Swap)
+3. **Where** — Filters based on Type+Item (e.g., for Learn+Role: `Player`, `Self`)
+4. **Disambiguation** — If multiple powers match the Type+Item+Where combo, show a dropdown of matching power names
+5. **Amount** — Number input clamped to the power's Min/Max range (auto-set and hidden when min === max)
+6. **Timing** — `before` or `after` (only for powers with split initiative values, i.e., Learn and Reveal powers with `"10 90"` or `"5 95"`)
+7. **Target Scope** — Two toggles: `canTargetPlayers`, `canTargetNPCs` (only shown when the power has `targetScopes` in the power table)
+8. **Modifiers** — Checkboxes: `lookPostAction` (only for Swap powers where the power table default is true), `doPower` (only for Reveal/Swap powers where the power table default is true)
 
 When a slot is fully configured, show the resolved power name and description from the power table.
 
@@ -202,25 +206,25 @@ Themes are a **cosmetic overlay** for the Infiltration game. They change every p
 
 Every piece of player-facing text in Infiltration should use theme terms instead of hardcoded strings:
 
-| Hardcoded Default            | Theme Field                      | Example (Aliens)                                        |
-| ---------------------------- | -------------------------------- | ------------------------------------------------------ |
-| "Infiltrator"                | `teamTerms.infiltratorSingular`  | "Alien"                                                |
-| "Infiltrators"               | `teamTerms.infiltratorPlural`    | "Aliens"                                              |
-| "Innocent"                   | `teamTerms.innocentSingular`     | "Crew"                                                |
-| "Innocents"                  | `teamTerms.innocentPlural`       | "Crew"                                               |
+| Hardcoded Default | Theme Field                     | Example (Aliens) |
+| ----------------- | ------------------------------- | ---------------- |
+| "Infiltrator"     | `teamTerms.infiltratorSingular` | "Alien"          |
+| "Infiltrators"    | `teamTerms.infiltratorPlural`   | "Aliens"         |
+| "Innocent"        | `teamTerms.innocentSingular`    | "Crew"           |
+| "Innocents"       | `teamTerms.innocentPlural`      | "Crew"           |
 
-| "NPC"                        | `characterTerms.npcSingular`     | "Treasure"                                             |
-| "NPCs"                       | `characterTerms.npcPlural`       | "Treasures"                                            |
-| "Reveal" phase name          | `phaseNames.reveal`              | "Briefing"                                             |
-| "Mayhem" phase name          | `phaseNames.mayhem`              | "Heist"                                                |
-| "Voting" phase name          | `phaseNames.voting`              | "Accusation"                                           |
-| Reveal phase prompt          | `phaseText.revealPrompt`         | "Your position in this heist has been revealed!"       |
-| Mayhem phase prompt          | `phaseText.mayhemPrompt`         | "Let the heist begin! Execute your specialized moves." |
-| Voting phase prompt          | `phaseText.votingPrompt`         | "Time to expose the thief! Who do you suspect?"        |
-| "No Infiltrator" vote option | `phaseText.noInfiltratorOption`  | "No thief was recruited for this job!"                 |
-| Win text (infiltrators)      | `playerTerms.infiltratorWinText` | "Thieves made off with the goods!"                     |
-| Win text (innocents)         | `playerTerms.innocentsWinText`   | "Thieves captured!"                                    |
-| Player outed text            | `playerTerms.playerOuted`        | "{role} compromised!"                                  |
+| "NPC" | `characterTerms.npcSingular` | "Treasure" |
+| "NPCs" | `characterTerms.npcPlural` | "Treasures" |
+| "Reveal" phase name | `phaseNames.reveal` | "Briefing" |
+| "Mayhem" phase name | `phaseNames.mayhem` | "Heist" |
+| "Voting" phase name | `phaseNames.voting` | "Accusation" |
+| Reveal phase prompt | `phaseText.revealPrompt` | "Your position in this heist has been revealed!" |
+| Mayhem phase prompt | `phaseText.mayhemPrompt` | "Let the heist begin! Execute your specialized moves." |
+| Voting phase prompt | `phaseText.votingPrompt` | "Time to expose the thief! Who do you suspect?" |
+| "No Infiltrator" vote option | `phaseText.noInfiltratorOption` | "No thief was recruited for this job!" |
+| Win text (infiltrators) | `playerTerms.infiltratorWinText` | "Thieves made off with the goods!" |
+| Win text (innocents) | `playerTerms.innocentsWinText` | "Thieves captured!" |
+| Player outed text | `playerTerms.playerOuted` | "{role} compromised!" |
 
 ### 2.3 Theme in the State Model
 
@@ -234,7 +238,7 @@ When the game starts, the server resolves the active theme and attaches it to th
 }
 ```
 
-The client reads `room.game.gameData.theme` and passes it to all Infiltration UI components. **No component should hardcode "Infiltrator" / "Innocent" / "Mayhem" etc.** — always read from theme. The `special` team has no theme overrides; when a special player wins, display their **character name** (e.g., *"The Oracle achieved their win condition!"*).
+The client reads `room.game.gameData.theme` and passes it to all Infiltration UI components. **No component should hardcode "Infiltrator" / "Innocent" / "Mayhem" etc.** — always read from theme. The `special` team has no theme overrides; when a special player wins, display their **character name** (e.g., _"The Oracle achieved their win condition!"_).
 
 ### 2.4 Theme Utility Helper
 
@@ -314,103 +318,51 @@ interface Character {
 
 ### 3.2 Power Slot Data Model
 
-Each power slot references a power from the 41-power table by index, plus configuration. The type is a **discriminated union** keyed on the power `type` field — each variant carries only the fields relevant to that power category.
+Each character has 1–3 **power slots**. A power slot stores the admin's configuration for one power — which power was selected and how the admin configured its variable fields. All other fields (flags, initiative, description, complexity, etc.) are **resolved at runtime** by looking up the power in the 41-power table via `powerIndex`.
 
-```typescript
-/** Shared base for all power slot variants */
-interface PowerSlotBase {
-  powerIndex: number; // Index into the power table (see INFILTRATION_POWERS)
-  item: string; // What the power acts on: Role, Team, Players, Block, etc.
-}
+A power slot stores these fields:
 
-/** Target scope — replaces the old `where` string with explicit booleans */
-interface TargetScopeFields {
-  canTargetPlayers: boolean; // Power can target player cards
-  canTargetNPCs: boolean; // Power can target center/NPC cards
-}
+- **powerIndex** (number) — Index into the power table (Section 4). Identifies the power. Required.
+- **type** (string) — The power category: `Learn`, `Reveal`, `Swap`, `Condition`, `Alter`, `Tamper`, `Settings`, or `None`. Mirrors the power's `type` field — stored on the slot so the UI/server can switch behavior without a lookup.
+- **item** (string) — What the power acts on: `Role`, `Team`, `Players`, `Amount`, `Status`, `Type`, `Block`, `Win`, `Silence`, `Duplicate`, `Kill`, `Destruct`, `Protect`, `Initiative`, `Time`, `NoAction`, `Role Team`. Mirrors the power's `item` field.
+- **where** (string) — Target type: `Player`, `Self`, `Center`, `Role`, `Same Role`, `Same Team`, `Type`, `Action`, `Association`, `Reversal`, `Player Player`, `Vote`, `Room`, `None`. Mirrors the power's `where` field.
+- **amount** (number) — How many targets the power affects. Admin picks within the power's `min`–`max` range. For powers where `min === max` (e.g., `min: 0, max: 0` for conditions), this is auto-set and not user-editable.
+- **timing** (`"before"` | `"after"` | null) — For powers with two initiative values (e.g., `"10 90"`), the admin chooses whether the power executes **before** swaps (lower initiative) or **after** swaps (higher initiative). Only applicable to Learn and Reveal powers that have split initiatives. Null for all others.
+- **canTargetPlayers** (boolean) — Power can target player cards. Derived from the power's `where` and `targetScopes` fields (see mapping below). For powers with `targetScopes`, the admin picks the scope and these booleans reflect the choice.
+- **canTargetNPCs** (boolean) — Power can target center/NPC cards. Same derivation as above.
+- **lookPostAction** (boolean) — Player sees their new role after this power changes it. Only meaningful for Swap powers where the power table has `lookPostAction: true` (e.g., Self Swap, Team Exchange). Stored on the slot to allow admin override. Default from power table.
+- **doPower** (boolean) — Player can execute the new role's power after seeing it. Only meaningful for Reveal and Swap powers where the power table has `doPower: true`. Stored on the slot to allow admin override. Default from power table.
 
-/** Learn powers: see a role/team/status before or after swaps */
-interface LearnPowerSlot extends PowerSlotBase, TargetScopeFields {
-  type: "Learn";
-  amount: number; // How many targets (clamped to power's Min–Max)
-  timing: "before" | "after"; // Execute before or after the Swap phase
-}
+**Fields NOT stored on the slot** (resolved at runtime from the power table via `powerIndex`):
 
-/** Reveal powers: publicly announce information */
-interface RevealPowerSlot extends PowerSlotBase, TargetScopeFields {
-  type: "Reveal";
-  amount: number;
-  timing: "before" | "after";
-  doPower: boolean; // Can execute new role's power after seeing it
-}
+- `initiative`, `powerName`, `description` — display/ordering info, always read from power table.
+- `min`, `max` — validation bounds for `amount`, read from power table.
+- `fixedAction`, `fixedInitiative` — execution behavior flags, read from power table.
+- `infected`, `allowRandom`, `vault`, `vaultName` — mechanic flags, read from power table.
+- `complexity` — informational rating, read from power table.
+- `targetScopes` — the available scope options, read from power table (admin's choice stored as `canTargetPlayers`/`canTargetNPCs`).
+- `murderer`, `predicter`, `twoXVote`, `silencer`, `suicidal` — meshing flags (Section 5), read from power table.
 
-/** Swap powers: exchange roles between targets */
-interface SwapPowerSlot extends PowerSlotBase, TargetScopeFields {
-  type: "Swap";
-  amount: number;
-  lookPostAction: boolean; // Can see own new role after swap
-  doPower: boolean; // Can execute new role's power after swap
-}
+**Mapping `canTargetPlayers` / `canTargetNPCs` defaults from the power's `where` field:**
 
-/** Condition powers: apply a conditional effect */
-interface ConditionPowerSlot extends PowerSlotBase {
-  type: "Condition";
-  amount: number;
-}
+| `where` value    | `canTargetPlayers` | `canTargetNPCs` | Notes                          |
+| ---------------- | ------------------ | --------------- | ------------------------------ |
+| `Player`         | true               | false           | Standard player targeting      |
+| `Center`         | false              | true            | Targets NPC/center cards only  |
+| `Self`           | true               | false           | Targets self (a player)        |
+| `Role`           | true               | true            | Targets by role name           |
+| `Same Role`      | true               | false           | All players sharing a role     |
+| `Same Team`      | true               | false           | All players sharing a team     |
+| `Type`           | true               | true            | Targets by power type          |
+| `Action`         | true               | false           | Targets by action taken        |
+| `Association`    | true               | true            | Targets by team association    |
+| `Reversal`       | true               | false           | Reverses previous swaps        |
+| `Player Player`  | true               | false           | Two-player targeting           |
+| `Vote`           | false              | false           | Targets the voter's own vote   |
+| `Room`           | false              | false           | Room-wide effect (no targets)  |
+| `None`           | false              | false           | No targeting                   |
 
-/** Alter powers: modify role, team, or vote properties */
-interface AlterPowerSlot extends PowerSlotBase, TargetScopeFields {
-  type: "Alter";
-  amount: number;
-}
-
-/** Tamper powers: interfere with voting */
-interface TamperPowerSlot extends PowerSlotBase {
-  type: "Tamper";
-  amount: number;
-}
-
-/** Settings powers: change game settings (room-wide, no targets) */
-interface SettingsPowerSlot extends PowerSlotBase {
-  type: "Settings";
-}
-
-/** None powers: no action (placeholder) */
-interface NonePowerSlot extends PowerSlotBase {
-  type: "None";
-}
-
-type PowerSlot =
-  | LearnPowerSlot
-  | RevealPowerSlot
-  | SwapPowerSlot
-  | ConditionPowerSlot
-  | AlterPowerSlot
-  | TamperPowerSlot
-  | SettingsPowerSlot
-  | NonePowerSlot;
-```
-
-**Why a discriminated union?**
-
-- `Learn` and `Reveal` need `timing`; `Swap` does not.
-- `Swap` and `Reveal` need `lookPostAction` / `doPower`; `Alter` does not.
-- `Settings` and `None` have no targets, amounts, or scope — no extra fields.
-- `Condition` and `Tamper` target players implicitly (no NPC interaction) — no scope fields.
-- The admin form switches sub-forms based on `type`, so the union maps cleanly to the UI.
-
-**Mapping `canTargetPlayers` / `canTargetNPCs` from the existing power table:**
-
-| Old `where` value | `canTargetPlayers` | `canTargetNPCs` |
-| ------------------ | ------------------ | --------------- |
-| `"Player"`         | `true`             | `false`         |
-| `"Center"`         | `false`            | `true`          |
-| `"Self"`           | `true`             | `false`         |
-| `"Role"`           | `true`             | `true`          |
-| `"Type"`           | `true`             | `true`          |
-| `"Reversal"`       | `true`             | `false`         |
-
-When a power has `targetScopes` in the TS constants (e.g., `["Players Only", "NPC Only", "Players and NPC"]`), the admin form shows a toggle for each scope and the host can pick. The booleans above are the defaults.
+When a power has `targetScopes` in the power table, the admin form overrides the defaults above — the admin explicitly picks Players, NPCs, or Both, and the booleans are set accordingly.
 
 ### 3.3 The InfiltrationPower Type
 
@@ -895,7 +847,7 @@ Infiltration is a **single-round social deduction game**. Players are secretly a
 | Most-voted player is innocent          | Infiltrator team         | Innocents guessed wrong                                    |
 | "No Infiltrator" gets most votes       | Infiltrator team         | Group failed to identify                                   |
 | No votes cast                          | No winner                | Stalemate                                                  |
-| Special team player meets condition    | That player (individual) | Special team wins/loses independently via Condition powers  |
+| Special team player meets condition    | That player (individual) | Special team wins/loses independently via Condition powers |
 | Deathwish player is most-voted         | That player (individual) | Overrides team outcome for that player                     |
 | Oracle player voted for an infiltrator | That player (individual) | Additional individual win alongside team outcome           |
 
