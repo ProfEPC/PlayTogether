@@ -333,6 +333,7 @@ Each power type has its own set of fields. Fields marked _(from power table)_ us
 | **canTargetNPCs**    | boolean                 | Can target NPC/center cards. Same derivation.                                                            |
 | **canTargetSelf**    | boolean                 | Targets self. True for Last Look (index 3).                                                              |
 | **canTargetRole**    | boolean                 | Targets by role name. True for Roll Rolecall (6), Role Beacon (7), Role Tally (12).                      |
+| **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after learning it.                                          |
 
 #### Reveal — publicly announce information to all players
 
@@ -567,20 +568,20 @@ The complete **41-power table**. This is the single source of truth — implemen
 
 ### 4.1 Learn Powers (12 powers)
 
-| Idx | Name             | Item    | Min | Max | fixedInit | Players | NPCs | Self | Role | Flags                     |
-| --- | ---------------- | ------- | --- | --- | --------- | ------- | ---- | ---- | ---- | ------------------------- |
-| 1   | Role Peek        | Role    | 1   | 3   | —         | ✓\*     | —\*  | —    | —    | infected, allowRandom     |
-| 3   | Last Look        | Role    | 1   | 1   | ✓         | —       | —    | ✓    | —    | fixedAction, infected     |
-| 4   | Allegiance Check | Team    | 1   | 3   | —         | ✓\*     | —\*  | —    | —    | infected, allowRandom     |
-| 6   | Roll Rolecall    | Players | 1   | 99  | —         | ✓       | ✓    | —    | ✓    | —                         |
-| 7   | Role Beacon      | Players | 99  | 99  | ✓         | ✓       | —    | —    | ✓    | fixedAction, infected     |
-| 8   | Team Echo        | Players | 1   | 5   | —         | ✓       | —    | —    | —    | fixedAction, infected     |
-| 9   | Action Trace     | Players | 1   | 99  | ✓         | ✓       | ✓    | —    | —    | infected                  |
-| 10  | Action Log       | Players | 1   | 99  | ✓         | ✓       | —    | —    | —    | infected                  |
-| 11  | Tactic Tell      | Type    | 1   | 3   | —         | ✓       | —    | —    | —    | infected                  |
-| 12  | Role Tally       | Amount  | 1   | 99  | —         | ✓\*     | ✓\*  | —    | ✓    | infected                  |
-| 13  | Team Tally       | Amount  | 1   | 3   | —         | ✓\*     | ✓\*  | —    | —    | infected                  |
-| 16  | Sixth Sense      | Status  | 1   | 99  | —         | ✓       | —    | —    | —    | infected                  |
+| Idx | Name             | Item    | Min | Max | fixedInit | Players | NPCs | Self | Role | doPower | Flags                 |
+| --- | ---------------- | ------- | --- | --- | --------- | ------- | ---- | ---- | ---- | ------- | --------------------- |
+| 1   | Role Peek        | Role    | 1   | 3   | —         | ✓\*     | —\*  | —    | —    | —       | infected, allowRandom |
+| 3   | Last Look        | Role    | 1   | 1   | ✓         | —       | —    | ✓    | —    | —       | fixedAction, infected |
+| 4   | Allegiance Check | Team    | 1   | 3   | —         | ✓\*     | —\*  | —    | —    | —       | infected, allowRandom |
+| 6   | Roll Rolecall    | Players | 1   | 99  | —         | ✓       | ✓    | —    | ✓    | —       | —                     |
+| 7   | Role Beacon      | Players | 99  | 99  | ✓         | ✓       | —    | —    | ✓    | —       | fixedAction, infected |
+| 8   | Team Echo        | Players | 1   | 5   | —         | ✓       | —    | —    | —    | —       | fixedAction, infected |
+| 9   | Action Trace     | Players | 1   | 99  | ✓         | ✓       | ✓    | —    | —    | —       | infected              |
+| 10  | Action Log       | Players | 1   | 99  | ✓         | ✓       | —    | —    | —    | —       | infected              |
+| 11  | Tactic Tell      | Type    | 1   | 3   | —         | ✓       | —    | —    | —    | —       | infected              |
+| 12  | Role Tally       | Amount  | 1   | 99  | —         | ✓\*     | ✓\*  | —    | ✓    | —       | infected              |
+| 13  | Team Tally       | Amount  | 1   | 3   | —         | ✓\*     | ✓\*  | —    | —    | —       | infected              |
+| 16  | Sixth Sense      | Status  | 1   | 99  | —         | ✓       | —    | —    | —    | —       | infected              |
 
 ### 4.2 Reveal Powers (3 powers)
 
