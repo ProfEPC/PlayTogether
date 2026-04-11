@@ -84,7 +84,7 @@ The form has these fields:
 | ------------------- | --------- | ------------------------------------------------------------------ |
 | Name                | text      | Character name (required, unique per theme)                        |
 | Description         | text      | Flavor text shown to players                                       |
-| Team                | select    | `innocent` or `infiltrator`                                        |
+| Team                | select    | `innocent`, `infiltrator`, or `special`                            |
 | Theme               | select    | Dropdown of available themes (from themes API)                     |
 | Infected Upon Sight | checkbox  | If true, learning this character's role can trigger team infection |
 | Power Slots         | 1–3 slots | Each slot is a cascading power selector (see below)                |
@@ -147,6 +147,8 @@ interface GameTheme {
     infiltratorPlural: string;
     innocentSingular: string; // e.g. "Employee", "Guard"
     innocentPlural: string;
+    specialSingular: string; // e.g. "Lone Wolf", "Wildcard"
+    specialPlural: string;
   };
   phaseText: {
     revealPrompt: string; // Shown during reveal phase
@@ -167,6 +169,7 @@ interface GameTheme {
     playerOuted: string; // e.g. "{role} exposed!" — use {role} placeholder
     infiltratorWinText: string;
     innocentsWinText: string;
+    specialWinText: string; // e.g. "The wildcard achieved their goal!"
   };
   createdAt: string;
   updatedAt: string;
@@ -175,11 +178,11 @@ interface GameTheme {
 
 #### Default Themes to Seed
 
-| ID            | Name             | Infiltrator   | Innocent | NPC      | Phases                               |
-| ------------- | ---------------- | ------------- | -------- | -------- | ------------------------------------ |
-| `debug`       | Debug Theme      | Infiltrator   | Innocent | NPC      | Reveal / Mayhem / Voting             |
-| `coop_office` | Corporate Office | Corporate Spy | Employee | Safe     | Briefing / Infiltration / Accusation |
-| `heist`       | Heist Scenario   | Thief         | Guard    | Treasure | Briefing / Heist / Accusation        |
+| ID            | Name             | Infiltrator   | Innocent | Special   | NPC      | Phases                               |
+| ------------- | ---------------- | ------------- | -------- | --------- | -------- | ------------------------------------ |
+| `debug`       | Debug Theme      | Infiltrator   | Innocent | Special   | NPC      | Reveal / Mayhem / Voting             |
+| `coop_office` | Corporate Office | Corporate Spy | Employee | Freelancer | Safe     | Briefing / Infiltration / Accusation |
+| `heist`       | Heist Scenario   | Thief         | Guard    | Lone Wolf | Treasure | Briefing / Heist / Accusation        |
 
 #### Theme Editor Form
 
@@ -240,25 +243,28 @@ Characters are filtered by theme everywhere — in the admin list, in the host's
 
 ## 2. Theme System
 
-Themes are a **cosmetic overlay** for the Infiltration game. They change every player-facing label, prompt, and term without altering any game mechanics. The active theme is determined by the characters selected for a game — all characters in a game session must share the same theme.
+Themes are a **cosmetic overlay** for the Infiltration game. They change every player-facing label, prompt, and term without altering any game mechanics. The **host selects one or more themes** during lobby setup, which in turn populates the character selection grid with characters from those themes.
 
 ### 2.1 How Themes Are Selected
 
 1. In the admin panel, every character is tagged with a `theme` ID (e.g., `"debug"`, `"heist"`).
-2. During lobby setup, the host toggles characters on/off from a grid. The grid is **filtered by theme** — the host picks a theme first (or it auto-selects based on the first character toggled).
-3. All characters in a single game must belong to the same theme. The UI enforces this by only showing characters from the active theme.
-4. The server loads the matching theme data and injects it into the game state so all clients render themed labels.
+2. During lobby setup, the host first **selects theme(s)** from a theme picker (dropdown or toggle list of available themes). This determines which characters appear in the character toggle grid.
+3. The character toggle grid is then populated with **all characters belonging to the selected theme(s)**. The host toggles on/off which characters to include.
+4. If multiple themes are selected, characters from all selected themes are shown together in the grid.
+5. The server loads the matching theme data and injects it into the game state so all clients render themed labels. When multiple themes are selected, a primary theme is used for phase labels and prompts.
 
 ### 2.2 Where Themes Apply
 
 Every piece of player-facing text in Infiltration should use theme terms instead of hardcoded strings:
 
-| Hardcoded Default            | Theme Field                      | Example (Heist)                                        |
+| Hardcoded Default            | Theme Field                      | Example (Aliens)                                        |
 | ---------------------------- | -------------------------------- | ------------------------------------------------------ |
-| "Infiltrator"                | `teamTerms.infiltratorSingular`  | "Thief"                                                |
-| "Infiltrators"               | `teamTerms.infiltratorPlural`    | "Thieves"                                              |
-| "Innocent"                   | `teamTerms.innocentSingular`     | "Guard"                                                |
+| "Infiltrator"                | `teamTerms.infiltratorSingular`  | "Alien"                                                |
+| "Infiltrators"               | `teamTerms.infiltratorPlural`    | "Aliens"                                              |
+| "Innocent"                   | `teamTerms.innocentSingular`     | "Crew"                                                |
 | "Innocents"                  | `teamTerms.innocentPlural`       | "Guards"                                               |
+| "Special"                    | `teamTerms.specialSingular`      | "Lone Wolf"                                            |
+| "Specials"                   | `teamTerms.specialPlural`        | "Lone Wolves"                                          |
 | "NPC"                        | `characterTerms.npcSingular`     | "Treasure"                                             |
 | "NPCs"                       | `characterTerms.npcPlural`       | "Treasures"                                            |
 | "Reveal" phase name          | `phaseNames.reveal`              | "Briefing"                                             |
@@ -270,6 +276,7 @@ Every piece of player-facing text in Infiltration should use theme terms instead
 | "No Infiltrator" vote option | `phaseText.noInfiltratorOption`  | "No thief was recruited for this job!"                 |
 | Win text (infiltrators)      | `playerTerms.infiltratorWinText` | "Thieves made off with the goods!"                     |
 | Win text (innocents)         | `playerTerms.innocentsWinText`   | "Thieves captured!"                                    |
+| Win text (special)           | `playerTerms.specialWinText`     | "The lone wolf achieved their goal!"                   |
 | Player outed text            | `playerTerms.playerOuted`        | "{role} compromised!"                                  |
 
 ### 2.3 Theme in the State Model
@@ -284,7 +291,7 @@ When the game starts, the server resolves the active theme and attaches it to th
 }
 ```
 
-The client reads `room.game.gameData.theme` and passes it to all Infiltration UI components. **No component should hardcode "Infiltrator" / "Innocent" / "Mayhem" etc.** — always read from theme.
+The client reads `room.game.gameData.theme` and passes it to all Infiltration UI components. **No component should hardcode "Infiltrator" / "Innocent" / "Special" / "Mayhem" etc.** — always read from theme.
 
 ### 2.4 Theme Utility Helper
 
@@ -295,13 +302,18 @@ Create a shared utility for resolving themed text:
 
 function getTeamLabel(
   theme: GameTheme,
-  team: "innocent" | "infiltrator",
+  team: "innocent" | "infiltrator" | "special",
   plural = false,
 ): string {
   if (team === "infiltrator") {
     return plural
       ? theme.teamTerms.infiltratorPlural
       : theme.teamTerms.infiltratorSingular;
+  }
+  if (team === "special") {
+    return plural
+      ? theme.teamTerms.specialPlural
+      : theme.teamTerms.specialSingular;
   }
   return plural
     ? theme.teamTerms.innocentPlural
@@ -332,8 +344,8 @@ function getPlayerOutedText(theme: GameTheme, roleName: string): string {
 
 - A character's `theme` field must reference a valid theme ID from `themes.json`.
 - The admin character creation form should only offer themes that exist.
-- When the host selects characters for a game, the server validates all selected characters share the same theme.
-- If the host tries to start with mixed-theme characters, emit `error:invalid` with message `"All characters must belong to the same theme"`.
+- During lobby, the host selects theme(s) first. The character grid only shows characters from the selected theme(s), preventing mismatched selections.
+- The server still validates at game-start that all selected characters belong to the selected theme(s). If violated, emit `error:invalid` with message `"All characters must belong to a selected theme"`.
 
 ---
 
@@ -350,7 +362,7 @@ interface Character {
   data: {
     name: string; // Same as top-level name
     description: string; // Flavor text shown to players
-    team: "innocent" | "infiltrator";
+    team: "innocent" | "infiltrator" | "special";
     theme: string; // Theme ID this character belongs to
     infectedUponSight: boolean; // Can learning this character trigger infection?
     powerSlots: PowerSlot[]; // 1–3 power slots
@@ -406,24 +418,24 @@ The `InfiltrationPower` type (from `types.ts`) defines each power:
 export type TargetScope = "Players Only" | "NPC Only" | "Players and NPC";
 
 export type InfiltrationPower = {
-  index: number;           // Unique power ID (non-contiguous: 1–46, with gaps)
-  initiative: string;      // Execution priority. Space-separated (e.g., "10 90"). Lower = earlier.
-  powerName: string;       // Display name
-  description: string;     // Human-readable description, # = placeholder for amount
-  type: string;            // Learn | Reveal | Swap | Condition | Alter | Tamper | Settings | None
-  item: string;            // What the power acts on (Role, Team, Block, Win, Silence, etc.)
-  where: string;           // Target type (Player, Self, Role, Type, Reversal, etc.)
-  min: number;             // Minimum targets/amount
-  max: number;             // Maximum targets/amount
-  fixedAction: boolean;    // Power auto-executes with no target choice
+  index: number; // Unique power ID (non-contiguous: 1–46, with gaps)
+  initiative: string; // Execution priority. Space-separated (e.g., "10 90"). Lower = earlier.
+  powerName: string; // Display name
+  description: string; // Human-readable description, # = placeholder for amount
+  type: string; // Learn | Reveal | Swap | Condition | Alter | Tamper | Settings | None
+  item: string; // What the power acts on (Role, Team, Block, Win, Silence, etc.)
+  where: string; // Target type (Player, Self, Role, Type, Reversal, etc.)
+  min: number; // Minimum targets/amount
+  max: number; // Maximum targets/amount
+  fixedAction: boolean; // Power auto-executes with no target choice
   fixedInitiative: boolean; // Initiative cannot be altered by other powers
-  infected: boolean;       // Can trigger infiltrator infection mechanic
+  infected: boolean; // Can trigger infiltrator infection mechanic
   lookPostAction: boolean; // Player sees their new role after a swap changes it
-  doPower: boolean;        // Player can execute new role's power after seeing it
-  allowRandom: boolean;    // Random target selection is valid
-  vault: boolean;          // Power can interact with center/NPC cards
-  vaultName?: string;      // Optional vault display name
-  complexity: number;      // 1–3 complexity rating
+  doPower: boolean; // Player can execute new role's power after seeing it
+  allowRandom: boolean; // Random target selection is valid
+  vault: boolean; // Power can interact with center/NPC cards
+  vaultName?: string; // Optional vault display name
+  complexity: number; // 1–3 complexity rating
   targetScopes?: TargetScope[]; // When present, power can target Players, NPCs, or both
 };
 ```
@@ -439,12 +451,16 @@ function getPowerByIndex(index: number): InfiltrationPower | undefined {
   return INFILTRATION_POWERS.find((p) => p.index === index);
 }
 
-function filterPowers(type?: string, item?: string, where?: string): InfiltrationPower[] {
+function filterPowers(
+  type?: string,
+  item?: string,
+  where?: string,
+): InfiltrationPower[] {
   return INFILTRATION_POWERS.filter(
     (p) =>
       (!type || p.type === type) &&
       (!item || p.item === item) &&
-      (!where || p.where === where)
+      (!where || p.where === where),
   );
 }
 ```
@@ -464,13 +480,14 @@ function filterPowers(type?: string, item?: string, where?: string): Infiltratio
 
 ### 3.5 How Characters Are Used in a Game
 
-1. **Host selects characters** — During lobby, the host sees a toggle grid of all characters in the active theme. They toggle on enough characters for all players + 3 NPCs.
-2. **Validation** — Server checks: `selectedCharacters.length >= players.length + 3`. At least one character must have `team: "infiltrator"`. All must share same theme.
-3. **Dealing** — When the game starts, server shuffles selected characters and deals them:
+1. **Host selects theme(s)** — During lobby, the host first picks one or more themes. This populates the character toggle grid with all characters from those themes.
+2. **Host selects characters** — The host sees a toggle grid of characters from the selected theme(s). They toggle on enough characters for all players + 3 NPCs.
+3. **Validation** — Server checks: `selectedCharacters.length >= players.length + 3`. At least one character must have `team: "infiltrator"`. All must belong to the selected theme(s).
+4. **Dealing** — When the game starts, server shuffles selected characters and deals them:
    - Each player gets one character (assigned to `player.character`).
    - The remaining 3 become **NPCs** (center cards). NPCs are virtual players with `isNPC: true`.
-4. **Team assignment** — Each player's team is set from their character's `team` field. This can change during mayhem via Swap powers.
-5. **Single round** — The game is always a single round. No re-dealing. After results, host can reset to lobby.
+5. **Team assignment** — Each player's team is set from their character's `team` field (`innocent`, `infiltrator`, or `special`). Teams share a win condition and are used as references during the mayhem phase. This can change during mayhem via Swap powers.
+6. **Single round** — The game is always a single round. No re-dealing. After results, host can reset to lobby.
 
 ### 3.6 NPC (Center Cards)
 
@@ -496,6 +513,7 @@ apps/web/src/constants/infiltrationPowers/   ← canonical source
 ```
 
 For the server, either:
+
 - **Re-export** from a shared package (`packages/shared`), or
 - **Copy** the constants into `apps/server/src/data/infiltrationPowers/` and keep in sync.
 
@@ -511,40 +529,40 @@ The complete **41-power table**, matching the TypeScript constants in `apps/web/
 
 ### 4.1 Learn Powers (12 powers)
 
-| Idx | Init  | Name             | Description                       | Item    | Where       | Min | Max | Flags (true only)                    | Scopes |
-| --- | ----- | ---------------- | --------------------------------- | ------- | ----------- | --- | --- | ------------------------------------ | ------ |
-| 1   | 10 90 | Role Peek        | Learn # Player's Roles            | Role    | Player      | 1   | 3   | infected, allowRandom                | P/N/B  |
-| 3   | 10    | Last Look        | Learn Final Role                  | Role    | Self        | 1   | 1   | fixedAction, fixedInitiative, infected | —    |
-| 4   | 10 90 | Allegiance Check | Learn # Player's Teams            | Team    | Player      | 1   | 3   | infected, allowRandom                | P/N/B  |
-| 6   | 10 90 | Roll Rolecall    | Learn # Players With Role         | Players | Role        | 1   | 99  | —                                    | —      |
-| 7   | 10    | Role Beacon      | Learn All Players With Same Role  | Players | Same Role   | 99  | 99  | fixedAction, fixedInitiative, infected | —    |
-| 8   | 10 90 | Team Echo        | Learn # Players With Same Team    | Players | Same Team   | 1   | 5   | fixedAction, infected                | —      |
-| 9   | 90    | Action Trace     | Learn # Players Did Action Type   | Players | Type        | 1   | 99  | fixedInitiative, infected            | —      |
-| 10  | 90    | Action Log       | Learn # Players Who Moved/Learned | Players | Action      | 1   | 99  | fixedInitiative, infected            | —      |
-| 11  | 10 90 | Tactic Tell      | Learn # Player Action Type        | Type    | Player      | 1   | 3   | infected                             | —      |
-| 12  | 10 90 | Role Tally       | Learn up to # of a Role           | Amount  | Role        | 1   | 99  | infected                             | P/N/B  |
-| 13  | 10 90 | Team Tally       | Learn up to # of a Team           | Amount  | Association | 1   | 3   | infected                             | P/N/B  |
-| 16  | 90    | Sixth Sense      | Learn if # Players Were Moved     | Status  | Player      | 1   | 99  | infected                             | —      |
+| Idx | Init  | Name             | Description                       | Item    | Where       | Min | Max | Flags (true only)                      | Scopes |
+| --- | ----- | ---------------- | --------------------------------- | ------- | ----------- | --- | --- | -------------------------------------- | ------ |
+| 1   | 10 90 | Role Peek        | Learn # Player's Roles            | Role    | Player      | 1   | 3   | infected, allowRandom                  | P/N/B  |
+| 3   | 10    | Last Look        | Learn Final Role                  | Role    | Self        | 1   | 1   | fixedAction, fixedInitiative, infected | —      |
+| 4   | 10 90 | Allegiance Check | Learn # Player's Teams            | Team    | Player      | 1   | 3   | infected, allowRandom                  | P/N/B  |
+| 6   | 10 90 | Roll Rolecall    | Learn # Players With Role         | Players | Role        | 1   | 99  | —                                      | —      |
+| 7   | 10    | Role Beacon      | Learn All Players With Same Role  | Players | Same Role   | 99  | 99  | fixedAction, fixedInitiative, infected | —      |
+| 8   | 10 90 | Team Echo        | Learn # Players With Same Team    | Players | Same Team   | 1   | 5   | fixedAction, infected                  | —      |
+| 9   | 90    | Action Trace     | Learn # Players Did Action Type   | Players | Type        | 1   | 99  | fixedInitiative, infected              | —      |
+| 10  | 90    | Action Log       | Learn # Players Who Moved/Learned | Players | Action      | 1   | 99  | fixedInitiative, infected              | —      |
+| 11  | 10 90 | Tactic Tell      | Learn # Player Action Type        | Type    | Player      | 1   | 3   | infected                               | —      |
+| 12  | 10 90 | Role Tally       | Learn up to # of a Role           | Amount  | Role        | 1   | 99  | infected                               | P/N/B  |
+| 13  | 10 90 | Team Tally       | Learn up to # of a Team           | Amount  | Association | 1   | 3   | infected                               | P/N/B  |
+| 16  | 90    | Sixth Sense      | Learn if # Players Were Moved     | Status  | Player      | 1   | 99  | infected                               | —      |
 
 ### 4.2 Reveal Powers (3 powers)
 
-| Idx | Init | Name           | Description      | Item | Where  | Min | Max | Flags (true only)              | Scopes |
-| --- | ---- | -------------- | ---------------- | ---- | ------ | --- | --- | ------------------------------ | ------ |
-| 17  | 5 95 | Expose Role    | Reveal # Roles   | Role | Player | 1   | 3   | infected, doPower, allowRandom | P/N/B  |
-| 19  | 5 95 | Face Reveal    | Reveal self      | Role | Self   | 1   | 1   | fixedAction, infected          | —      |
-| 20  | 5 95 | Role Spotlight | Reveal # innocents | Role | Player | 1 | 5   | doPower, allowRandom           | P/N/B  |
+| Idx | Init | Name           | Description        | Item | Where  | Min | Max | Flags (true only)              | Scopes |
+| --- | ---- | -------------- | ------------------ | ---- | ------ | --- | --- | ------------------------------ | ------ |
+| 17  | 5 95 | Expose Role    | Reveal # Roles     | Role | Player | 1   | 3   | infected, doPower, allowRandom | P/N/B  |
+| 19  | 5 95 | Face Reveal    | Reveal self        | Role | Self   | 1   | 1   | fixedAction, infected          | —      |
+| 20  | 5 95 | Role Spotlight | Reveal # innocents | Role | Player | 1   | 5   | doPower, allowRandom           | P/N/B  |
 
 ### 4.3 Swap Powers (7 powers)
 
-| Idx | Init | Name           | Description                    | Item      | Where         | Min | Max | Flags (true only)                          | Scopes |
-| --- | ---- | -------------- | ------------------------------ | --------- | ------------- | --- | --- | ------------------------------------------ | ------ |
-| 21  | 50   | Role Swap      | Swap Two Roles                 | Role      | Player        | 2   | 2   | fixedInitiative, allowRandom               | P/N/B  |
-| 22  | 50   | Self Swap      | Swap A Role With Own Role      | Role      | Player        | 1   | 1   | fixedInitiative, lookPostAction, doPower, allowRandom | P/N/B |
-| 23  | 50   | Swap Role Team | Swap A Role and Team           | Role Team | Player        | 2   | 2   | fixedInitiative, allowRandom               | P/N/B  |
-| 24  | 60   | Swap Reversal  | Swap # Swaps of Roles          | Role      | Reversal      | 1   | 5   | fixedAction, fixedInitiative               | —      |
-| 25  | 50   | Team Exchange  | Swap Own Team With Another     | Team      | Self          | 1   | 1   | fixedInitiative, lookPostAction, doPower, allowRandom | P/N/B |
-| 26  | 50   | Recruit        | Swap another's Team to your own | Team     | Self          | 1   | 1   | fixedInitiative, allowRandom               | P/N/B  |
-| 27  | 50   | Team Shuffle   | Swap Two Teams                 | Team      | Player Player | 2   | 2   | fixedInitiative, allowRandom               | P/N/B  |
+| Idx | Init | Name           | Description                     | Item      | Where         | Min | Max | Flags (true only)                                     | Scopes |
+| --- | ---- | -------------- | ------------------------------- | --------- | ------------- | --- | --- | ----------------------------------------------------- | ------ |
+| 21  | 50   | Role Swap      | Swap Two Roles                  | Role      | Player        | 2   | 2   | fixedInitiative, allowRandom                          | P/N/B  |
+| 22  | 50   | Self Swap      | Swap A Role With Own Role       | Role      | Player        | 1   | 1   | fixedInitiative, lookPostAction, doPower, allowRandom | P/N/B  |
+| 23  | 50   | Swap Role Team | Swap A Role and Team            | Role Team | Player        | 2   | 2   | fixedInitiative, allowRandom                          | P/N/B  |
+| 24  | 60   | Swap Reversal  | Swap # Swaps of Roles           | Role      | Reversal      | 1   | 5   | fixedAction, fixedInitiative                          | —      |
+| 25  | 50   | Team Exchange  | Swap Own Team With Another      | Team      | Self          | 1   | 1   | fixedInitiative, lookPostAction, doPower, allowRandom | P/N/B  |
+| 26  | 50   | Recruit        | Swap another's Team to your own | Team      | Self          | 1   | 1   | fixedInitiative, allowRandom                          | P/N/B  |
+| 27  | 50   | Team Shuffle   | Swap Two Teams                  | Team      | Player Player | 2   | 2   | fixedInitiative, allowRandom                          | P/N/B  |
 
 ### 4.4 Condition Powers (2 powers)
 
@@ -568,40 +586,40 @@ The complete **41-power table**, matching the TypeScript constants in `apps/web/
 
 ### 4.6 Tamper Powers (7 powers)
 
-| Idx | Init | Name        | Description                                  | Item      | Where  | Min | Max | Flags (true only)            |
-| --- | ---- | ----------- | -------------------------------------------- | --------- | ------ | --- | --- | ---------------------------- |
-| 38  | 0    | Mute Vote   | Silence # Player From Voting                 | Silence   | Player | 1   | 5   | fixedInitiative, allowRandom |
-| 39  | 0    | Vote Jam    | Silence # Role From Voting                   | Silence   | Role   | 1   | 5   | fixedInitiative              |
-| 40  | 0    | Vote Encore | Duplicate Own Vote                           | Duplicate | Player | 0   | 0   | fixedAction, fixedInitiative |
-| 41  | 0    | Vote Echo   | Duplicate Role Votes                         | Duplicate | Role   | 0   | 0   | fixedAction, fixedInitiative |
-| 42  | 0    | Double Tap  | Duplicate Own Vote                           | Duplicate | Self   | 0   | 0   | fixedAction, fixedInitiative |
-| 43  | 0    | Death Vote  | Players Vote Is Killed                       | Kill      | Player | 1   | 1   | fixedAction, fixedInitiative |
-| 44  | 0    | Last Laugh  | Players Vote Is Killed, If Player is Killed  | Destruct  | Player | 1   | 1   | fixedAction, fixedInitiative |
+| Idx | Init | Name        | Description                                 | Item      | Where  | Min | Max | Flags (true only)            |
+| --- | ---- | ----------- | ------------------------------------------- | --------- | ------ | --- | --- | ---------------------------- |
+| 38  | 0    | Mute Vote   | Silence # Player From Voting                | Silence   | Player | 1   | 5   | fixedInitiative, allowRandom |
+| 39  | 0    | Vote Jam    | Silence # Role From Voting                  | Silence   | Role   | 1   | 5   | fixedInitiative              |
+| 40  | 0    | Vote Encore | Duplicate Own Vote                          | Duplicate | Player | 0   | 0   | fixedAction, fixedInitiative |
+| 41  | 0    | Vote Echo   | Duplicate Role Votes                        | Duplicate | Role   | 0   | 0   | fixedAction, fixedInitiative |
+| 42  | 0    | Double Tap  | Duplicate Own Vote                          | Duplicate | Self   | 0   | 0   | fixedAction, fixedInitiative |
+| 43  | 0    | Death Vote  | Players Vote Is Killed                      | Kill      | Player | 1   | 1   | fixedAction, fixedInitiative |
+| 44  | 0    | Last Laugh  | Players Vote Is Killed, If Player is Killed | Destruct  | Player | 1   | 1   | fixedAction, fixedInitiative |
 
 ### 4.7 Settings & None (2 powers)
 
-| Idx | Init | Name      | Description                              | Item     | Where | Min | Max | Flags (true only)            |
-| --- | ---- | --------- | ---------------------------------------- | -------- | ----- | --- | --- | ---------------------------- |
-| 45  | 0    | Time Warp | Shorten or Lengthen Discussion Times     | Time     | Room  | 0   | 300 | fixedAction, fixedInitiative |
-| 46  | 0    | No Action | Has no power                             | NoAction | None  | 0   | 0   | fixedAction, fixedInitiative |
+| Idx | Init | Name      | Description                          | Item     | Where | Min | Max | Flags (true only)            |
+| --- | ---- | --------- | ------------------------------------ | -------- | ----- | --- | --- | ---------------------------- |
+| 45  | 0    | Time Warp | Shorten or Lengthen Discussion Times | Time     | Room  | 0   | 300 | fixedAction, fixedInitiative |
+| 46  | 0    | No Action | Has no power                         | NoAction | None  | 0   | 0   | fixedAction, fixedInitiative |
 
 ### 4.8 Initiative Ordering Rules
 
 Initiative determines when a power executes during the mayhem phase. Lower numbers execute first.
 
-| Initiative | Phase                                   | Powers                                                       |
-| ---------- | --------------------------------------- | ------------------------------------------------------------ |
-| 0          | Voting/passive (not during mayhem)      | Conditions, Tamper, Settings, No Action                      |
-| 1          | Earliest mayhem — hard priority setting | Hard Priority, Order Rule                                    |
-| 2          | Early mayhem — priority alteration      | Priority Warp, Order Rewrite                                 |
-| 3          | Early-mid mayhem — protection           | Shield, Guard                                                |
-| 4          | Mid mayhem — blocking                   | Nope!, Role Jam                                              |
-| 5          | Pre-action reveal                       | Expose Role, Face Reveal, Role Spotlight (early timing)      |
-| 10         | Pre-swap learn                          | All Learn powers (early timing)                              |
-| 50         | Swap phase                              | All Swap powers                                              |
-| 60         | Post-swap reversal                      | Swap Reversal                                                |
-| 90         | Post-swap learn                         | All Learn powers (late timing), Action Trace, Action Log     |
-| 95         | Post-action reveal                      | Reveal powers (late timing)                                  |
+| Initiative | Phase                                   | Powers                                                   |
+| ---------- | --------------------------------------- | -------------------------------------------------------- |
+| 0          | Voting/passive (not during mayhem)      | Conditions, Tamper, Settings, No Action                  |
+| 1          | Earliest mayhem — hard priority setting | Hard Priority, Order Rule                                |
+| 2          | Early mayhem — priority alteration      | Priority Warp, Order Rewrite                             |
+| 3          | Early-mid mayhem — protection           | Shield, Guard                                            |
+| 4          | Mid mayhem — blocking                   | Nope!, Role Jam                                          |
+| 5          | Pre-action reveal                       | Expose Role, Face Reveal, Role Spotlight (early timing)  |
+| 10         | Pre-swap learn                          | All Learn powers (early timing)                          |
+| 50         | Swap phase                              | All Swap powers                                          |
+| 60         | Post-swap reversal                      | Swap Reversal                                            |
+| 90         | Post-swap learn                         | All Learn powers (late timing), Action Trace, Action Log |
+| 95         | Post-action reveal                      | Reveal powers (late timing)                              |
 
 Powers with two initiative values (e.g., `"10 90"`) can be configured to run at either timing via the `timing` field on the power slot: `"before"` = use the lower value, `"after"` = use the higher value.
 
@@ -789,7 +807,7 @@ Display in the admin UI next to each character. Max theoretical = 9 (three compl
 
 ## 6. Infiltration Game — Rules & Flow
 
-Infiltration is a **single-round social deduction game**. Players are secretly assigned characters with teams (innocent vs. infiltrator) and powers. After a mayhem phase where powers are used, players vote on who they think is the infiltrator. The game is always one round — after results, the host can reset to lobby.
+Infiltration is a **single-round social deduction game**. Players are secretly assigned characters with teams (innocent, infiltrator, or special) and powers. Teams share a win condition and are used as references during the mayhem phase. The **special** team indicates a player with their own individual win condition, separate from both innocent and infiltrator teams. After a mayhem phase where powers are used, players vote on who they think is the infiltrator. The game is always one round — after results, the host can reset to lobby.
 
 ### 6.1 Game Phases
 
@@ -806,19 +824,20 @@ Infiltration is a **single-round social deduction game**. Players are secretly a
 #### Lobby
 
 - Host has already selected Infiltration from the game selector.
-- Host sees a **character toggle grid** — all characters from the active theme. Host toggles on/off which characters to include.
+- Host first **selects theme(s)** from a theme picker. This populates the character toggle grid with characters from the selected theme(s).
+- Host sees a **character toggle grid** — all characters from the selected theme(s). Host toggles on/off which characters to include.
 - Host configures: voting timer duration, max players.
 - Players join, pick avatars, ready up.
 - Host can start when:
   - All players are ready.
   - `selectedCharacters.length >= players.length + 3` (enough for players + 3 NPCs).
   - At least one selected character has `team: "infiltrator"`.
-  - All selected characters share the same theme.
+  - All selected characters belong to the selected theme(s).
 
 #### Reveal Phase
 
 1. Server shuffles the selected characters.
-2. Deals one character to each player → sets `player.character` and `player.team`.
+2. Deals one character to each player → sets `player.character` and `player.team` (`innocent`, `infiltrator`, or `special`).
 3. Remaining characters (exactly 3) become NPCs → created as `Player` objects with `isNPC: true`.
 4. Server emits `player:character` privately to each player with their assigned character (name, description, team, powers).
 5. Each player sees their character card on their device and taps **"Acknowledge"**.
@@ -863,8 +882,9 @@ Infiltration is a **single-round social deduction game**. Players are secretly a
 3. Determines winner:
    - **Innocents win** if the most-voted player is on the infiltrator team.
    - **Infiltrators win** if "No Infiltrator" got the most votes, OR the most-voted player is on the innocent team.
+   - **Special team**: Players on the `special` team have their own individual win conditions (defined by their Condition powers, e.g., Deathwish, Oracle). They do not win with innocents or infiltrators — they win or lose independently.
    - **No winner** if no votes were cast.
-4. Check condition powers:
+4. Check condition powers (applies to any team, but especially relevant for `special`):
    - **Deathwish**: If the most-voted player has the Deathwish condition, that player wins individually (regardless of team outcome).
    - **Oracle**: If a player with Oracle voted for someone who is actually an infiltrator, that player wins individually.
 5. Server reveals all characters and teams to all players.
@@ -873,14 +893,15 @@ Infiltration is a **single-round social deduction game**. Players are secretly a
 
 ### 6.3 Win Conditions Summary
 
-| Condition                              | Who Wins                 | When                                             |
-| -------------------------------------- | ------------------------ | ------------------------------------------------ |
-| Most-voted player is infiltrator       | Innocent team            | Normal vote outcome                              |
-| Most-voted player is innocent          | Infiltrator team         | Innocents guessed wrong                          |
-| "No Infiltrator" gets most votes       | Infiltrator team         | Group failed to identify                         |
-| No votes cast                          | No winner                | Stalemate                                        |
-| Deathwish player is most-voted         | That player (individual) | Overrides team outcome for that player           |
-| Oracle player voted for an infiltrator | That player (individual) | Additional individual win alongside team outcome |
+| Condition                              | Who Wins                 | When                                                       |
+| -------------------------------------- | ------------------------ | ---------------------------------------------------------- |
+| Most-voted player is infiltrator       | Innocent team            | Normal vote outcome                                        |
+| Most-voted player is innocent          | Infiltrator team         | Innocents guessed wrong                                    |
+| "No Infiltrator" gets most votes       | Infiltrator team         | Group failed to identify                                   |
+| No votes cast                          | No winner                | Stalemate                                                  |
+| Special team player meets condition    | That player (individual) | Special team wins/loses independently via Condition powers  |
+| Deathwish player is most-voted         | That player (individual) | Overrides team outcome for that player                     |
+| Oracle player voted for an infiltrator | That player (individual) | Additional individual win alongside team outcome           |
 
 ### 6.4 Infection Mechanic
 
@@ -888,9 +909,9 @@ When a Learn or Reveal power causes a player to **see** an infiltrator's role (v
 
 1. Check if the power has `infected: true` in the power table.
 2. Check if the target character has `infectedUponSight: true` in the character data.
-3. If **both** are true, the acting player's team flips to `infiltrator`.
+3. If **both** are true, the acting player's team flips to `infiltrator` (regardless of whether they were `innocent` or `special`).
 4. The player is notified privately that their allegiance has changed.
-5. Their win condition now aligns with the infiltrator team.
+5. Their win condition now aligns with the infiltrator team (any previous special win condition is lost).
 
 **Exception**: `Roll Rolecall` (index 6) has `infected: false` — it reveals player counts by role, not actual identities, so it cannot trigger infection.
 
@@ -910,9 +931,10 @@ When a Learn or Reveal power causes a player to **see** an infiltrator's role (v
 
 ```typescript
 interface InfiltrationSettings {
+  selectedThemes: string[]; // Theme IDs selected by host (populates character grid)
   selectedCharacters: string[]; // Character IDs toggled on by host
   votingTimerMs: number; // Voting phase duration in ms, default 30000
 }
 ```
 
-The host configures these during lobby via the character toggle grid and a timer slider. Settings are sent to the server via `game:setInfiltrationOptions`.
+The host configures these during lobby: first selecting theme(s), then toggling characters from those themes, and adjusting the timer slider. Settings are sent to the server via `game:setInfiltrationOptions`.
