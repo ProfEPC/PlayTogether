@@ -46,7 +46,7 @@ A full character creation and management UI. Characters are persisted to a JSON 
 | `PUT`    | `/api/characters/:id` | Update an existing character                   |
 | `DELETE` | `/api/characters/:id` | Delete a character                             |
 
-Server persists to `apps/server/data/characters.json`. Each entry:
+Server persists to a JSON file (e.g., `data/characters.json`). Each entry:
 
 ```json
 {
@@ -131,7 +131,7 @@ Full CRUD for cosmetic themes. Themes change the labels/text used in Infiltratio
 | `PUT`    | `/api/themes/:id` | Update a theme     |
 | `DELETE` | `/api/themes/:id` | Delete a theme     |
 
-Server persists to `apps/server/data/themes.json`.
+Server persists to a JSON file (e.g., `data/themes.json`).
 
 #### Theme Data Structure
 
@@ -241,7 +241,7 @@ The client reads `room.game.gameData.theme` and passes it to all Infiltration UI
 Create a shared utility for resolving themed text:
 
 ```typescript
-// packages/shared/src/utils/themeText.ts (or apps/web/src/utils/themeText.ts)
+// Shared utility — place in a shared package or utils folder accessible to both server and client
 
 function getTeamLabel(
   theme: GameTheme,
@@ -412,24 +412,11 @@ type PowerSlot =
 
 When a power has `targetScopes` in the TS constants (e.g., `["Players Only", "NPC Only", "Players and NPC"]`), the admin form shows a toggle for each scope and the host can pick. The booleans above are the defaults.
 
-### 3.3 The 41-Power Table (Existing TypeScript Constants)
+### 3.3 The InfiltrationPower Type
 
-Powers are **already defined** in the codebase as TypeScript constants in:
+All 41 powers are fully specified in **Section 4 — Power Table Reference** of this document. That section is the single source of truth. The implementing agent must create these as TypeScript constants grouped by category.
 
-```
-apps/web/src/constants/infiltrationPowers/
-  types.ts          ← InfiltrationPower type & TargetScope type
-  learn.ts          ← LEARN_POWERS (12 powers, indices 1,3,4,6–13,16)
-  reveal.ts         ← REVEAL_POWERS (3 powers, indices 17,19,20)
-  swap.ts           ← SWAP_POWERS (7 powers, indices 21–27)
-  condition.ts      ← CONDITION_POWERS (2 powers, indices 28–29)
-  alter.ts          ← ALTER_POWERS (8 powers, indices 30–37)
-  tamper.ts         ← TAMPER_POWERS (7 powers, indices 38–44)
-  settingsNone.ts   ← SETTINGS_NONE_POWERS (2 powers, indices 45–46)
-  index.ts          ← barrel export: INFILTRATION_POWERS (all 41 combined)
-```
-
-The `InfiltrationPower` type (from `types.ts`) defines each power:
+The `InfiltrationPower` type defines each power:
 
 ```typescript
 export type TargetScope = "Players Only" | "NPC Only" | "Players and NPC";
@@ -457,13 +444,11 @@ export type InfiltrationPower = {
 };
 ```
 
-> **Design note — targetScopes consolidation**: The original CSV had 46 powers with separate entries for "Player" vs "Center/Vault" variants (e.g., Role Peek vs Vault Peek). The TS constants **consolidated** these into 41 powers by using `targetScopes`. When a power has `targetScopes`, the admin character creation UI should present a dropdown to choose the scope ("Players Only", "NPC Only", or "Players and NPC"). This scope is saved on the `PowerSlot` and determines valid targets at runtime.
+> **Design note — targetScopes consolidation**: Rather than having 46 separate powers with separate entries for "Player" vs "Center/Vault" variants (e.g., Role Peek vs Vault Peek), the power table **consolidates** these into 41 powers by using `targetScopes`. When a power has `targetScopes`, the admin character creation UI should present a dropdown to choose the scope ("Players Only", "NPC Only", or "Players and NPC"). This scope is saved on the `PowerSlot` and determines valid targets at runtime.
 
-Import the power table on the server side by copying or re-exporting from the web constants. Provide helpers:
+Provide helpers for power lookups:
 
 ```typescript
-import { INFILTRATION_POWERS } from "./infiltrationPowers";
-
 function getPowerByIndex(index: number): InfiltrationPower | undefined {
   return INFILTRATION_POWERS.find((p) => p.index === index);
 }
@@ -519,30 +504,24 @@ NPCs represent undealt characters sitting in the "center" or "vault":
 
 ### 3.7 Character Data File
 
-Characters are stored in `apps/server/data/characters.json` as an array. The server provides a REST API (Section 1.2) and also exports a `getCharacters()` function for the socket handlers to read at game-start time.
+Characters are stored in a server-side JSON file (e.g., `data/characters.json`) as an array. The server provides a REST API (Section 1.2) and also exports a `getCharacters()` function for the socket handlers to read at game-start time.
 
 ### 3.8 Power Table Data Files
 
-The 41 powers **already exist** as TypeScript constants at:
+The 41 powers are fully specified in **Section 4** of this document. The implementing agent should:
 
-```
-apps/web/src/constants/infiltrationPowers/   ← canonical source
-```
-
-For the server, either:
-
-- **Re-export** from a shared package (`packages/shared`), or
-- **Copy** the constants into `apps/server/src/data/infiltrationPowers/` and keep in sync.
-
-The barrel export `INFILTRATION_POWERS` from `index.ts` gives a flat array of all 41 powers. Use `getPowerByIndex()` and `filterPowers()` helpers (shown in Section 3.3) for lookups and admin cascading dropdowns.
+1. Create the `InfiltrationPower` type and all 41 power constants as TypeScript files, grouped by category (Learn, Reveal, Swap, Condition, Alter, Tamper, Settings/None).
+2. Create a barrel export (`INFILTRATION_POWERS`) combining all powers into a flat array.
+3. Share the power constants between server and client (via a shared package, or by placing them where both can import).
+4. Use `getPowerByIndex()` and `filterPowers()` helpers (shown in Section 3.3) for lookups and admin cascading dropdowns.
 
 ---
 
 ## 4. Power Table Reference
 
-The complete **41-power table**, matching the TypeScript constants in `apps/web/src/constants/infiltrationPowers/`. This is the single source of truth. The `#` in descriptions is a placeholder for the configured amount. The **Flags** column lists only fields that are `true` for that power. The **Scopes** column shows `targetScopes` values when present (P = Players Only, N = NPC Only, B = Players and NPC).
+The complete **41-power table**. This is the single source of truth — implement these as TypeScript constants. The `#` in descriptions is a placeholder for the configured amount. The **Flags** column lists only fields that are `true` for that power. The **Scopes** column shows `targetScopes` values when present (P = Players Only, N = NPC Only, B = Players and NPC).
 
-> **Note**: Indices are **not contiguous** (gaps at 2, 5, 14, 15, 18). These were vault/center variants in the original CSV that have been consolidated via `targetScopes` on the base power.
+> **Note**: Indices are **not contiguous** (gaps at 2, 5, 14, 15, 18). These gaps exist because Player vs Center/NPC variants were consolidated into single powers via `targetScopes`.
 
 ### 4.1 Learn Powers (12 powers)
 
@@ -654,11 +633,11 @@ Powers with two initiative values (e.g., `"10 90"`) can be configured to run at 
 
 When a character has multiple power slots, not all combinations are valid. The system must validate compatibility both in the admin character creation UI (client-side warnings) and on the server (reject on save).
 
-> **⚠ Implementation note**: The five meshing flags below (`murderer`, `predicter`, `twoXVote`, `silencer`, `suicidal`) are **NOT yet in the existing `InfiltrationPower` type** in `apps/web/src/constants/infiltrationPowers/types.ts`. They were part of the original CSV design but were stripped during the TypeScript conversion. To implement meshing validation, you must **extend** the `InfiltrationPower` type with these fields and add them to each power constant, OR compute them from the power's `type`/`item`/`where` fields at validation time. The recommended approach is to add them to the type as optional booleans and populate them on the relevant powers.
+> **⚠ Implementation note**: The five meshing flags below (`murderer`, `predicter`, `twoXVote`, `silencer`, `suicidal`) are **not included** in the base `InfiltrationPower` type defined in Section 3.3. To implement meshing validation, **extend** the `InfiltrationPower` type with these fields as optional booleans and populate them on the relevant powers, OR compute them from the power's `type`/`item`/`where` fields at validation time. The recommended approach is to add them to the type.
 
 ### 5.1 Compatibility Flags
 
-Five boolean flags define meshing constraints. **Add these to `InfiltrationPower` in `types.ts`:**
+Five boolean flags define meshing constraints. **Add these to the `InfiltrationPower` type (Section 3.3):**
 
 ```typescript
 // Add to InfiltrationPower type:
@@ -701,7 +680,7 @@ Currently defined as **TBD** — same approach. Allow all suicidal combinations.
 
 ### 5.5 Non-Constraint Flags
 
-These are game mechanic flags that **already exist** in the `InfiltrationPower` type — they do **NOT** restrict which powers can coexist:
+These are game mechanic flags defined on `InfiltrationPower` (Section 3.3) — they do **NOT** restrict which powers can coexist:
 
 | Flag              | Purpose                                                                                         |
 | ----------------- | ----------------------------------------------------------------------------------------------- |
