@@ -64,7 +64,7 @@ Server persists to a JSON file (e.g., `data/characters.json`). Each entry:
         "type": "Learn",
         "item": "Role",
         "amount": 1,
-        "timing": "before",
+        "fixedInitiative": false,
         "canTargetPlayers": true,
         "canTargetNPCs": false,
         "canTargetSelf": false,
@@ -99,9 +99,8 @@ Each power slot uses a series of dependent dropdowns that narrow down to a speci
 3. **Where** — Filters based on Type+Item (e.g., for Learn+Role: `Player`, `Self`)
 4. **Disambiguation** — If multiple powers match the Type+Item+Where combo, show a dropdown of matching power names
 5. **Amount** — Number input clamped to the power's Min/Max range (auto-set and hidden when min === max)
-6. **Timing** — `before` or `after` (only for powers with split initiative values, i.e., Learn and Reveal powers with `"10 90"` or `"5 95"`)
-7. **Target Scope** — Two toggles: `canTargetPlayers`, `canTargetNPCs` (only shown when the power has `targetScopes` in the power table)
-8. **Modifiers** — Checkboxes: `lookPostAction` (only for Swap powers where the power table default is true), `doPower` (only for Reveal/Swap powers where the power table default is true)
+6. **Target Scope** — Two toggles: `canTargetPlayers`, `canTargetNPCs` (only shown when the power has `targetScopes` in the power table)
+7. **Modifiers** — Checkboxes: `lookPostAction` (only for Swap powers where the power table default is true), `doPower` (only for Reveal/Swap powers where the power table default is true)
 
 When a slot is fully configured, show the resolved power name and description from the power table.
 
@@ -328,9 +327,9 @@ Each power type has its own set of fields. Fields marked _(from power table)_ us
 | **powerIndex**       | number                  | Index into the power table (Section 4). Identifies the power.                                            |
 | **type**             | `"Learn"`               | Power category.                                                                                          |
 | **item**             | string                  | What the power learns — `Role`, `Team`, `Players`, `Amount`, `Status`, `Type`.                           |
-| **amount**           | number                  | How many targets. Admin picks within power's min–max range.                                              |
-| **timing**           | `"before"` \| `"after"` | Execute before or after swaps. Only for powers with split initiative (e.g., `"10 90"`).                  |
-| **canTargetPlayers** | boolean                 | Can target player cards. Derived from power's `where`; overridden by admin when power has `targetScopes`.|
+| **amount**           | number                       | How many targets. Admin picks within power's min–max range.                                              |
+| **fixedInitiative**  | boolean _(from power table)_ | Whether the power's initiative is locked and cannot be altered by other powers (e.g., Priority Warp).    |
+| **canTargetPlayers** | boolean                      | Can target player cards. Derived from power's `where`; overridden by admin when power has `targetScopes`.|
 | **canTargetNPCs**    | boolean                 | Can target NPC/center cards. Same derivation.                                                            |
 | **canTargetSelf**    | boolean                 | Targets self. True for Last Look (index 3).                                                              |
 | **canTargetRole**    | boolean                 | Targets by role name. True for Roll Rolecall (6), Role Beacon (7), Role Tally (12).                      |
@@ -342,9 +341,9 @@ Each power type has its own set of fields. Fields marked _(from power table)_ us
 | **powerIndex**       | number                       | Index into the power table (Section 4).                   |
 | **type**             | `"Reveal"`                   | Power category.                                           |
 | **item**             | string                       | What is revealed — always `Role` for current Reveal powers.|
-| **amount**           | number                       | How many targets.                                         |
-| **timing**           | `"before"` \| `"after"`      | Execute before or after swaps.                            |
-| **canTargetPlayers** | boolean                      | Can target player cards.                                  |
+| **amount**           | number                       | How many targets.                                                                     |
+| **fixedInitiative**  | boolean _(from power table)_ | Whether the power's initiative is locked and cannot be altered by other powers.        |
+| **canTargetPlayers** | boolean                      | Can target player cards.                                                              |
 | **canTargetNPCs**    | boolean                      | Can target NPC/center cards.                              |
 | **canTargetSelf**    | boolean                      | Targets self. True for Face Reveal (index 19).            |
 | **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after the reveal. |
@@ -425,7 +424,6 @@ These come from looking up `powerIndex` in the power table:
 - **where** — target type string; used to derive scope booleans (see Section 3.3). Only stored directly on Condition slots; all other types use scope booleans instead.
 - **min**, **max** — validation bounds for the amount field
 - **fixedAction** — power auto-executes with no target choice
-- **fixedInitiative** — initiative cannot be altered by other powers
 - **infected** — can trigger the infiltrator infection mechanic (Section 6.4)
 - **allowRandom** — random target selection is valid
 - **vault**, **vaultName** — power can interact with center/NPC cards
@@ -563,85 +561,85 @@ The 41 powers are fully specified in **Section 4** of this document. The impleme
 
 ## 4. Power Table Reference
 
-The complete **41-power table**. This is the single source of truth — implement these as TypeScript constants. The `#` in descriptions is a placeholder for the configured amount. The **Flags** column lists only fields that are `true` for that power. The **Scopes** column shows `targetScopes` values when present (P = Players Only, N = NPC Only, B = Players and NPC).
+The complete **41-power table**. This is the single source of truth — implement these as TypeScript constants. Columns match the **PowerSlot fields** defined in Section 3.2 for each type, plus **Name** for identification and **Flags** for remaining runtime boolean properties that are `true` for that power. Boolean columns use ✓ for true and — for false. An asterisk (`*`) on a scope boolean means the power has `targetScopes` and the admin can override that value.
 
 > **Note**: Indices are **not contiguous** (gaps at 2, 5, 14, 15, 18). These gaps exist because Player vs Center/NPC variants were consolidated into single powers via `targetScopes`.
 
 ### 4.1 Learn Powers (12 powers)
 
-| Idx | Init  | Name             | Description                       | Item    | Where       | Min | Max | Flags (true only)                      | Scopes |
-| --- | ----- | ---------------- | --------------------------------- | ------- | ----------- | --- | --- | -------------------------------------- | ------ |
-| 1   | 10 90 | Role Peek        | Learn # Player's Roles            | Role    | Player      | 1   | 3   | infected, allowRandom                  | P/N/B  |
-| 3   | 10    | Last Look        | Learn Final Role                  | Role    | Self        | 1   | 1   | fixedAction, fixedInitiative, infected | —      |
-| 4   | 10 90 | Allegiance Check | Learn # Player's Teams            | Team    | Player      | 1   | 3   | infected, allowRandom                  | P/N/B  |
-| 6   | 10 90 | Roll Rolecall    | Learn # Players With Role         | Players | Role        | 1   | 99  | —                                      | —      |
-| 7   | 10    | Role Beacon      | Learn All Players With Same Role  | Players | Same Role   | 99  | 99  | fixedAction, fixedInitiative, infected | —      |
-| 8   | 10 90 | Team Echo        | Learn # Players With Same Team    | Players | Same Team   | 1   | 5   | fixedAction, infected                  | —      |
-| 9   | 90    | Action Trace     | Learn # Players Did Action Type   | Players | Type        | 1   | 99  | fixedInitiative, infected              | —      |
-| 10  | 90    | Action Log       | Learn # Players Who Moved/Learned | Players | Action      | 1   | 99  | fixedInitiative, infected              | —      |
-| 11  | 10 90 | Tactic Tell      | Learn # Player Action Type        | Type    | Player      | 1   | 3   | infected                               | —      |
-| 12  | 10 90 | Role Tally       | Learn up to # of a Role           | Amount  | Role        | 1   | 99  | infected                               | P/N/B  |
-| 13  | 10 90 | Team Tally       | Learn up to # of a Team           | Amount  | Association | 1   | 3   | infected                               | P/N/B  |
-| 16  | 90    | Sixth Sense      | Learn if # Players Were Moved     | Status  | Player      | 1   | 99  | infected                               | —      |
+| Idx | Name             | Item    | Min | Max | fixedInit | Players | NPCs | Self | Role | Flags                     |
+| --- | ---------------- | ------- | --- | --- | --------- | ------- | ---- | ---- | ---- | ------------------------- |
+| 1   | Role Peek        | Role    | 1   | 3   | —         | ✓\*     | —\*  | —    | —    | infected, allowRandom     |
+| 3   | Last Look        | Role    | 1   | 1   | ✓         | —       | —    | ✓    | —    | fixedAction, infected     |
+| 4   | Allegiance Check | Team    | 1   | 3   | —         | ✓\*     | —\*  | —    | —    | infected, allowRandom     |
+| 6   | Roll Rolecall    | Players | 1   | 99  | —         | ✓       | ✓    | —    | ✓    | —                         |
+| 7   | Role Beacon      | Players | 99  | 99  | ✓         | ✓       | —    | —    | ✓    | fixedAction, infected     |
+| 8   | Team Echo        | Players | 1   | 5   | —         | ✓       | —    | —    | —    | fixedAction, infected     |
+| 9   | Action Trace     | Players | 1   | 99  | ✓         | ✓       | ✓    | —    | —    | infected                  |
+| 10  | Action Log       | Players | 1   | 99  | ✓         | ✓       | —    | —    | —    | infected                  |
+| 11  | Tactic Tell      | Type    | 1   | 3   | —         | ✓       | —    | —    | —    | infected                  |
+| 12  | Role Tally       | Amount  | 1   | 99  | —         | ✓\*     | ✓\*  | —    | ✓    | infected                  |
+| 13  | Team Tally       | Amount  | 1   | 3   | —         | ✓\*     | ✓\*  | —    | —    | infected                  |
+| 16  | Sixth Sense      | Status  | 1   | 99  | —         | ✓       | —    | —    | —    | infected                  |
 
 ### 4.2 Reveal Powers (3 powers)
 
-| Idx | Init | Name           | Description        | Item | Where  | Min | Max | Flags (true only)              | Scopes |
-| --- | ---- | -------------- | ------------------ | ---- | ------ | --- | --- | ------------------------------ | ------ |
-| 17  | 5 95 | Expose Role    | Reveal # Roles     | Role | Player | 1   | 3   | infected, doPower, allowRandom | P/N/B  |
-| 19  | 5 95 | Face Reveal    | Reveal self        | Role | Self   | 1   | 1   | fixedAction, infected          | —      |
-| 20  | 5 95 | Role Spotlight | Reveal # innocents | Role | Player | 1   | 5   | doPower, allowRandom           | P/N/B  |
+| Idx | Name           | Item | Min | Max | fixedInit | Players | NPCs | Self | doPower | Flags                |
+| --- | -------------- | ---- | --- | --- | --------- | ------- | ---- | ---- | ------- | -------------------- |
+| 17  | Expose Role    | Role | 1   | 3   | —         | ✓\*     | —\*  | —    | ✓       | infected, allowRandom|
+| 19  | Face Reveal    | Role | 1   | 1   | —         | —       | —    | ✓    | —       | fixedAction, infected|
+| 20  | Role Spotlight | Role | 1   | 5   | —         | ✓\*     | —\*  | —    | ✓       | allowRandom          |
 
 ### 4.3 Swap Powers (7 powers)
 
-| Idx | Init | Name           | Description                     | Item      | Where         | Min | Max | Flags (true only)                                     | Scopes |
-| --- | ---- | -------------- | ------------------------------- | --------- | ------------- | --- | --- | ----------------------------------------------------- | ------ |
-| 21  | 50   | Role Swap      | Swap Two Roles                  | Role      | Player        | 2   | 2   | fixedInitiative, allowRandom                          | P/N/B  |
-| 22  | 50   | Self Swap      | Swap A Role With Own Role       | Role      | Player        | 1   | 1   | fixedInitiative, lookPostAction, doPower, allowRandom | P/N/B  |
-| 23  | 50   | Swap Role Team | Swap A Role and Team            | Role Team | Player        | 2   | 2   | fixedInitiative, allowRandom                          | P/N/B  |
-| 24  | 60   | Swap Reversal  | Swap # Swaps of Roles           | Role      | Reversal      | 1   | 5   | fixedAction, fixedInitiative                          | —      |
-| 25  | 50   | Team Exchange  | Swap Own Team With Another      | Team      | Self          | 1   | 1   | fixedInitiative, lookPostAction, doPower, allowRandom | P/N/B  |
-| 26  | 50   | Recruit        | Swap another's Team to your own | Team      | Self          | 1   | 1   | fixedInitiative, allowRandom                          | P/N/B  |
-| 27  | 50   | Team Shuffle   | Swap Two Teams                  | Team      | Player Player | 2   | 2   | fixedInitiative, allowRandom                          | P/N/B  |
+| Idx | Name           | Item      | Min | Max | Players | NPCs | Self | lookPost | doPower | Flags                |
+| --- | -------------- | --------- | --- | --- | ------- | ---- | ---- | -------- | ------- | -------------------- |
+| 21  | Role Swap      | Role      | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom          |
+| 22  | Self Swap      | Role      | 1   | 1   | ✓\*     | —\*  | —    | ✓        | ✓       | allowRandom          |
+| 23  | Swap Role Team | Role Team | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom          |
+| 24  | Swap Reversal  | Role      | 1   | 5   | ✓       | —    | —    | —        | —       | fixedAction          |
+| 25  | Team Exchange  | Team      | 1   | 1   | —\*     | —\*  | ✓    | ✓        | ✓       | allowRandom          |
+| 26  | Recruit        | Team      | 1   | 1   | —\*     | —\*  | ✓    | —        | —       | allowRandom          |
+| 27  | Team Shuffle   | Team      | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom          |
 
 ### 4.4 Condition Powers (2 powers)
 
-| Idx | Init | Name      | Description                 | Item | Where | Min | Max | Flags (true only) |
-| --- | ---- | --------- | --------------------------- | ---- | ----- | --- | --- | ----------------- |
-| 28  | 0    | Deathwish | Wins If Voted Out           | Win  | Self  | 0   | 0   | fixedInitiative   |
-| 29  | 0    | Oracle    | Wins If Vote Is Infiltrator | Win  | Vote  | 0   | 0   | fixedInitiative   |
+| Idx | Name      | Item | Where | Min | Max |
+| --- | --------- | ---- | ----- | --- | --- |
+| 28  | Deathwish | Win  | Self  | 0   | 0   |
+| 29  | Oracle    | Win  | Vote  | 0   | 0   |
 
 ### 4.5 Alter Powers (8 powers)
 
-| Idx | Init | Name          | Description                        | Item       | Where  | Min | Max | Flags (true only)            |
-| --- | ---- | ------------- | ---------------------------------- | ---------- | ------ | --- | --- | ---------------------------- |
-| 30  | 4    | Nope!         | Block # Player From Doing Actions  | Block      | Player | 1   | 5   | fixedInitiative, allowRandom |
-| 31  | 4    | Role Jam      | Block # Role From Doing Actions    | Block      | Role   | 1   | 5   | fixedInitiative              |
-| 32  | 2    | Priority Warp | Alter # Players Action \* Priority | Initiative | Player | 1   | 5   | fixedInitiative, allowRandom |
-| 33  | 2    | Order Rewrite | Alter # Roles Action \* Priority   | Initiative | Role   | 1   | 5   | fixedInitiative              |
-| 34  | 1    | Hard Priority | Set # Players Action Priority      | Initiative | Player | 1   | 5   | allowRandom                  |
-| 35  | 1    | Order Rule    | Set # Roles Action Priority        | Initiative | Role   | 1   | 5   | —                            |
-| 36  | 3    | Shield        | Protect # Player From \* Actions   | Protect    | Player | 1   | 5   | fixedInitiative, allowRandom |
-| 37  | 3    | Guard         | Protect # \* Roles From \* Actions | Protect    | Role   | 1   | 5   | fixedInitiative              |
+| Idx | Name          | Item       | Min | Max | Players | NPCs | Role | Flags                |
+| --- | ------------- | ---------- | --- | --- | ------- | ---- | ---- | -------------------- |
+| 30  | Nope!         | Block      | 1   | 5   | ✓       | —    | —    | allowRandom          |
+| 31  | Role Jam      | Block      | 1   | 5   | ✓       | —    | ✓    | —                    |
+| 32  | Priority Warp | Initiative | 1   | 5   | ✓       | —    | —    | allowRandom          |
+| 33  | Order Rewrite | Initiative | 1   | 5   | ✓       | —    | ✓    | —                    |
+| 34  | Hard Priority | Initiative | 1   | 5   | ✓       | —    | —    | allowRandom          |
+| 35  | Order Rule    | Initiative | 1   | 5   | ✓       | —    | ✓    | —                    |
+| 36  | Shield        | Protect    | 1   | 5   | ✓       | —    | —    | allowRandom          |
+| 37  | Guard         | Protect    | 1   | 5   | ✓       | —    | ✓    | —                    |
 
 ### 4.6 Tamper Powers (7 powers)
 
-| Idx | Init | Name        | Description                                 | Item      | Where  | Min | Max | Flags (true only)            |
-| --- | ---- | ----------- | ------------------------------------------- | --------- | ------ | --- | --- | ---------------------------- |
-| 38  | 0    | Mute Vote   | Silence # Player From Voting                | Silence   | Player | 1   | 5   | fixedInitiative, allowRandom |
-| 39  | 0    | Vote Jam    | Silence # Role From Voting                  | Silence   | Role   | 1   | 5   | fixedInitiative              |
-| 40  | 0    | Vote Encore | Duplicate Own Vote                          | Duplicate | Player | 0   | 0   | fixedAction, fixedInitiative |
-| 41  | 0    | Vote Echo   | Duplicate Role Votes                        | Duplicate | Role   | 0   | 0   | fixedAction, fixedInitiative |
-| 42  | 0    | Double Tap  | Duplicate Own Vote                          | Duplicate | Self   | 0   | 0   | fixedAction, fixedInitiative |
-| 43  | 0    | Death Vote  | Players Vote Is Killed                      | Kill      | Player | 1   | 1   | fixedAction, fixedInitiative |
-| 44  | 0    | Last Laugh  | Players Vote Is Killed, If Player is Killed | Destruct  | Player | 1   | 1   | fixedAction, fixedInitiative |
+| Idx | Name        | Item      | Min | Max | Players | Self | Role | Flags       |
+| --- | ----------- | --------- | --- | --- | ------- | ---- | ---- | ----------- |
+| 38  | Mute Vote   | Silence   | 1   | 5   | ✓       | —    | —    | allowRandom |
+| 39  | Vote Jam    | Silence   | 1   | 5   | —       | —    | ✓    | —           |
+| 40  | Vote Encore | Duplicate | 0   | 0   | ✓       | —    | —    | fixedAction |
+| 41  | Vote Echo   | Duplicate | 0   | 0   | —       | —    | ✓    | fixedAction |
+| 42  | Double Tap  | Duplicate | 0   | 0   | —       | ✓    | —    | fixedAction |
+| 43  | Death Vote  | Kill      | 1   | 1   | ✓       | —    | —    | fixedAction |
+| 44  | Last Laugh  | Destruct  | 1   | 1   | ✓       | —    | —    | fixedAction |
 
 ### 4.7 Settings & None (2 powers)
 
-| Idx | Init | Name      | Description                          | Item     | Where | Min | Max | Flags (true only)            |
-| --- | ---- | --------- | ------------------------------------ | -------- | ----- | --- | --- | ---------------------------- |
-| 45  | 0    | Time Warp | Shorten or Lengthen Discussion Times | Time     | Room  | 0   | 300 | fixedAction, fixedInitiative |
-| 46  | 0    | No Action | Has no power                         | NoAction | None  | 0   | 0   | fixedAction, fixedInitiative |
+| Idx | Name      | Item     | Min | Max | Flags       |
+| --- | --------- | -------- | --- | --- | ----------- |
+| 45  | Time Warp | Time     | 0   | 300 | fixedAction |
+| 46  | No Action | NoAction | 0   | 0   | fixedAction |
 
 ### 4.8 Initiative Ordering Rules
 
@@ -661,7 +659,7 @@ Initiative determines when a power executes during the mayhem phase. Lower numbe
 | 90         | Post-swap learn                         | All Learn powers (late timing), Action Trace, Action Log |
 | 95         | Post-action reveal                      | Reveal powers (late timing)                              |
 
-Powers with two initiative values (e.g., `"10 90"`) can be configured to run at either timing via the `timing` field on the power slot: `"before"` = use the lower value, `"after"` = use the higher value.
+Powers with two initiative values (e.g., `"10 90"`) can execute at either the lower or higher value. Execution order configuration is handled separately from the power slot.
 
 ### 4.9 Complexity Ratings
 
