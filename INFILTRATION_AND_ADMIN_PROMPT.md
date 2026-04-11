@@ -40,12 +40,12 @@ A full character creation and management UI. Characters are persisted to a JSON 
 
 #### REST API — Characters
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/characters` | List all saved characters |
-| `POST` | `/api/characters` | Create a new character (body = character data) |
-| `PUT` | `/api/characters/:id` | Update an existing character |
-| `DELETE` | `/api/characters/:id` | Delete a character |
+| Method   | Endpoint              | Description                                    |
+| -------- | --------------------- | ---------------------------------------------- |
+| `GET`    | `/api/characters`     | List all saved characters                      |
+| `POST`   | `/api/characters`     | Create a new character (body = character data) |
+| `PUT`    | `/api/characters/:id` | Update an existing character                   |
+| `DELETE` | `/api/characters/:id` | Delete a character                             |
 
 Server persists to `apps/server/data/characters.json`. Each entry:
 
@@ -80,14 +80,14 @@ Server persists to `apps/server/data/characters.json`. Each entry:
 
 The form has these fields:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| Name | text | Character name (required, unique per theme) |
-| Description | text | Flavor text shown to players |
-| Team | select | `innocent` or `infiltrator` |
-| Theme | select | Dropdown of available themes (from themes API) |
-| Infected Upon Sight | checkbox | If true, learning this character's role can trigger team infection |
-| Power Slots | 1–3 slots | Each slot is a cascading power selector (see below) |
+| Field               | Type      | Description                                                        |
+| ------------------- | --------- | ------------------------------------------------------------------ |
+| Name                | text      | Character name (required, unique per theme)                        |
+| Description         | text      | Flavor text shown to players                                       |
+| Team                | select    | `innocent` or `infiltrator`                                        |
+| Theme               | select    | Dropdown of available themes (from themes API)                     |
+| Infected Upon Sight | checkbox  | If true, learning this character's role can trigger team infection |
+| Power Slots         | 1–3 slots | Each slot is a cascading power selector (see below)                |
 
 #### Power Slot Selector (Cascading Dropdowns)
 
@@ -126,12 +126,12 @@ Full CRUD for cosmetic themes. Themes change the labels/text used in Infiltratio
 
 #### REST API — Themes
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/themes` | List all themes |
-| `POST` | `/api/themes` | Create a new theme |
-| `PUT` | `/api/themes/:id` | Update a theme |
-| `DELETE` | `/api/themes/:id` | Delete a theme |
+| Method   | Endpoint          | Description        |
+| -------- | ----------------- | ------------------ |
+| `GET`    | `/api/themes`     | List all themes    |
+| `POST`   | `/api/themes`     | Create a new theme |
+| `PUT`    | `/api/themes/:id` | Update a theme     |
+| `DELETE` | `/api/themes/:id` | Delete a theme     |
 
 Server persists to `apps/server/data/themes.json`.
 
@@ -143,28 +143,28 @@ interface GameTheme {
   name: string;
   description: string;
   teamTerms: {
-    infiltratorSingular: string;   // e.g. "Spy", "Thief"
+    infiltratorSingular: string; // e.g. "Spy", "Thief"
     infiltratorPlural: string;
-    innocentSingular: string;      // e.g. "Employee", "Guard"
+    innocentSingular: string; // e.g. "Employee", "Guard"
     innocentPlural: string;
   };
   phaseText: {
-    revealPrompt: string;          // Shown during reveal phase
-    mayhemPrompt: string;          // Shown during mayhem phase
-    votingPrompt: string;          // Shown during voting phase
-    noInfiltratorOption: string;   // Label for "no infiltrator" vote option
+    revealPrompt: string; // Shown during reveal phase
+    mayhemPrompt: string; // Shown during mayhem phase
+    votingPrompt: string; // Shown during voting phase
+    noInfiltratorOption: string; // Label for "no infiltrator" vote option
   };
   phaseNames: {
-    reveal: string;                // e.g. "Briefing"
-    mayhem: string;                // e.g. "Heist"
-    voting: string;                // e.g. "Accusation"
+    reveal: string; // e.g. "Briefing"
+    mayhem: string; // e.g. "Heist"
+    voting: string; // e.g. "Accusation"
   };
   characterTerms: {
-    npcSingular: string;           // e.g. "Safe", "Treasure"
+    npcSingular: string; // e.g. "Safe", "Treasure"
     npcPlural: string;
   };
   playerTerms: {
-    playerOuted: string;           // e.g. "{role} exposed!" — use {role} placeholder
+    playerOuted: string; // e.g. "{role} exposed!" — use {role} placeholder
     infiltratorWinText: string;
     innocentsWinText: string;
   };
@@ -175,11 +175,11 @@ interface GameTheme {
 
 #### Default Themes to Seed
 
-| ID | Name | Infiltrator | Innocent | NPC | Phases |
-|----|------|-------------|----------|-----|--------|
-| `debug` | Debug Theme | Infiltrator | Innocent | NPC | Reveal / Mayhem / Voting |
-| `coop_office` | Corporate Office | Corporate Spy | Employee | Safe | Briefing / Infiltration / Accusation |
-| `heist` | Heist Scenario | Thief | Guard | Treasure | Briefing / Heist / Accusation |
+| ID            | Name             | Infiltrator   | Innocent | NPC      | Phases                               |
+| ------------- | ---------------- | ------------- | -------- | -------- | ------------------------------------ |
+| `debug`       | Debug Theme      | Infiltrator   | Innocent | NPC      | Reveal / Mayhem / Voting             |
+| `coop_office` | Corporate Office | Corporate Spy | Employee | Safe     | Briefing / Infiltration / Accusation |
+| `heist`       | Heist Scenario   | Thief         | Guard    | Treasure | Briefing / Heist / Accusation        |
 
 #### Theme Editor Form
 
@@ -193,34 +193,34 @@ A live monitoring view of all active rooms on the server. Communicates via Socke
 
 #### Features
 
-| Feature | Description |
-|---------|-------------|
-| **Room List** | Table of all active rooms: room code, player count, game phase, created at |
-| **Room Detail** | Click a room → see full `RoomState` as formatted JSON |
-| **Force Close** | Button to forcibly close any room (emits `room:closed` to all players, cleans up state) |
-| **Export State** | Download the current `RoomState` as a JSON file |
-| **Player List** | Per-room: all players with connection status, team, character, vote |
-| **Live Updates** | Room state auto-refreshes (via socket subscription or 2-second polling) |
+| Feature          | Description                                                                             |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| **Room List**    | Table of all active rooms: room code, player count, game phase, created at              |
+| **Room Detail**  | Click a room → see full `RoomState` as formatted JSON                                   |
+| **Force Close**  | Button to forcibly close any room (emits `room:closed` to all players, cleans up state) |
+| **Export State** | Download the current `RoomState` as a JSON file                                         |
+| **Player List**  | Per-room: all players with connection status, team, character, vote                     |
+| **Live Updates** | Room state auto-refreshes (via socket subscription or 2-second polling)                 |
 
 #### Admin Socket Events or REST
 
 Option A (Socket-based — preferred):
 
-| Event | Direction | Payload | Description |
-|-------|-----------|---------|-------------|
-| `admin:listRooms` | C -> S | `{}` | Request list of all rooms |
-| `admin:rooms` | S -> C | `RoomState[]` | Full state of all rooms |
-| `admin:forceClose` | C -> S | `{ roomCode }` | Force close a room |
-| `admin:exportRoom` | C -> S | `{ roomCode }` | Request room state for export |
-| `admin:roomExport` | S -> C | `RoomState` | Room state for download |
+| Event              | Direction | Payload        | Description                   |
+| ------------------ | --------- | -------------- | ----------------------------- |
+| `admin:listRooms`  | C -> S    | `{}`           | Request list of all rooms     |
+| `admin:rooms`      | S -> C    | `RoomState[]`  | Full state of all rooms       |
+| `admin:forceClose` | C -> S    | `{ roomCode }` | Force close a room            |
+| `admin:exportRoom` | C -> S    | `{ roomCode }` | Request room state for export |
+| `admin:roomExport` | S -> C    | `RoomState`    | Room state for download       |
 
 Option B (REST-based — simpler):
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/admin/rooms` | List all rooms (summary) |
-| `GET` | `/api/admin/rooms/:code` | Full room state |
-| `POST` | `/api/admin/rooms/:code/close` | Force close room |
+| Method | Endpoint                       | Description              |
+| ------ | ------------------------------ | ------------------------ |
+| `GET`  | `/api/admin/rooms`             | List all rooms (summary) |
+| `GET`  | `/api/admin/rooms/:code`       | Full room state          |
+| `POST` | `/api/admin/rooms/:code/close` | Force close room         |
 
 Guard admin endpoints with a simple check (e.g., query param `?key=admin` or just leave unguarded for local dev).
 
@@ -253,24 +253,24 @@ Themes are a **cosmetic overlay** for the Infiltration game. They change every p
 
 Every piece of player-facing text in Infiltration should use theme terms instead of hardcoded strings:
 
-| Hardcoded Default | Theme Field | Example (Heist) |
-|-------------------|-------------|------------------|
-| "Infiltrator" | `teamTerms.infiltratorSingular` | "Thief" |
-| "Infiltrators" | `teamTerms.infiltratorPlural` | "Thieves" |
-| "Innocent" | `teamTerms.innocentSingular` | "Guard" |
-| "Innocents" | `teamTerms.innocentPlural` | "Guards" |
-| "NPC" | `characterTerms.npcSingular` | "Treasure" |
-| "NPCs" | `characterTerms.npcPlural` | "Treasures" |
-| "Reveal" phase name | `phaseNames.reveal` | "Briefing" |
-| "Mayhem" phase name | `phaseNames.mayhem` | "Heist" |
-| "Voting" phase name | `phaseNames.voting` | "Accusation" |
-| Reveal phase prompt | `phaseText.revealPrompt` | "Your position in this heist has been revealed!" |
-| Mayhem phase prompt | `phaseText.mayhemPrompt` | "Let the heist begin! Execute your specialized moves." |
-| Voting phase prompt | `phaseText.votingPrompt` | "Time to expose the thief! Who do you suspect?" |
-| "No Infiltrator" vote option | `phaseText.noInfiltratorOption` | "No thief was recruited for this job!" |
-| Win text (infiltrators) | `playerTerms.infiltratorWinText` | "Thieves made off with the goods!" |
-| Win text (innocents) | `playerTerms.innocentsWinText` | "Thieves captured!" |
-| Player outed text | `playerTerms.playerOuted` | "{role} compromised!" |
+| Hardcoded Default            | Theme Field                      | Example (Heist)                                        |
+| ---------------------------- | -------------------------------- | ------------------------------------------------------ |
+| "Infiltrator"                | `teamTerms.infiltratorSingular`  | "Thief"                                                |
+| "Infiltrators"               | `teamTerms.infiltratorPlural`    | "Thieves"                                              |
+| "Innocent"                   | `teamTerms.innocentSingular`     | "Guard"                                                |
+| "Innocents"                  | `teamTerms.innocentPlural`       | "Guards"                                               |
+| "NPC"                        | `characterTerms.npcSingular`     | "Treasure"                                             |
+| "NPCs"                       | `characterTerms.npcPlural`       | "Treasures"                                            |
+| "Reveal" phase name          | `phaseNames.reveal`              | "Briefing"                                             |
+| "Mayhem" phase name          | `phaseNames.mayhem`              | "Heist"                                                |
+| "Voting" phase name          | `phaseNames.voting`              | "Accusation"                                           |
+| Reveal phase prompt          | `phaseText.revealPrompt`         | "Your position in this heist has been revealed!"       |
+| Mayhem phase prompt          | `phaseText.mayhemPrompt`         | "Let the heist begin! Execute your specialized moves." |
+| Voting phase prompt          | `phaseText.votingPrompt`         | "Time to expose the thief! Who do you suspect?"        |
+| "No Infiltrator" vote option | `phaseText.noInfiltratorOption`  | "No thief was recruited for this job!"                 |
+| Win text (infiltrators)      | `playerTerms.infiltratorWinText` | "Thieves made off with the goods!"                     |
+| Win text (innocents)         | `playerTerms.innocentsWinText`   | "Thieves captured!"                                    |
+| Player outed text            | `playerTerms.playerOuted`        | "{role} compromised!"                                  |
 
 ### 2.3 Theme in the State Model
 
@@ -279,7 +279,7 @@ When the game starts, the server resolves the active theme and attaches it to th
 ```typescript
 // Inside GameState.gameData for infiltration
 {
-  theme: GameTheme;  // Full resolved theme object
+  theme: GameTheme; // Full resolved theme object
   // ... other infiltration game data
 }
 ```
@@ -293,18 +293,32 @@ Create a shared utility for resolving themed text:
 ```typescript
 // packages/shared/src/utils/themeText.ts (or apps/web/src/utils/themeText.ts)
 
-function getTeamLabel(theme: GameTheme, team: "innocent" | "infiltrator", plural = false): string {
+function getTeamLabel(
+  theme: GameTheme,
+  team: "innocent" | "infiltrator",
+  plural = false,
+): string {
   if (team === "infiltrator") {
-    return plural ? theme.teamTerms.infiltratorPlural : theme.teamTerms.infiltratorSingular;
+    return plural
+      ? theme.teamTerms.infiltratorPlural
+      : theme.teamTerms.infiltratorSingular;
   }
-  return plural ? theme.teamTerms.innocentPlural : theme.teamTerms.innocentSingular;
+  return plural
+    ? theme.teamTerms.innocentPlural
+    : theme.teamTerms.innocentSingular;
 }
 
-function getPhaseName(theme: GameTheme, phase: "reveal" | "mayhem" | "voting"): string {
+function getPhaseName(
+  theme: GameTheme,
+  phase: "reveal" | "mayhem" | "voting",
+): string {
   return theme.phaseNames[phase];
 }
 
-function getPhasePrompt(theme: GameTheme, phase: "reveal" | "mayhem" | "voting"): string {
+function getPhasePrompt(
+  theme: GameTheme,
+  phase: "reveal" | "mayhem" | "voting",
+): string {
   const key = `${phase}Prompt` as keyof GameTheme["phaseText"];
   return theme.phaseText[key];
 }
@@ -325,21 +339,21 @@ function getPlayerOutedText(theme: GameTheme, roleName: string): string {
 
 ## 3. Character & Power System
 
-Infiltration uses a **character-based power system** — there are no hardcoded roles like "Spy" or "Seer". Instead, an admin creates characters in the admin panel, each with 1–3 power slots selected from a table of 46 powers. The host then picks which characters to use for a given game session.
+Infiltration uses a **character-based power system** — there are no hardcoded roles like "Spy" or "Seer". Instead, an admin creates characters in the admin panel, each with 1–3 power slots selected from a table of **41 powers**. The host then picks which characters to use for a given game session.
 
 ### 3.1 Character Data Model
 
 ```typescript
 interface Character {
-  id: string;                    // Unique ID (timestamp-based or UUID)
-  name: string;                  // Display name (e.g., "Seer", "Robber")
+  id: string; // Unique ID (timestamp-based or UUID)
+  name: string; // Display name (e.g., "Seer", "Robber")
   data: {
-    name: string;                // Same as top-level name
-    description: string;         // Flavor text shown to players
+    name: string; // Same as top-level name
+    description: string; // Flavor text shown to players
     team: "innocent" | "infiltrator";
-    theme: string;               // Theme ID this character belongs to
-    infectedUponSight: boolean;  // Can learning this character trigger infection?
-    powerSlots: PowerSlot[];     // 1–3 power slots
+    theme: string; // Theme ID this character belongs to
+    infectedUponSight: boolean; // Can learning this character trigger infection?
+    powerSlots: PowerSlot[]; // 1–3 power slots
   };
   createdAt: string;
   updatedAt: string;
@@ -348,68 +362,105 @@ interface Character {
 
 ### 3.2 Power Slot Data Model
 
-Each power slot references a power from the 46-power table by index, plus configuration:
+Each power slot references a power from the 41-power table by index, plus configuration:
 
 ```typescript
 interface PowerSlot {
-  powerIndex: number | null;     // Index (1–46) into the power table, null = empty slot
-  type: string | null;           // Power type: Learn, Reveal, Swap, Condition, Alter, Tamper, Settings, None
-  item: string | null;           // What the power acts on: Role, Team, Players, Block, etc.
-  where: string | null;          // Target scope: Player, Center, Self, Role, etc.
-  amount: string | null;         // How many targets (clamped to power's Min–Max)
-  timing: "before" | "after" | null;  // Learn/Reveal timing relative to Swap phase
+  powerIndex: number | null; // Index into the power table (see INFILTRATION_POWERS), null = empty slot
+  type: string | null; // Power type: Learn, Reveal, Swap, Condition, Alter, Tamper, Settings, None
+  item: string | null; // What the power acts on: Role, Team, Players, Block, etc.
+  where: string | null; // Target scope: Player, Center, Self, Role, etc.
+  amount: string | null; // How many targets (clamped to power's Min–Max)
+  timing: "before" | "after" | null; // Learn/Reveal timing relative to Swap phase
   targetScope?: "Players Only" | "NPC Only" | "Players and NPC";
-  toggles: {                     // Modifier flags
-    lookPostAction?: boolean;    // Can see own new role after this power changes it
-    doPower?: boolean;           // Can execute new role's power after seeing it
+  toggles: {
+    // Modifier flags
+    lookPostAction?: boolean; // Can see own new role after this power changes it
+    doPower?: boolean; // Can execute new role's power after seeing it
   };
   // Resolved at runtime from the power table:
   // description, initiative, min, max, complexity, and all boolean flags
 }
 ```
 
-### 3.3 The 46-Power Table
+### 3.3 The 41-Power Table (Existing TypeScript Constants)
 
-Powers are defined in a static CSV/data file. The server loads this at startup. Each power has:
+Powers are **already defined** in the codebase as TypeScript constants in:
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `Index` | number | Unique ID (1–46) |
-| `Initiative` | string | Execution priority. Space-separated values (e.g., `"10 90"` = can run at priority 10 or 90). Lower = earlier. |
-| `Power Name` | string | Display name |
-| `Description` | string | Human-readable description with `#` as placeholder for amount |
-| `Type` | enum | `Learn`, `Reveal`, `Swap`, `Condition`, `Alter`, `Tamper`, `Settings`, `None` |
-| `Item` | string | What the power acts on (e.g., `Role`, `Team`, `Block`, `Win`, `Silence`) |
-| `Where` | string | Target type (e.g., `Player`, `Center`, `Self`, `Role`). Space-delimited for multi-target (e.g., `Player Player`) |
-| `Min` | number | Minimum targets/amount |
-| `Max` | number | Maximum targets/amount |
-| `FixedAction` | boolean | Power has no target choice (auto-executes) |
-| `FixedInitiative` | boolean | Initiative cannot be altered by other powers |
-| `Infected` | boolean | Can trigger infiltrator infection mechanic |
-| `Suicidal` | boolean | Win condition: player wins if voted out |
-| `Murderer` | boolean | Player's vote also eliminates the target |
-| `Predicter` | boolean | Player wins if their vote target is an infiltrator |
-| `Silencer` | boolean | Can silence another player's vote |
-| `2xVote` | boolean | Vote counts double |
-| `LookPostAction` | boolean | Player can see their new role after this power changes it |
-| `DoPower` | boolean | Player can execute their new role's power after seeing it |
-| `Self-Destruct` | boolean | Power involves swapping own role away |
-| `AllowRandom` | boolean | Random target selection is valid |
-| `Vault` | boolean | Power can interact with center/NPC cards |
-| `Complexity` | 1–3 | Complexity rating |
+```
+apps/web/src/constants/infiltrationPowers/
+  types.ts          ← InfiltrationPower type & TargetScope type
+  learn.ts          ← LEARN_POWERS (12 powers, indices 1,3,4,6–13,16)
+  reveal.ts         ← REVEAL_POWERS (3 powers, indices 17,19,20)
+  swap.ts           ← SWAP_POWERS (7 powers, indices 21–27)
+  condition.ts      ← CONDITION_POWERS (2 powers, indices 28–29)
+  alter.ts          ← ALTER_POWERS (8 powers, indices 30–37)
+  tamper.ts         ← TAMPER_POWERS (7 powers, indices 38–44)
+  settingsNone.ts   ← SETTINGS_NONE_POWERS (2 powers, indices 45–46)
+  index.ts          ← barrel export: INFILTRATION_POWERS (all 41 combined)
+```
+
+The `InfiltrationPower` type (from `types.ts`) defines each power:
+
+```typescript
+export type TargetScope = "Players Only" | "NPC Only" | "Players and NPC";
+
+export type InfiltrationPower = {
+  index: number;           // Unique power ID (non-contiguous: 1–46, with gaps)
+  initiative: string;      // Execution priority. Space-separated (e.g., "10 90"). Lower = earlier.
+  powerName: string;       // Display name
+  description: string;     // Human-readable description, # = placeholder for amount
+  type: string;            // Learn | Reveal | Swap | Condition | Alter | Tamper | Settings | None
+  item: string;            // What the power acts on (Role, Team, Block, Win, Silence, etc.)
+  where: string;           // Target type (Player, Self, Role, Type, Reversal, etc.)
+  min: number;             // Minimum targets/amount
+  max: number;             // Maximum targets/amount
+  fixedAction: boolean;    // Power auto-executes with no target choice
+  fixedInitiative: boolean; // Initiative cannot be altered by other powers
+  infected: boolean;       // Can trigger infiltrator infection mechanic
+  lookPostAction: boolean; // Player sees their new role after a swap changes it
+  doPower: boolean;        // Player can execute new role's power after seeing it
+  allowRandom: boolean;    // Random target selection is valid
+  vault: boolean;          // Power can interact with center/NPC cards
+  vaultName?: string;      // Optional vault display name
+  complexity: number;      // 1–3 complexity rating
+  targetScopes?: TargetScope[]; // When present, power can target Players, NPCs, or both
+};
+```
+
+> **Design note — targetScopes consolidation**: The original CSV had 46 powers with separate entries for "Player" vs "Center/Vault" variants (e.g., Role Peek vs Vault Peek). The TS constants **consolidated** these into 41 powers by using `targetScopes`. When a power has `targetScopes`, the admin character creation UI should present a dropdown to choose the scope ("Players Only", "NPC Only", or "Players and NPC"). This scope is saved on the `PowerSlot` and determines valid targets at runtime.
+
+Import the power table on the server side by copying or re-exporting from the web constants. Provide helpers:
+
+```typescript
+import { INFILTRATION_POWERS } from "./infiltrationPowers";
+
+function getPowerByIndex(index: number): InfiltrationPower | undefined {
+  return INFILTRATION_POWERS.find((p) => p.index === index);
+}
+
+function filterPowers(type?: string, item?: string, where?: string): InfiltrationPower[] {
+  return INFILTRATION_POWERS.filter(
+    (p) =>
+      (!type || p.type === type) &&
+      (!item || p.item === item) &&
+      (!where || p.where === where)
+  );
+}
+```
 
 ### 3.4 Power Categories Summary
 
-| Type | Count | What It Does | Examples |
-|------|-------|-------------|----------|
-| **Learn** | 16 | Actor privately learns information about targets | Role Peek, Vault Peek, Allegiance Check, Roll Rolecall, Action Trace |
-| **Reveal** | 4 | Information is revealed publicly to all players | Expose Role, Open Vault, Face Reveal, Role Spotlight |
-| **Swap** | 7 | Move roles and/or teams between players and/or center cards | Role Swap, Self Swap, Team Exchange, Recruit, Swap Reversal |
-| **Condition** | 2 | Grants an alternate win condition | Deathwish (win if voted out), Oracle (win if vote target is infiltrator) |
-| **Alter** | 8 | Modify other players' actions: block, protect, change priority | Nope!, Shield, Priority Warp, Role Jam |
-| **Tamper** | 7 | Modify the voting phase: silence, duplicate, kill votes | Mute Vote, Vote Encore, Double Tap, Death Vote |
-| **Settings** | 1 | Change game settings at runtime | Time Warp (adjust discussion timer) |
-| **None** | 1 | No power (placeholder for powerless characters) | No Action |
+| Type          | Count | What It Does                                                   | Examples                                                                 |
+| ------------- | ----- | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Learn**     | 12    | Actor privately learns information about targets               | Role Peek, Allegiance Check, Roll Rolecall, Action Trace, Role Tally     |
+| **Reveal**    | 3     | Information is revealed publicly to all players                | Expose Role, Face Reveal, Role Spotlight                                 |
+| **Swap**      | 7     | Move roles and/or teams between players and/or center cards    | Role Swap, Self Swap, Team Exchange, Recruit, Swap Reversal              |
+| **Condition** | 2     | Grants an alternate win condition                              | Deathwish (win if voted out), Oracle (win if vote target is infiltrator) |
+| **Alter**     | 8     | Modify other players' actions: block, protect, change priority | Nope!, Shield, Priority Warp, Role Jam                                   |
+| **Tamper**    | 7     | Modify the voting phase: silence, duplicate, kill votes        | Mute Vote, Vote Encore, Double Tap, Death Vote                           |
+| **Settings**  | 1     | Change game settings at runtime                                | Time Warp (adjust discussion timer)                                      |
+| **None**      | 1     | No power (placeholder for powerless characters)                | No Action                                                                |
 
 ### 3.5 How Characters Are Used in a Game
 
@@ -436,131 +487,131 @@ NPCs represent undealt characters sitting in the "center" or "vault":
 
 Characters are stored in `apps/server/data/characters.json` as an array. The server provides a REST API (Section 1.2) and also exports a `getCharacters()` function for the socket handlers to read at game-start time.
 
-### 3.8 Power Table Data File
+### 3.8 Power Table Data Files
 
-The 46-power table should be stored as a TypeScript constant or JSON file loaded at startup:
+The 41 powers **already exist** as TypeScript constants at:
 
 ```
-apps/server/data/powers.csv          // or powers.json
-apps/server/src/data/powerTable.ts   // parsed + typed version
+apps/web/src/constants/infiltrationPowers/   ← canonical source
 ```
 
-Provide a `getPowerByIndex(index: number): Power` helper and a `filterPowers(type?, item?, where?): Power[]` helper for the cascading admin dropdowns.
+For the server, either:
+- **Re-export** from a shared package (`packages/shared`), or
+- **Copy** the constants into `apps/server/src/data/infiltrationPowers/` and keep in sync.
+
+The barrel export `INFILTRATION_POWERS` from `index.ts` gives a flat array of all 41 powers. Use `getPowerByIndex()` and `filterPowers()` helpers (shown in Section 3.3) for lookups and admin cascading dropdowns.
 
 ---
 
 ## 4. Power Table Reference
 
-The complete 46-power table. This is the single source of truth for all powers. Store as a typed constant or parsed CSV on the server. The `#` in descriptions is a placeholder for the configured amount.
+The complete **41-power table**, matching the TypeScript constants in `apps/web/src/constants/infiltrationPowers/`. This is the single source of truth. The `#` in descriptions is a placeholder for the configured amount. The **Flags** column lists only fields that are `true` for that power. The **Scopes** column shows `targetScopes` values when present (P = Players Only, N = NPC Only, B = Players and NPC).
 
-### 4.1 Learn Powers (Index 1–16)
+> **Note**: Indices are **not contiguous** (gaps at 2, 5, 14, 15, 18). These were vault/center variants in the original CSV that have been consolidated via `targetScopes` on the base power.
 
-| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
-|-----|-----------|------|-------------|------|-------|-----|-----|-------|
-| 1 | 10 90 | Role Peek | Learn # Player's Roles | Role | Player | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
-| 2 | 10 90 | Vault Peek | Learn # Center's Roles | Role | Center | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
-| 3 | 10 90 | Last Look | Learn Final Role | Role | Self | 1 | 1 | fixedAction, infected, suicidal, murderer, predicter |
-| 4 | 10 90 | Allegiance Check | Learn # Player's Teams | Team | Player | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
-| 5 | 10 90 | Vault Allegiance | Learn # Center's Teams | Team | Center | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
-| 6 | 10 90 | Roll Rolecall | Learn # Players With Role | Players | Role | 1 | 99 | suicidal, murderer, predicter |
-| 7 | 10 90 | Role Beacon | Learn All Players With Same Role | Players | Role Assoc. | 99 | 99 | fixedAction, infected, suicidal, murderer, predicter |
-| 8 | 10 90 | Team Echo | Learn # Players With Same Team | Players | Team Assoc. | 1 | 99 | fixedAction, infected, suicidal, murderer, predicter |
-| 9 | 90 | Action Trace | Learn # Players Did Action Type | Players | Type | 1 | 99 | fixedInitiative, infected, suicidal, murderer, predicter |
-| 10 | 90 | Action Log | Learn # Players Who Moved/Learned | Players | Action | 1 | 99 | fixedInitiative, infected, suicidal, murderer, predicter |
-| 11 | 10 90 | Tactic Tell | Learn # Player Action Type | Type | Player | 1 | 3 | infected, suicidal, murderer, predicter |
-| 12 | 10 90 | Role Tally | Learn up to # role are Players | Amount | Role | 1 | 99 | infected, suicidal, murderer, predicter |
-| 13 | 10 90 | Team Tally | Learn up to # Team are Players | Amount | Association | 1 | 3 | infected, suicidal, murderer, predicter |
-| 14 | 10 90 | Who's Missing | Learn up to # role are Center | Amount | Role | 1 | 99 | infected, suicidal, murderer, predicter |
-| 15 | 10 90 | Absentee Ballot | Learn up to # Team are Center | Amount | Association | 1 | 3 | infected, suicidal, murderer, predicter |
-| 16 | 90 | Sixth Sense | Learn if # Players Were Moved | Status | Player | 1 | 99 | infected, suicidal, murderer, predicter |
+### 4.1 Learn Powers (12 powers)
 
-### 4.2 Reveal Powers (Index 17–20)
+| Idx | Init  | Name             | Description                       | Item    | Where       | Min | Max | Flags (true only)                    | Scopes |
+| --- | ----- | ---------------- | --------------------------------- | ------- | ----------- | --- | --- | ------------------------------------ | ------ |
+| 1   | 10 90 | Role Peek        | Learn # Player's Roles            | Role    | Player      | 1   | 3   | infected, allowRandom                | P/N/B  |
+| 3   | 10    | Last Look        | Learn Final Role                  | Role    | Self        | 1   | 1   | fixedAction, fixedInitiative, infected | —    |
+| 4   | 10 90 | Allegiance Check | Learn # Player's Teams            | Team    | Player      | 1   | 3   | infected, allowRandom                | P/N/B  |
+| 6   | 10 90 | Roll Rolecall    | Learn # Players With Role         | Players | Role        | 1   | 99  | —                                    | —      |
+| 7   | 10    | Role Beacon      | Learn All Players With Same Role  | Players | Same Role   | 99  | 99  | fixedAction, fixedInitiative, infected | —    |
+| 8   | 10 90 | Team Echo        | Learn # Players With Same Team    | Players | Same Team   | 1   | 5   | fixedAction, infected                | —      |
+| 9   | 90    | Action Trace     | Learn # Players Did Action Type   | Players | Type        | 1   | 99  | fixedInitiative, infected            | —      |
+| 10  | 90    | Action Log       | Learn # Players Who Moved/Learned | Players | Action      | 1   | 99  | fixedInitiative, infected            | —      |
+| 11  | 10 90 | Tactic Tell      | Learn # Player Action Type        | Type    | Player      | 1   | 3   | infected                             | —      |
+| 12  | 10 90 | Role Tally       | Learn up to # of a Role           | Amount  | Role        | 1   | 99  | infected                             | P/N/B  |
+| 13  | 10 90 | Team Tally       | Learn up to # of a Team           | Amount  | Association | 1   | 3   | infected                             | P/N/B  |
+| 16  | 90    | Sixth Sense      | Learn if # Players Were Moved     | Status  | Player      | 1   | 99  | infected                             | —      |
 
-| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
-|-----|-----------|------|-------------|------|-------|-----|-----|-------|
-| 17 | 5 95 | Expose Role | Reveal # Player Role | Role | Player | 1 | 99 | infected, suicidal, murderer, predicter, allowRandom |
-| 18 | 5 95 | Open Vault | Reveal # Center Role | Role | Center | 1 | 3 | infected, suicidal, murderer, predicter, allowRandom |
-| 19 | 5 95 | Face Reveal | Reveal self | Role | Self | 1 | 1 | fixedAction, infected, suicidal, murderer, predicter |
-| 20 | 5 95 | Role Spotlight | Reveal # player of role | Role | Role | 1 | 99 | fixedAction, infected, suicidal, murderer, predicter |
+### 4.2 Reveal Powers (3 powers)
 
-### 4.3 Swap Powers (Index 21–27)
+| Idx | Init | Name           | Description      | Item | Where  | Min | Max | Flags (true only)              | Scopes |
+| --- | ---- | -------------- | ---------------- | ---- | ------ | --- | --- | ------------------------------ | ------ |
+| 17  | 5 95 | Expose Role    | Reveal # Roles   | Role | Player | 1   | 3   | infected, doPower, allowRandom | P/N/B  |
+| 19  | 5 95 | Face Reveal    | Reveal self      | Role | Self   | 1   | 1   | fixedAction, infected          | —      |
+| 20  | 5 95 | Role Spotlight | Reveal # innocents | Role | Player | 1 | 5   | doPower, allowRandom           | P/N/B  |
 
-| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
-|-----|-----------|------|-------------|------|-------|-----|-----|-------|
-| 21 | 50 | Role Swap | Swap Two Players Roles (can use Vault) | Role | Player | 2 | 2 | fixedInitiative, allowRandom, vault, selfDestruct |
-| 22 | 50 | Self Swap | Swap One Player's Role With Own Role (can use Vault) | Role | Player | 1 | 1 | fixedInitiative, lookPostAction, doPower, allowRandom, vault, selfDestruct |
-| 23 | 50 | Swap Role Team | Swap A Player's Role and Team | Role Team | Player | 2 | 2 | fixedInitiative, allowRandom, vault, selfDestruct |
-| 24 | 60 | Swap Reversal | Swap # Swaps of Roles | Role | Role | 1 | 99 | fixedAction, fixedInitiative |
-| 25 | 50 | Team Exchange | Swap Own Team With Another Player | Team | Self | 1 | 1 | fixedInitiative, lookPostAction, doPower, allowRandom, vault, selfDestruct |
-| 26 | 50 | Recruit | Swap another's Team to your own | Team | Self | 1 | 1 | fixedInitiative, allowRandom, vault, selfDestruct |
-| 27 | 50 | Team Shuffle | Swap Two Players Teams | Team | Player Player | 2 | 2 | fixedInitiative, allowRandom, vault, selfDestruct |
+### 4.3 Swap Powers (7 powers)
 
-### 4.4 Condition Powers (Index 28–29)
+| Idx | Init | Name           | Description                    | Item      | Where         | Min | Max | Flags (true only)                          | Scopes |
+| --- | ---- | -------------- | ------------------------------ | --------- | ------------- | --- | --- | ------------------------------------------ | ------ |
+| 21  | 50   | Role Swap      | Swap Two Roles                 | Role      | Player        | 2   | 2   | fixedInitiative, allowRandom               | P/N/B  |
+| 22  | 50   | Self Swap      | Swap A Role With Own Role      | Role      | Player        | 1   | 1   | fixedInitiative, lookPostAction, doPower, allowRandom | P/N/B |
+| 23  | 50   | Swap Role Team | Swap A Role and Team           | Role Team | Player        | 2   | 2   | fixedInitiative, allowRandom               | P/N/B  |
+| 24  | 60   | Swap Reversal  | Swap # Swaps of Roles          | Role      | Reversal      | 1   | 5   | fixedAction, fixedInitiative               | —      |
+| 25  | 50   | Team Exchange  | Swap Own Team With Another     | Team      | Self          | 1   | 1   | fixedInitiative, lookPostAction, doPower, allowRandom | P/N/B |
+| 26  | 50   | Recruit        | Swap another's Team to your own | Team     | Self          | 1   | 1   | fixedInitiative, allowRandom               | P/N/B  |
+| 27  | 50   | Team Shuffle   | Swap Two Teams                 | Team      | Player Player | 2   | 2   | fixedInitiative, allowRandom               | P/N/B  |
 
-| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
-|-----|-----------|------|-------------|------|-------|-----|-----|-------|
-| 28 | 0 | Deathwish | Wins If Voted Out | Win | Self | 0 | 0 | fixedInitiative, infected |
-| 29 | 0 | Oracle | Wins If Vote Is Infiltrator | Win | Vote | 0 | 0 | fixedInitiative, infected |
+### 4.4 Condition Powers (2 powers)
 
-### 4.5 Alter Powers (Index 30–37)
+| Idx | Init | Name      | Description                 | Item | Where | Min | Max | Flags (true only) |
+| --- | ---- | --------- | --------------------------- | ---- | ----- | --- | --- | ----------------- |
+| 28  | 0    | Deathwish | Wins If Voted Out           | Win  | Self  | 0   | 0   | fixedInitiative   |
+| 29  | 0    | Oracle    | Wins If Vote Is Infiltrator | Win  | Vote  | 0   | 0   | fixedInitiative   |
 
-| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
-|-----|-----------|------|-------------|------|-------|-----|-----|-------|
-| 30 | 4 | Nope! | Block # Player From Doing Actions | Block | Player | 1 | 99 | fixedInitiative, allowRandom |
-| 31 | 4 | Role Jam | Block # Role From Doing Actions | Block | Role | 1 | 99 | fixedInitiative |
-| 32 | 2 | Priority Warp | Alter # Players Action * Priority | Initiative | Player | 1 | 99 | fixedInitiative, allowRandom |
-| 33 | 2 | Order Rewrite | Alter # Roles Action * Priority | Initiative | Role | 1 | 99 | fixedInitiative |
-| 34 | 1 | Hard Priority | Set # Players Action Priority | Initiative | Player | 1 | 99 | allowRandom |
-| 35 | 1 | Order Rule | Set # Roles Action Priority | Initiative | Role | 1 | 99 | — |
-| 36 | 3 | Shield | Protect # Player From * Actions | Protect | Player | 1 | 99 | fixedInitiative, allowRandom |
-| 37 | 3 | Guard | Protect # * Roles From * Actions | Protect | Role | 1 | 99 | fixedInitiative |
+### 4.5 Alter Powers (8 powers)
 
-### 4.6 Tamper Powers (Index 38–44)
+| Idx | Init | Name          | Description                        | Item       | Where  | Min | Max | Flags (true only)            |
+| --- | ---- | ------------- | ---------------------------------- | ---------- | ------ | --- | --- | ---------------------------- |
+| 30  | 4    | Nope!         | Block # Player From Doing Actions  | Block      | Player | 1   | 5   | fixedInitiative, allowRandom |
+| 31  | 4    | Role Jam      | Block # Role From Doing Actions    | Block      | Role   | 1   | 5   | fixedInitiative              |
+| 32  | 2    | Priority Warp | Alter # Players Action \* Priority | Initiative | Player | 1   | 5   | fixedInitiative, allowRandom |
+| 33  | 2    | Order Rewrite | Alter # Roles Action \* Priority   | Initiative | Role   | 1   | 5   | fixedInitiative              |
+| 34  | 1    | Hard Priority | Set # Players Action Priority      | Initiative | Player | 1   | 5   | allowRandom                  |
+| 35  | 1    | Order Rule    | Set # Roles Action Priority        | Initiative | Role   | 1   | 5   | —                            |
+| 36  | 3    | Shield        | Protect # Player From \* Actions   | Protect    | Player | 1   | 5   | fixedInitiative, allowRandom |
+| 37  | 3    | Guard         | Protect # \* Roles From \* Actions | Protect    | Role   | 1   | 5   | fixedInitiative              |
 
-| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
-|-----|-----------|------|-------------|------|-------|-----|-----|-------|
-| 38 | 0 | Mute Vote | Silence # Player From Voting | Silence | Player | 1 | 99 | fixedInitiative, murderer, allowRandom |
-| 39 | 0 | Vote Jam | Silence # Role From Voting | Silence | Role | 1 | 99 | fixedInitiative, murderer |
-| 40 | 0 | Vote Encore | Duplicate Own Vote | Duplicate | Player | 0 | 0 | fixedAction, fixedInitiative |
-| 41 | 0 | Vote Echo | Duplicate Role Votes | Duplicate | Role | 0 | 0 | fixedAction, fixedInitiative |
-| 42 | 0 | Double Tap | Duplicate Own Vote | Duplicate | Self | 0 | 0 | fixedAction, fixedInitiative |
-| 43 | 0 | Death Vote | Player's Vote Is Killed | Kill | Player | 1 | 1 | fixedAction, fixedInitiative |
-| 44 | 0 | Last Laugh | Player's Vote Is Killed, If Player is Killed | Destruct | Player | 1 | 1 | fixedAction, fixedInitiative |
+### 4.6 Tamper Powers (7 powers)
 
-### 4.7 Settings & None (Index 45–46)
+| Idx | Init | Name        | Description                                  | Item      | Where  | Min | Max | Flags (true only)            |
+| --- | ---- | ----------- | -------------------------------------------- | --------- | ------ | --- | --- | ---------------------------- |
+| 38  | 0    | Mute Vote   | Silence # Player From Voting                 | Silence   | Player | 1   | 5   | fixedInitiative, allowRandom |
+| 39  | 0    | Vote Jam    | Silence # Role From Voting                   | Silence   | Role   | 1   | 5   | fixedInitiative              |
+| 40  | 0    | Vote Encore | Duplicate Own Vote                           | Duplicate | Player | 0   | 0   | fixedAction, fixedInitiative |
+| 41  | 0    | Vote Echo   | Duplicate Role Votes                         | Duplicate | Role   | 0   | 0   | fixedAction, fixedInitiative |
+| 42  | 0    | Double Tap  | Duplicate Own Vote                           | Duplicate | Self   | 0   | 0   | fixedAction, fixedInitiative |
+| 43  | 0    | Death Vote  | Players Vote Is Killed                       | Kill      | Player | 1   | 1   | fixedAction, fixedInitiative |
+| 44  | 0    | Last Laugh  | Players Vote Is Killed, If Player is Killed  | Destruct  | Player | 1   | 1   | fixedAction, fixedInitiative |
 
-| Idx | Initiative | Name | Description | Item | Where | Min | Max | Flags |
-|-----|-----------|------|-------------|------|-------|-----|-----|-------|
-| 45 | 0 | Time Warp | Shorten or lengthen discussion times | Time | Room | 0 | 99 | fixedAction, fixedInitiative |
-| 46 | 0 | No Action | Has no power, can be modified | NoAction | None | 0 | 0 | fixedAction, fixedInitiative |
+### 4.7 Settings & None (2 powers)
+
+| Idx | Init | Name      | Description                              | Item     | Where | Min | Max | Flags (true only)            |
+| --- | ---- | --------- | ---------------------------------------- | -------- | ----- | --- | --- | ---------------------------- |
+| 45  | 0    | Time Warp | Shorten or Lengthen Discussion Times     | Time     | Room  | 0   | 300 | fixedAction, fixedInitiative |
+| 46  | 0    | No Action | Has no power                             | NoAction | None  | 0   | 0   | fixedAction, fixedInitiative |
 
 ### 4.8 Initiative Ordering Rules
 
 Initiative determines when a power executes during the mayhem phase. Lower numbers execute first.
 
-| Initiative | Phase | Powers |
-|-----------|-------|--------|
-| 0 | Voting/passive (not during mayhem) | Conditions, Tamper, Settings, No Action |
-| 1 | Earliest mayhem — hard priority setting | Hard Priority, Order Rule |
-| 2 | Early mayhem — priority alteration | Priority Warp, Order Rewrite |
-| 3 | Early-mid mayhem — protection | Shield, Guard |
-| 4 | Mid mayhem — blocking | Nope!, Role Jam |
-| 5 | Pre-action reveal | Expose Role, Open Vault, Face Reveal, Role Spotlight (early timing) |
-| 10 | Pre-swap learn | All Learn powers (early timing) |
-| 50 | Swap phase | All Swap powers |
-| 60 | Post-swap reversal | Swap Reversal |
-| 90 | Post-swap learn | All Learn powers (late timing), Action Trace, Action Log |
-| 95 | Post-action reveal | Reveal powers (late timing) |
+| Initiative | Phase                                   | Powers                                                       |
+| ---------- | --------------------------------------- | ------------------------------------------------------------ |
+| 0          | Voting/passive (not during mayhem)      | Conditions, Tamper, Settings, No Action                      |
+| 1          | Earliest mayhem — hard priority setting | Hard Priority, Order Rule                                    |
+| 2          | Early mayhem — priority alteration      | Priority Warp, Order Rewrite                                 |
+| 3          | Early-mid mayhem — protection           | Shield, Guard                                                |
+| 4          | Mid mayhem — blocking                   | Nope!, Role Jam                                              |
+| 5          | Pre-action reveal                       | Expose Role, Face Reveal, Role Spotlight (early timing)      |
+| 10         | Pre-swap learn                          | All Learn powers (early timing)                              |
+| 50         | Swap phase                              | All Swap powers                                              |
+| 60         | Post-swap reversal                      | Swap Reversal                                                |
+| 90         | Post-swap learn                         | All Learn powers (late timing), Action Trace, Action Log     |
+| 95         | Post-action reveal                      | Reveal powers (late timing)                                  |
 
 Powers with two initiative values (e.g., `"10 90"`) can be configured to run at either timing via the `timing` field on the power slot: `"before"` = use the lower value, `"after"` = use the higher value.
 
 ### 4.9 Complexity Ratings
 
-| Rating | Meaning | Examples |
-|--------|---------|----------|
-| 1 | Simple — no targeting, no lookups | No Action, Face Reveal, Deathwish, Double Tap |
-| 2 | Medium — target selection or mid-level interaction | Role Peek, Shield, Nope!, Role Swap, Mute Vote |
-| 3 | High — lookup-heavy, mass effects, timing-sensitive | Roll Rolecall, Action Trace, Role Jam, Swap Reversal, Role Spotlight |
+| Rating | Meaning                                             | Examples                                                             |
+| ------ | --------------------------------------------------- | -------------------------------------------------------------------- |
+| 1      | Simple — no targeting, no lookups                   | No Action, Face Reveal, Deathwish, Double Tap, Vote Encore           |
+| 2      | Medium — target selection or mid-level interaction  | Role Peek, Shield, Nope!, Role Swap, Mute Vote, Time Warp            |
+| 3      | High — lookup-heavy, mass effects, timing-sensitive | Roll Rolecall, Action Trace, Role Jam, Swap Reversal, Role Spotlight |
 
 ---
 
@@ -568,17 +619,28 @@ Powers with two initiative values (e.g., `"10 90"`) can be configured to run at 
 
 When a character has multiple power slots, not all combinations are valid. The system must validate compatibility both in the admin character creation UI (client-side warnings) and on the server (reject on save).
 
+> **⚠ Implementation note**: The five meshing flags below (`murderer`, `predicter`, `twoXVote`, `silencer`, `suicidal`) are **NOT yet in the existing `InfiltrationPower` type** in `apps/web/src/constants/infiltrationPowers/types.ts`. They were part of the original CSV design but were stripped during the TypeScript conversion. To implement meshing validation, you must **extend** the `InfiltrationPower` type with these fields and add them to each power constant, OR compute them from the power's `type`/`item`/`where` fields at validation time. The recommended approach is to add them to the type as optional booleans and populate them on the relevant powers.
+
 ### 5.1 Compatibility Flags
 
-Five boolean flags on each power define meshing constraints:
+Five boolean flags define meshing constraints. **Add these to `InfiltrationPower` in `types.ts`:**
 
-| Flag | Meaning | Game Mechanic |
-|------|---------|---------------|
-| `murderer` | Player's vote also eliminates the target | Secondary elimination on vote |
-| `predicter` | Player wins if their vote target is an infiltrator | Alternate win condition on vote |
-| `twoXVote` | Player's vote counts as two | Double voting weight |
-| `silencer` | Player can silence another's vote | Silenced vote removed from tally |
-| `suicidal` | Player wins if they are voted out | Alternate win condition on elimination |
+```typescript
+// Add to InfiltrationPower type:
+murderer?: boolean;   // Player's vote also eliminates the target
+predicter?: boolean;  // Player wins if their vote target is an infiltrator
+twoXVote?: boolean;   // Player's vote counts as two
+silencer?: boolean;   // Player can silence another's vote
+suicidal?: boolean;   // Player wins if they are voted out
+```
+
+| Flag        | Meaning                                            | Game Mechanic                          |
+| ----------- | -------------------------------------------------- | -------------------------------------- |
+| `murderer`  | Player's vote also eliminates the target           | Secondary elimination on vote          |
+| `predicter` | Player wins if their vote target is an infiltrator | Alternate win condition on vote        |
+| `twoXVote`  | Player's vote counts as two                        | Double voting weight                   |
+| `silencer`  | Player can silence another's vote                  | Silenced vote removed from tally       |
+| `suicidal`  | Player wins if they are voted out                  | Alternate win condition on elimination |
 
 ### 5.2 Core Meshing Rule: Murderer / Predicter / TwoXVote vs. Post-Swap Learn/Reveal
 
@@ -604,47 +666,68 @@ Currently defined as **TBD** — same approach. Allow all suicidal combinations.
 
 ### 5.5 Non-Constraint Flags
 
-These are game mechanic flags, **NOT** meshing constraints — they do not restrict which powers can coexist:
+These are game mechanic flags that **already exist** in the `InfiltrationPower` type — they do **NOT** restrict which powers can coexist:
 
-| Flag | Purpose |
-|------|---------|
-| `infected` | Triggers infection mechanic when a role is seen (Learn/Reveal). Not a compatibility constraint. |
-| `vault` | Power can target center/NPC cards. Just a behavior toggle. |
-| `lookPostAction` | Player sees their new role after a self-swap. Behavioral. |
-| `doPower` | Player can execute new role's power after seeing it. Behavioral. |
-| `fixedAction` | Power auto-executes with no target choice. Behavioral. |
-| `fixedInitiative` | Initiative can't be altered by other powers. Behavioral. |
-| `allowRandom` | Random target selection is valid. Behavioral. |
-| `selfDestruct` | Power involves swapping own role away. Behavioral. |
+| Flag              | Purpose                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| `infected`        | Triggers infection mechanic when a role is seen (Learn/Reveal). Not a compatibility constraint. |
+| `vault`           | Power can target center/NPC cards. Just a behavior toggle.                                      |
+| `lookPostAction`  | Player sees their new role after a self-swap. Behavioral.                                       |
+| `doPower`         | Player can execute new role's power after seeing it. Behavioral.                                |
+| `fixedAction`     | Power auto-executes with no target choice. Behavioral.                                          |
+| `fixedInitiative` | Initiative can't be altered by other powers. Behavioral.                                        |
+| `allowRandom`     | Random target selection is valid. Behavioral.                                                   |
+| `targetScopes`    | When present, power can target Players, NPCs, or both. Behavioral / scope selection.            |
 
 ### 5.6 Validation Functions
 
 Implement these utilities (shared or server-side):
 
 ```typescript
-function canMeshPowers(power1: Power, power2: Power): { valid: boolean; reason?: string } {
+function canMeshPowers(
+  power1: Power,
+  power2: Power,
+): { valid: boolean; reason?: string } {
   // Murderer + post-swap Learn/Reveal
   if (power1.murderer && isPostSwapLearnReveal(power2)) {
-    return { valid: false, reason: "Murderer cannot coexist with post-swap Learn/Reveal" };
+    return {
+      valid: false,
+      reason: "Murderer cannot coexist with post-swap Learn/Reveal",
+    };
   }
   if (power2.murderer && isPostSwapLearnReveal(power1)) {
-    return { valid: false, reason: "Murderer cannot coexist with post-swap Learn/Reveal" };
+    return {
+      valid: false,
+      reason: "Murderer cannot coexist with post-swap Learn/Reveal",
+    };
   }
 
   // Predicter + post-swap Learn/Reveal
   if (power1.predicter && isPostSwapLearnReveal(power2)) {
-    return { valid: false, reason: "Predicter cannot coexist with post-swap Learn/Reveal" };
+    return {
+      valid: false,
+      reason: "Predicter cannot coexist with post-swap Learn/Reveal",
+    };
   }
   if (power2.predicter && isPostSwapLearnReveal(power1)) {
-    return { valid: false, reason: "Predicter cannot coexist with post-swap Learn/Reveal" };
+    return {
+      valid: false,
+      reason: "Predicter cannot coexist with post-swap Learn/Reveal",
+    };
   }
 
   // TwoXVote + post-swap Learn/Reveal
   if (power1.twoXVote && isPostSwapLearnReveal(power2)) {
-    return { valid: false, reason: "2x Vote cannot coexist with post-swap Learn/Reveal" };
+    return {
+      valid: false,
+      reason: "2x Vote cannot coexist with post-swap Learn/Reveal",
+    };
   }
   if (power2.twoXVote && isPostSwapLearnReveal(power1)) {
-    return { valid: false, reason: "2x Vote cannot coexist with post-swap Learn/Reveal" };
+    return {
+      valid: false,
+      reason: "2x Vote cannot coexist with post-swap Learn/Reveal",
+    };
   }
 
   // Silencer: TBD — allow for now
@@ -654,12 +737,20 @@ function canMeshPowers(power1: Power, power2: Power): { valid: boolean; reason?:
 }
 
 function isPostSwapLearnReveal(power: Power): boolean {
-  return (power.type === "Learn" || power.type === "Reveal") && power.timing === "after";
+  return (
+    (power.type === "Learn" || power.type === "Reveal") &&
+    power.timing === "after"
+  );
 }
 
-function validateCharacterPowers(slots: PowerSlot[]): { valid: boolean; errors: string[] } {
+function validateCharacterPowers(slots: PowerSlot[]): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
-  const resolvedPowers = slots.filter(s => s.powerIndex !== null).map(s => getPowerByIndex(s.powerIndex!));
+  const resolvedPowers = slots
+    .filter((s) => s.powerIndex !== null)
+    .map((s) => getPowerByIndex(s.powerIndex!));
 
   for (let i = 0; i < resolvedPowers.length; i++) {
     for (let j = i + 1; j < resolvedPowers.length; j++) {
@@ -676,18 +767,18 @@ function validateCharacterPowers(slots: PowerSlot[]): { valid: boolean; errors: 
 
 ### 5.7 Where Validation Runs
 
-| Location | When | Action on Failure |
-|----------|------|-------------------|
-| **Admin UI (client)** | On every power slot change | Show warning banner with incompatibility reason. Allow save but with warning. |
-| **Server REST API** | On `POST /api/characters` and `PUT /api/characters/:id` | Return `400` with error messages. Reject save. |
-| **Game start** | When host starts game with selected characters | Emit `error:invalid` if any selected character has invalid power combos. |
+| Location              | When                                                    | Action on Failure                                                             |
+| --------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Admin UI (client)** | On every power slot change                              | Show warning banner with incompatibility reason. Allow save but with warning. |
+| **Server REST API**   | On `POST /api/characters` and `PUT /api/characters/:id` | Return `400` with error messages. Reject save.                                |
+| **Game start**        | When host starts game with selected characters          | Emit `error:invalid` if any selected character has invalid power combos.      |
 
 ### 5.8 Character Complexity Calculation
 
 ```typescript
 function getCharacterComplexity(slots: PowerSlot[]): number {
   return slots
-    .filter(s => s.powerIndex !== null)
+    .filter((s) => s.powerIndex !== null)
     .reduce((sum, s) => sum + getPowerByIndex(s.powerIndex!).complexity, 0);
 }
 ```
@@ -702,13 +793,13 @@ Infiltration is a **single-round social deduction game**. Players are secretly a
 
 ### 6.1 Game Phases
 
-| Phase | Duration | Description |
-|-------|----------|-------------|
-| **lobby** | Indefinite | Host selects characters, players join and ready up |
-| **reveal** | Until all players acknowledge | Characters dealt, each player privately sees their character |
-| **mayhem** | Until all players acknowledge | Players use their character powers on targets |
-| **voting** | Configurable timer (default 30s) | Players vote for suspected infiltrator or "No Infiltrator" |
-| **results** | View-only, host advances | Votes tallied, winner announced, all roles shown |
+| Phase       | Duration                         | Description                                                  |
+| ----------- | -------------------------------- | ------------------------------------------------------------ |
+| **lobby**   | Indefinite                       | Host selects characters, players join and ready up           |
+| **reveal**  | Until all players acknowledge    | Characters dealt, each player privately sees their character |
+| **mayhem**  | Until all players acknowledge    | Players use their character powers on targets                |
+| **voting**  | Configurable timer (default 30s) | Players vote for suspected infiltrator or "No Infiltrator"   |
+| **results** | View-only, host advances         | Votes tallied, winner announced, all roles shown             |
 
 ### 6.2 Phase Details
 
@@ -782,13 +873,13 @@ Infiltration is a **single-round social deduction game**. Players are secretly a
 
 ### 6.3 Win Conditions Summary
 
-| Condition | Who Wins | When |
-|-----------|----------|------|
-| Most-voted player is infiltrator | Innocent team | Normal vote outcome |
-| Most-voted player is innocent | Infiltrator team | Innocents guessed wrong |
-| "No Infiltrator" gets most votes | Infiltrator team | Group failed to identify |
-| No votes cast | No winner | Stalemate |
-| Deathwish player is most-voted | That player (individual) | Overrides team outcome for that player |
+| Condition                              | Who Wins                 | When                                             |
+| -------------------------------------- | ------------------------ | ------------------------------------------------ |
+| Most-voted player is infiltrator       | Innocent team            | Normal vote outcome                              |
+| Most-voted player is innocent          | Infiltrator team         | Innocents guessed wrong                          |
+| "No Infiltrator" gets most votes       | Infiltrator team         | Group failed to identify                         |
+| No votes cast                          | No winner                | Stalemate                                        |
+| Deathwish player is most-voted         | That player (individual) | Overrides team outcome for that player           |
 | Oracle player voted for an infiltrator | That player (individual) | Additional individual win alongside team outcome |
 
 ### 6.4 Infection Mechanic
@@ -807,20 +898,20 @@ When a Learn or Reveal power causes a player to **see** an infiltrator's role (v
 
 ### 6.5 Player Limits (Infiltration-Specific)
 
-| Constraint | Value |
-|-----------|-------|
-| Minimum players | 3 |
-| Maximum players | 8 |
-| NPCs per game | Always exactly 3 |
-| Min selected characters | `players + 3` |
+| Constraint                 | Value                     |
+| -------------------------- | ------------------------- |
+| Minimum players            | 3                         |
+| Maximum players            | 8                         |
+| NPCs per game              | Always exactly 3          |
+| Min selected characters    | `players + 3`             |
 | Min infiltrator characters | At least 1 among selected |
 
 ### 6.6 Host Settings (Infiltration)
 
 ```typescript
 interface InfiltrationSettings {
-  selectedCharacters: string[];  // Character IDs toggled on by host
-  votingTimerMs: number;         // Voting phase duration in ms, default 30000
+  selectedCharacters: string[]; // Character IDs toggled on by host
+  votingTimerMs: number; // Voting phase duration in ms, default 30000
 }
 ```
 
