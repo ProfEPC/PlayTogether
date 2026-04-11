@@ -343,6 +343,8 @@ Each power type adds its own fields on top of the shared ones. Fields marked *(f
 | **timing**          | `"before"` \| `"after"`       | Execute before or after swaps. Only for powers with split initiative (e.g., `"10 90"`).              |
 | **canTargetPlayers**| boolean                       | Can target player cards. Derived from `where`; overridden by admin when power has `targetScopes`.    |
 | **canTargetNPCs**   | boolean                       | Can target NPC/center cards. Same derivation.                                                        |
+| **canTargetSelf**   | boolean                       | Can target self. True for Last Look (index 3).                                                       |
+| **canTargetRole**   | boolean                       | Can target by role name. True for Roll Rolecall (6), Role Beacon (7), Role Tally (12).               |
 
 **Reveal** — publicly announce information to all players
 
@@ -352,6 +354,7 @@ Each power type adds its own fields on top of the shared ones. Fields marked *(f
 | **timing**          | `"before"` \| `"after"`       | Execute before or after swaps.                                                                       |
 | **canTargetPlayers**| boolean                       | Can target player cards.                                                                             |
 | **canTargetNPCs**   | boolean                       | Can target NPC/center cards.                                                                         |
+| **canTargetSelf**   | boolean                       | Can target self. True for Face Reveal (index 19).                                                    |
 | **doPower**         | boolean *(from power table)*  | Player can execute the new role's power after the reveal.                                            |
 
 **Swap** — exchange roles and/or teams between targets
@@ -361,6 +364,7 @@ Each power type adds its own fields on top of the shared ones. Fields marked *(f
 | **amount**          | number                        | How many targets (e.g., 2 for Role Swap, 1 for Self Swap).                                          |
 | **canTargetPlayers**| boolean                       | Can target player cards.                                                                             |
 | **canTargetNPCs**   | boolean                       | Can target NPC/center cards.                                                                         |
+| **canTargetSelf**   | boolean                       | Swap involves self. True for Team Exchange (25), Recruit (26).                                       |
 | **lookPostAction**  | boolean *(from power table)*  | Player sees their new role after the swap changes it. Relevant for Self Swap, Team Exchange.         |
 | **doPower**         | boolean *(from power table)*  | Player can execute the new role's power after seeing it. Relevant for Self Swap, Team Exchange.      |
 
@@ -377,12 +381,15 @@ Each power type adds its own fields on top of the shared ones. Fields marked *(f
 | **amount**          | number                        | How many targets.                                                                                    |
 | **canTargetPlayers**| boolean                       | Can target player cards. Most Alter powers target by Player or Role.                                 |
 | **canTargetNPCs**   | boolean                       | Can target NPC/center cards. Usually false for Alter.                                                |
+| **canTargetRole**   | boolean                       | Targets by role name instead of by player. True for Role Jam (31), Order Rewrite (33), Order Rule (35), Guard (37). |
 
 **Tamper** — modify the voting phase (silence, duplicate, kill votes)
 
 | Field               | Type                          | Description                                                                                          |
 | ------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **amount**          | number                        | How many targets. Auto-set to 0 for powers where min === max === 0 (e.g., Vote Encore, Double Tap). |
+| **canTargetSelf**   | boolean                       | Affects self's own vote. True for Double Tap (42).                                                   |
+| **canTargetRole**   | boolean                       | Targets by role name. True for Vote Jam (39), Vote Echo (41).                                        |
 
 **Settings** — change game settings at runtime (room-wide, no targets)
 
@@ -407,28 +414,28 @@ These come from looking up `powerIndex` in the power table:
 - **targetScopes** — available scope options (admin's choice stored as `canTargetPlayers`/`canTargetNPCs`)
 - **murderer**, **predicter**, **twoXVote**, **silencer**, **suicidal** — meshing flags (Section 5)
 
-#### Default `canTargetPlayers` / `canTargetNPCs` by `where` value
+#### Default Scope Booleans by `where` value
 
-When a power does **not** have `targetScopes`, derive the booleans from `where`:
+When a power does **not** have `targetScopes`, derive all four booleans from `where`:
 
-| `where` value    | `canTargetPlayers` | `canTargetNPCs` | Notes                          |
-| ---------------- | ------------------ | --------------- | ------------------------------ |
-| `Player`         | true               | false           | Standard player targeting      |
-| `Center`         | false              | true            | NPC/center cards only          |
-| `Self`           | true               | false           | Targets self (a player)        |
-| `Role`           | true               | true            | Targets by role name           |
-| `Same Role`      | true               | false           | All players sharing a role     |
-| `Same Team`      | true               | false           | All players sharing a team     |
-| `Type`           | true               | true            | Targets by power type          |
-| `Action`         | true               | false           | Targets by action taken        |
-| `Association`    | true               | true            | Targets by team association    |
-| `Reversal`       | true               | false           | Reverses previous swaps        |
-| `Player Player`  | true               | false           | Two-player targeting           |
-| `Vote`           | false              | false           | Targets the voter's own vote   |
-| `Room`           | false              | false           | Room-wide effect (no targets)  |
-| `None`           | false              | false           | No targeting                   |
+| `where` value    | `canTargetPlayers` | `canTargetNPCs` | `canTargetSelf` | `canTargetRole` | Notes                          |
+| ---------------- | ------------------ | --------------- | --------------- | --------------- | ------------------------------ |
+| `Player`         | true               | false           | false           | false           | Standard player targeting      |
+| `Center`         | false              | true            | false           | false           | NPC/center cards only          |
+| `Self`           | false              | false           | true            | false           | Targets self only              |
+| `Role`           | true               | true            | false           | true            | Targets by role name           |
+| `Same Role`      | true               | false           | false           | true            | All players sharing a role     |
+| `Same Team`      | true               | false           | false           | false           | All players sharing a team     |
+| `Type`           | true               | true            | false           | false           | Targets by power type          |
+| `Action`         | true               | false           | false           | false           | Targets by action taken        |
+| `Association`    | true               | true            | false           | false           | Targets by team association    |
+| `Reversal`       | true               | false           | false           | false           | Reverses previous swaps        |
+| `Player Player`  | true               | false           | false           | false           | Two-player targeting           |
+| `Vote`           | false              | false           | false           | false           | Targets the voter's own vote   |
+| `Room`           | false              | false           | false           | false           | Room-wide effect (no targets)  |
+| `None`           | false              | false           | false           | false           | No targeting                   |
 
-When a power **does** have `targetScopes`, the admin form overrides these defaults — the admin explicitly picks Players Only, NPC Only, or Players and NPC, and the booleans are set accordingly.
+When a power **does** have `targetScopes`, the admin form overrides `canTargetPlayers` and `canTargetNPCs` — the admin explicitly picks Players Only, NPC Only, or Players and NPC. The `canTargetSelf` and `canTargetRole` booleans are always derived from `where` and are not admin-configurable.
 
 ### 3.3 The InfiltrationPower Type
 
