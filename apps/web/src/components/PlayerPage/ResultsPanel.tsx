@@ -12,11 +12,18 @@ interface ResultsPanelProps {
   voteGroups: VoteGroup[];
 }
 
-export const ResultsPanel: FC<ResultsPanelProps> = ({
-  roomState,
-  voteGroups,
-}) => {
+
+import { useState } from "react";
+
+export const ResultsPanel: FC<ResultsPanelProps> = ({ roomState, voteGroups }) => {
+  const [acknowledged, setAcknowledged] = useState(false);
   if (!roomState || roomState.game.phase !== "results") return null;
+
+  // If a duplicate vote is reported, reset acknowledge state
+  // (simulate: if roomState has a "missedDuplicate" or similar flag, reset)
+  // For now, always reset on phase change
+  // (You may want to add a real missedDuplicate flag in roomState)
+  // If you have a real flag, useEffect(() => setAcknowledged(false), [roomState.game.duplicateReported])
 
   const roleMap: Record<string, string[]> = {};
   roomState.players.forEach((p) => {
@@ -29,6 +36,15 @@ export const ResultsPanel: FC<ResultsPanelProps> = ({
     roleMap[role].push("unused");
   });
 
+  // Find if a duplicate was reported (simulate with a flag on roomState)
+  // Allow for missedDuplicate injected by server for review phase (not in type)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const missedDuplicate = (roomState.game && (roomState.game as any).missedDuplicate) || false;
+  // If a duplicate is reported, show a message and re-enable acknowledge
+  if (missedDuplicate && acknowledged) {
+    setAcknowledged(false);
+  }
+
   return (
     <div style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}>
       <div style={{ fontWeight: 700, marginBottom: 8 }}>Results</div>
@@ -36,12 +52,18 @@ export const ResultsPanel: FC<ResultsPanelProps> = ({
       {/* Show the winner of the round */}
       {roomState.game.winner && (
         <div style={{ marginBottom: 8, fontWeight: 700 }}>
-          Winner:{" "}
-          {roomState.game.winner === "innocents"
+          Winner: {roomState.game.winner === "innocents"
             ? "Innocents (Players)"
             : roomState.game.winner === "infiltrators"
               ? "Infiltrators"
               : "No winner"}
+        </div>
+      )}
+
+      {/* Show missed duplicate warning if present */}
+      {missedDuplicate && (
+        <div style={{ color: "#a00", marginBottom: 8 }}>
+          ⚠ Missed duplicate reported! Please review and acknowledge.
         </div>
       )}
 
@@ -108,6 +130,16 @@ export const ResultsPanel: FC<ResultsPanelProps> = ({
               ))}
           </ul>
         </div>
+      )}
+
+      {/* Acknowledge button for review phase, reappears if duplicate is reported */}
+      {!acknowledged && (
+        <button
+          style={{ marginTop: 16, width: "100%" }}
+          onClick={() => setAcknowledged(true)}
+        >
+          Acknowledge
+        </button>
       )}
     </div>
   );

@@ -6,6 +6,10 @@
   border: 1px solid #b3d9e8;
   border-radius: 6px;
   color: #0c4e6e;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .power-action-panel h3 {
@@ -20,6 +24,9 @@
   margin: 8px 0;
   font-size: 14px;
   opacity: 0.9;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
 }
 
 .power-action-panel h4 {

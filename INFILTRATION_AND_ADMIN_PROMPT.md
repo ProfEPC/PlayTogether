@@ -231,56 +231,56 @@ Each power type has its own set of fields. Fields marked _(from power table)_ us
 
 #### Learn — privately discover information about targets
 
-| Field                | Type                    | Description                                                                                              |
-| -------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------- |
-| **powerIndex**       | number                  | Index into the power table (Section 4). Identifies the power.                                            |
-| **type**             | `"Learn"`               | Power category.                                                                                          |
-| **item**             | string                  | What the power learns — `Role`, `Team`, `Players`, `Amount`, `Status`, `Type`.                           |
-| **amount**           | number                       | How many targets. Admin picks within power's min–max range.                                              |
+| Field                | Type                         | Description                                                                                                                                   |
+| -------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **powerIndex**       | number                       | Index into the power table (Section 4). Identifies the power.                                                                                 |
+| **type**             | `"Learn"`                    | Power category.                                                                                                                               |
+| **item**             | string                       | What the power learns — `Role`, `Team`, `Players`, `Amount`, `Status`, `Type`.                                                                |
+| **amount**           | number                       | How many targets. Admin picks within power's min–max range.                                                                                   |
 | **fixedInitiative**  | boolean _(from power table)_ | Whether this power's initiative is fixed. When true, runs at its defined initiative. When false, the order can be adjusted in theme settings. |
-| **canTargetPlayers** | boolean                      | Can target player cards. Default from `where`; overridden by `targetScopes` dropdown when present.       |
-| **canTargetNPCs**    | boolean                 | Can target NPC/center cards. Same derivation.                                                            |
-| **canTargetSelf**    | boolean                 | Targets self. True for Last Look (index 3).                                                              |
-| **canTargetRole**    | boolean                 | Targets by role name. True for Roll Rolecall (6), Role Beacon (7), Role Tally (12).                      |
-| **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after learning it.                                          |
+| **canTargetPlayers** | boolean                      | Can target player cards. Default from `where`; overridden by `targetScopes` dropdown when present.                                            |
+| **canTargetNPCs**    | boolean                      | Can target NPC/center cards. Same derivation.                                                                                                 |
+| **canTargetSelf**    | boolean                      | Targets self. True for Last Look (index 3).                                                                                                   |
+| **canTargetRole**    | boolean                      | Targets by role name. True for Roll Rolecall (6), Role Beacon (7), Role Tally (12).                                                           |
+| **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after learning it.                                                                                    |
 
 #### Reveal — publicly announce information to all players
 
-| Field                | Type                         | Description                                               |
-| -------------------- | ---------------------------- | --------------------------------------------------------- |
-| **powerIndex**       | number                       | Index into the power table (Section 4).                   |
-| **type**             | `"Reveal"`                   | Power category.                                           |
-| **item**             | string                       | What is revealed — always `Role` for current Reveal powers.|
-| **amount**           | number                       | How many targets.                                                                     |
+| Field                | Type                         | Description                                                                                                                                   |
+| -------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **powerIndex**       | number                       | Index into the power table (Section 4).                                                                                                       |
+| **type**             | `"Reveal"`                   | Power category.                                                                                                                               |
+| **item**             | string                       | What is revealed — always `Role` for current Reveal powers.                                                                                   |
+| **amount**           | number                       | How many targets.                                                                                                                             |
 | **fixedInitiative**  | boolean _(from power table)_ | Whether this power's initiative is fixed. When true, runs at its defined initiative. When false, the order can be adjusted in theme settings. |
-| **canTargetPlayers** | boolean                      | Can target player cards. Default from `where`; overridden by `targetScopes` dropdown when present.                                           |
-| **canTargetNPCs**    | boolean                      | Can target NPC/center cards.                              |
-| **canTargetSelf**    | boolean                      | Targets self. True for Face Reveal (index 19).            |
-| **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after the reveal. |
+| **canTargetPlayers** | boolean                      | Can target player cards. Default from `where`; overridden by `targetScopes` dropdown when present.                                            |
+| **canTargetNPCs**    | boolean                      | Can target NPC/center cards.                                                                                                                  |
+| **canTargetSelf**    | boolean                      | Targets self. True for Face Reveal (index 19).                                                                                                |
+| **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after the reveal.                                                                                     |
 
 #### Swap — exchange roles and/or teams between targets
 
-| Field                | Type                         | Description                                                                                              |
-| -------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------- |
-| **powerIndex**       | number                       | Index into the power table (Section 4).                                                                  |
-| **type**             | `"Swap"`                     | Power category.                                                                                          |
-| **item**             | string                       | What is swapped — `Role`, `Role Team`, `Team`.                                                           |
-| **amount**           | number                       | How many targets (e.g., 2 for Role Swap, 1 for Self Swap).                                               |
-| **canTargetPlayers** | boolean                      | Can target player cards.                                                                                 |
-| **canTargetNPCs**    | boolean                      | Can target NPC/center cards.                                                                             |
-| **canTargetSelf**    | boolean                      | Swap involves self. True for Team Exchange (25), Recruit (26).                                           |
-| **lookPostAction**   | boolean _(from power table)_ | Player sees their new role after the swap. Relevant for Self Swap (22), Team Exchange (25).              |
-| **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after seeing it. Relevant for Self Swap (22), Team Exchange (25).|
+| Field                | Type                         | Description                                                                                               |
+| -------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **powerIndex**       | number                       | Index into the power table (Section 4).                                                                   |
+| **type**             | `"Swap"`                     | Power category.                                                                                           |
+| **item**             | string                       | What is swapped — `Role`, `Role Team`, `Team`.                                                            |
+| **amount**           | number                       | How many targets (e.g., 2 for Role Swap, 1 for Self Swap).                                                |
+| **canTargetPlayers** | boolean                      | Can target player cards.                                                                                  |
+| **canTargetNPCs**    | boolean                      | Can target NPC/center cards.                                                                              |
+| **canTargetSelf**    | boolean                      | Swap involves self. True for Team Exchange (25), Recruit (26).                                            |
+| **lookPostAction**   | boolean _(from power table)_ | Player sees their new role after the swap. Relevant for Self Swap (22), Team Exchange (25).               |
+| **doPower**          | boolean _(from power table)_ | Player can execute the new role's power after seeing it. Relevant for Self Swap (22), Team Exchange (25). |
 
 #### Condition — grants an alternate win condition (passive, no targeting)
 
-| Field          | Type          | Description                                                                |
-| -------------- | ------------- | -------------------------------------------------------------------------- |
-| **powerIndex** | number        | Index into the power table (Section 4).                                    |
-| **type**       | `"Condition"` | Power category.                                                            |
-| **item**       | string        | What triggers the condition — `Win`.                                       |
+| Field          | Type          | Description                                                               |
+| -------------- | ------------- | ------------------------------------------------------------------------- |
+| **powerIndex** | number        | Index into the power table (Section 4).                                   |
+| **type**       | `"Condition"` | Power category.                                                           |
+| **item**       | string        | What triggers the condition — `Win`.                                      |
 | **where**      | string        | Trigger context — `Self` (voted out) or `Vote` (vote target). Kept as-is. |
-| **amount**     | number        | Always 0 (min and max are both 0 for conditions). Auto-set, not editable.  |
+| **amount**     | number        | Always 0 (min and max are both 0 for conditions). Auto-set, not editable. |
 
 #### Alter — modify other players' actions (block, protect, change priority)
 
@@ -303,26 +303,26 @@ Each power type has its own set of fields. Fields marked _(from power table)_ us
 | **item**             | string     | What is tampered — `Silence`, `Duplicate`, `Kill`, `Bonus`.                                         |
 | **amount**           | number     | How many targets. Auto-set to 0 for powers where min === max === 0 (e.g., Vote Encore, Double Tap). |
 | **canTargetPlayers** | boolean    | Targets by player. True for Mute Vote (38), Vote Encore (40), Death Vote (43), Last Laugh (44).     |
-| **canTargetSelf**    | boolean    | Affects self's own vote. True for Double Tap (42).                                                   |
-| **canTargetRole**    | boolean    | Targets by role name. True for Vote Jam (39), Vote Echo (41).                                        |
+| **canTargetSelf**    | boolean    | Affects self's own vote. True for Double Tap (42).                                                  |
+| **canTargetRole**    | boolean    | Targets by role name. True for Vote Jam (39), Vote Echo (41).                                       |
 
 #### Settings — change game settings at runtime (room-wide, no targets)
 
-| Field          | Type         | Description                                              |
-| -------------- | ------------ | -------------------------------------------------------- |
-| **powerIndex** | number       | Index into the power table (Section 4).                  |
-| **type**       | `"Settings"` | Power category.                                          |
-| **item**       | string       | Always `Time` (the only Settings power is Time Warp).    |
+| Field          | Type         | Description                                           |
+| -------------- | ------------ | ----------------------------------------------------- |
+| **powerIndex** | number       | Index into the power table (Section 4).               |
+| **type**       | `"Settings"` | Power category.                                       |
+| **item**       | string       | Always `Time` (the only Settings power is Time Warp). |
 
 No targeting fields — the power takes effect automatically based on its definition in the power table.
 
 #### None — no power (placeholder for powerless characters)
 
-| Field          | Type     | Description                                     |
-| -------------- | -------- | ----------------------------------------------- |
-| **powerIndex** | number   | Index into the power table (Section 4).         |
-| **type**       | `"None"` | Power category.                                 |
-| **item**       | string   | Always `NoAction`.                              |
+| Field          | Type     | Description                             |
+| -------------- | -------- | --------------------------------------- |
+| **powerIndex** | number   | Index into the power table (Section 4). |
+| **type**       | `"None"` | Power category.                         |
+| **item**       | string   | Always `NoAction`.                      |
 
 No targeting fields — the character has no action during mayhem.
 
@@ -478,23 +478,23 @@ The complete **41-power table**. This is the single source of truth — implemen
 
 ### 4.2 Reveal Powers (3 powers)
 
-| Idx | Name           | Item | Min | Max | fixedInit | Players | NPCs | Self | doPower | Flags                |
-| --- | -------------- | ---- | --- | --- | --------- | ------- | ---- | ---- | ------- | -------------------- |
-| 17  | Expose Role    | Role | 1   | 3   | —         | ✓\*     | —\*  | —    | ✓       | infected, allowRandom|
-| 19  | Face Reveal    | Role | 1   | 1   | —         | —       | —    | ✓    | —       | fixedAction, infected|
-| 20  | Role Spotlight | Role | 1   | 5   | —         | ✓\*     | —\*  | —    | ✓       | allowRandom          |
+| Idx | Name           | Item | Min | Max | fixedInit | Players | NPCs | Self | doPower | Flags                 |
+| --- | -------------- | ---- | --- | --- | --------- | ------- | ---- | ---- | ------- | --------------------- |
+| 17  | Expose Role    | Role | 1   | 3   | —         | ✓\*     | —\*  | —    | ✓       | infected, allowRandom |
+| 19  | Face Reveal    | Role | 1   | 1   | —         | —       | —    | ✓    | —       | fixedAction, infected |
+| 20  | Role Spotlight | Role | 1   | 5   | —         | ✓\*     | —\*  | —    | ✓       | allowRandom           |
 
 ### 4.3 Swap Powers (7 powers)
 
-| Idx | Name           | Item      | Min | Max | Players | NPCs | Self | lookPost | doPower | Flags                |
-| --- | -------------- | --------- | --- | --- | ------- | ---- | ---- | -------- | ------- | -------------------- |
-| 21  | Role Swap      | Role      | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom          |
-| 22  | Self Swap      | Role      | 1   | 1   | ✓\*     | —\*  | —    | ✓        | ✓       | allowRandom          |
-| 23  | Swap Role Team | Role Team | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom          |
-| 24  | Swap Reversal  | Role      | 1   | 5   | ✓       | —    | —    | —        | —       | fixedAction          |
-| 25  | Team Exchange  | Team      | 1   | 1   | —\*     | —\*  | ✓    | ✓        | ✓       | allowRandom          |
-| 26  | Recruit        | Team      | 1   | 1   | —\*     | —\*  | ✓    | —        | —       | allowRandom          |
-| 27  | Team Shuffle   | Team      | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom          |
+| Idx | Name           | Item      | Min | Max | Players | NPCs | Self | lookPost | doPower | Flags       |
+| --- | -------------- | --------- | --- | --- | ------- | ---- | ---- | -------- | ------- | ----------- |
+| 21  | Role Swap      | Role      | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom |
+| 22  | Self Swap      | Role      | 1   | 1   | ✓\*     | —\*  | —    | ✓        | ✓       | allowRandom |
+| 23  | Swap Role Team | Role Team | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom |
+| 24  | Swap Reversal  | Role      | 1   | 5   | ✓       | —    | —    | —        | —       | fixedAction |
+| 25  | Team Exchange  | Team      | 1   | 1   | —\*     | —\*  | ✓    | ✓        | ✓       | allowRandom |
+| 26  | Recruit        | Team      | 1   | 1   | —\*     | —\*  | ✓    | —        | —       | allowRandom |
+| 27  | Team Shuffle   | Team      | 2   | 2   | ✓\*     | —\*  | —    | —        | —       | allowRandom |
 
 ### 4.4 Condition Powers (2 powers)
 
@@ -505,16 +505,16 @@ The complete **41-power table**. This is the single source of truth — implemen
 
 ### 4.5 Alter Powers (8 powers)
 
-| Idx | Name          | Item       | Min | Max | Players | NPCs | Role | Flags                |
-| --- | ------------- | ---------- | --- | --- | ------- | ---- | ---- | -------------------- |
-| 30  | Nope!         | Block      | 1   | 5   | ✓       | —    | —    | allowRandom          |
-| 31  | Role Jam      | Block      | 1   | 5   | ✓       | —    | ✓    | —                    |
-| 32  | Priority Warp | Initiative | 1   | 5   | ✓       | —    | —    | allowRandom          |
-| 33  | Order Rewrite | Initiative | 1   | 5   | ✓       | —    | ✓    | —                    |
-| 34  | Hard Priority | Initiative | 1   | 5   | ✓       | —    | —    | allowRandom          |
-| 35  | Order Rule    | Initiative | 1   | 5   | ✓       | —    | ✓    | —                    |
-| 36  | Shield        | Protect    | 1   | 5   | ✓       | —    | —    | allowRandom          |
-| 37  | Guard         | Protect    | 1   | 5   | ✓       | —    | ✓    | —                    |
+| Idx | Name          | Item       | Min | Max | Players | NPCs | Role | Flags       |
+| --- | ------------- | ---------- | --- | --- | ------- | ---- | ---- | ----------- |
+| 30  | Nope!         | Block      | 1   | 5   | ✓       | —    | —    | allowRandom |
+| 31  | Role Jam      | Block      | 1   | 5   | ✓       | —    | ✓    | —           |
+| 32  | Priority Warp | Initiative | 1   | 5   | ✓       | —    | —    | allowRandom |
+| 33  | Order Rewrite | Initiative | 1   | 5   | ✓       | —    | ✓    | —           |
+| 34  | Hard Priority | Initiative | 1   | 5   | ✓       | —    | —    | allowRandom |
+| 35  | Order Rule    | Initiative | 1   | 5   | ✓       | —    | ✓    | —           |
+| 36  | Shield        | Protect    | 1   | 5   | ✓       | —    | —    | allowRandom |
+| 37  | Guard         | Protect    | 1   | 5   | ✓       | —    | ✓    | —           |
 
 ### 4.6 Tamper Powers (7 powers)
 

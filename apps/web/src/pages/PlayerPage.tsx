@@ -219,7 +219,7 @@ export default function PlayerPage() {
         </div>
       )}
 
-      <div style={{ display: "grid", gap: 12, maxWidth: 640 }}>
+      <div style={{ display: "grid", gap: 12, maxWidth: 640, minWidth: 0, boxSizing: "border-box", width: "100%" }}>
         {!myPlayer && !roomState?.game.started ? (
           <>
             <label>

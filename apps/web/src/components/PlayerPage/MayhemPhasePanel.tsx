@@ -33,7 +33,7 @@ export const MayhemPhasePanel: FC<MayhemPhasePanelProps> = ({
   onPowerPromptClose,
 }) => {
   return (
-    <div style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8 }}>
+    <div style={{ padding: 12, border: "1px solid #ccc", borderRadius: 8, boxSizing: "border-box", minWidth: 0, overflow: "hidden", wordBreak: "break-word" }}>
       <strong>Mayhem Round</strong>
       <div style={{ marginTop: 6, opacity: 0.8 }}>
         Use your special powers if you have them, then acknowledge when ready.

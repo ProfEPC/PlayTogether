@@ -21,18 +21,29 @@ export function GameControlsPanel({
   const allReady = hasEnoughPlayers && roomState.players.every((p) => p.ready);
   const canStart = allReady && !roomState.game.started;
 
+  // Show Next Round button if in results phase
+  const showNextRound = roomState.game.phase === "results";
   return (
     <div style={{ display: "grid", gap: 8 }}>
-      {/* Show End Game button if game is active, Start Game if conditions are met, or nothing if waiting for players/readiness */}
-      {roomState.game.started ? (
+      {roomState.game.started && !showNextRound && (
         <button onClick={() => endGameAction(socket, effectiveRoomCode)}>
           End Game
         </button>
-      ) : canStart ? (
+      )}
+      {canStart && (
         <button onClick={() => startGameAction(socket, effectiveRoomCode)}>
           Start Game
         </button>
-      ) : null}
+      )}
+      {showNextRound && (
+        <button
+          onClick={() =>
+            socket.emit("game:nextRound", { roomCode: effectiveRoomCode })
+          }
+        >
+          Next Round
+        </button>
+      )}
     </div>
   );
 }

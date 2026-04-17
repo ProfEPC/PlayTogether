@@ -29,6 +29,10 @@ export const VotingPanel: FC<VotingPanelProps> = ({
       border: `1px solid ${COLORS.border}`,
       borderRadius: 8,
       position: "relative",
+      boxSizing: "border-box",
+      minWidth: 0,
+      overflow: "hidden",
+      wordBreak: "break-word",
     }}
   >
     {/* Timer in top right corner */}

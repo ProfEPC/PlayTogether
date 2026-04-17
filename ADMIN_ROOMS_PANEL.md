@@ -30,15 +30,15 @@ Because PlayTogether stores all state in-memory, there is no database to query �
 
 A table showing all active rooms at a glance:
 
-| Column         | Source                        | Notes                                 |
-| -------------- | ----------------------------- | ------------------------------------- |
-| Room Code      | `room.code`                   | Uppercased, clickable → detail view   |
-| Player Count   | `room.players.length`         | e.g. "4 / 8"                          |
-| Game           | `room.game.type`              | "infiltration", "odd_one_out", "none" |
-| Phase          | `room.game.phase`             | "lobby", "reveal", "mayhem", etc.     |
-| Created At     | `room.createdAt`              | Relative time ("2 min ago")           |
-| Host           | `room.hostSocketId` → player  | Display name of the host              |
-| Status         | derived                       | 🟢 active / 🟡 idle / 🔴 closing     |
+| Column       | Source                       | Notes                                 |
+| ------------ | ---------------------------- | ------------------------------------- |
+| Room Code    | `room.code`                  | Uppercased, clickable → detail view   |
+| Player Count | `room.players.length`        | e.g. "4 / 8"                          |
+| Game         | `room.game.type`             | "infiltration", "odd_one_out", "none" |
+| Phase        | `room.game.phase`            | "lobby", "reveal", "mayhem", etc.     |
+| Created At   | `room.createdAt`             | Relative time ("2 min ago")           |
+| Host         | `room.hostSocketId` → player | Display name of the host              |
+| Status       | derived                      | 🟢 active / 🟡 idle / 🔴 closing      |
 
 **Sorting**: Clickable column headers. Default: newest first.
 **Filtering**: Text filter on room code, game type dropdown.
@@ -54,12 +54,12 @@ Clicking a room row expands or navigates to a detail panel:
 
 ### 3.3 Actions
 
-| Action           | Button / Control      | What It Does                                                                                        |
-| ---------------- | --------------------- | --------------------------------------------------------------------------------------------------- |
-| **Force Close**  | 🔴 "Close Room"       | Emits `room:closed` to all sockets in the room, clears timers, removes room from the in-memory map. |
-| **Export State**  | 📥 "Export JSON"       | Downloads the full `RoomState` as a `.json` file (timestamped filename).                            |
+| Action           | Button / Control       | What It Does                                                                                        |
+| ---------------- | ---------------------- | --------------------------------------------------------------------------------------------------- |
+| **Force Close**  | 🔴 "Close Room"        | Emits `room:closed` to all sockets in the room, clears timers, removes room from the in-memory map. |
+| **Export State** | 📥 "Export JSON"       | Downloads the full `RoomState` as a `.json` file (timestamped filename).                            |
 | **Kick Player**  | Per-player ❌ button   | Emits `room:kick` for that player, disconnects their socket from the room.                          |
-| **Pause Timer**  | ⏸ "Pause" / ▶ "Resume"| Pauses/resumes the current phase timer (dev tool only).                                             |
+| **Pause Timer**  | ⏸ "Pause" / ▶ "Resume" | Pauses/resumes the current phase timer (dev tool only).                                             |
 | **Skip Phase**   | ⏭ "Skip to Next"      | Advances the room to the next game phase immediately.                                               |
 
 ### 3.4 Live Updates
@@ -70,26 +70,26 @@ The panel must stay in sync with the server's in-memory state. Two options:
 
 The admin client joins a special `admin` room on the Socket.IO server. The server broadcasts room state changes to this room.
 
-| Event              | Direction | Payload                          | Description                        |
-| ------------------ | --------- | -------------------------------- | ---------------------------------- |
-| `admin:subscribe`  | C → S     | `{}`                             | Join the admin broadcast room      |
-| `admin:rooms`      | S → C     | `RoomSummary[]`                  | Full list on subscribe + on change |
-| `admin:roomDetail` | S → C     | `{ code: string, state: RoomState }` | Pushed when a watched room changes |
-| `admin:watchRoom`  | C → S     | `{ roomCode: string }`           | Start watching a specific room     |
-| `admin:unwatchRoom`| C → S     | `{ roomCode: string }`           | Stop watching a specific room      |
-| `admin:forceClose` | C → S     | `{ roomCode: string }`           | Force-close a room                 |
-| `admin:kickPlayer` | C → S     | `{ roomCode, socketId }`         | Kick a player from a room          |
-| `admin:pauseTimer` | C → S     | `{ roomCode }`                   | Pause the phase timer              |
-| `admin:resumeTimer`| C → S     | `{ roomCode }`                   | Resume the phase timer             |
-| `admin:skipPhase`  | C → S     | `{ roomCode }`                   | Skip to the next phase             |
+| Event               | Direction | Payload                              | Description                        |
+| ------------------- | --------- | ------------------------------------ | ---------------------------------- |
+| `admin:subscribe`   | C → S     | `{}`                                 | Join the admin broadcast room      |
+| `admin:rooms`       | S → C     | `RoomSummary[]`                      | Full list on subscribe + on change |
+| `admin:roomDetail`  | S → C     | `{ code: string, state: RoomState }` | Pushed when a watched room changes |
+| `admin:watchRoom`   | C → S     | `{ roomCode: string }`               | Start watching a specific room     |
+| `admin:unwatchRoom` | C → S     | `{ roomCode: string }`               | Stop watching a specific room      |
+| `admin:forceClose`  | C → S     | `{ roomCode: string }`               | Force-close a room                 |
+| `admin:kickPlayer`  | C → S     | `{ roomCode, socketId }`             | Kick a player from a room          |
+| `admin:pauseTimer`  | C → S     | `{ roomCode }`                       | Pause the phase timer              |
+| `admin:resumeTimer` | C → S     | `{ roomCode }`                       | Resume the phase timer             |
+| `admin:skipPhase`   | C → S     | `{ roomCode }`                       | Skip to the next phase             |
 
 **Option B — REST polling (simpler, fewer features)**
 
-| Method | Endpoint                       | Description                |
-| ------ | ------------------------------ | -------------------------- |
-| `GET`  | `/api/admin/rooms`             | List all rooms (summary)   |
-| `GET`  | `/api/admin/rooms/:code`       | Full room state            |
-| `POST` | `/api/admin/rooms/:code/close` | Force close room           |
+| Method | Endpoint                       | Description                        |
+| ------ | ------------------------------ | ---------------------------------- |
+| `GET`  | `/api/admin/rooms`             | List all rooms (summary)           |
+| `GET`  | `/api/admin/rooms/:code`       | Full room state                    |
+| `POST` | `/api/admin/rooms/:code/close` | Force close room                   |
 | `POST` | `/api/admin/rooms/:code/kick`  | Kick player (body: `{ socketId }`) |
 
 Poll `GET /api/admin/rooms` every 2 seconds for auto-refresh.
