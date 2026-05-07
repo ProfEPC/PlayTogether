@@ -498,7 +498,265 @@ export function VotingPhase() {
 }
 ```
 
-## Common Patterns
+## Component Architecture
+
+The web client follows a feature-based structure. Shared UI primitives live in `components/`, page-level containers in `pages/`, and game-specific feature components in `features/` or `components/<PageName>/`.
+
+### Shared Components (`components/`)
+
+| Component | Purpose |
+|-----------|---------|
+| `Panel.tsx` | Reusable bordered panel container used throughout game phases |
+| `ThemesAdmin.tsx` | Admin UI for managing game themes (create, edit, load) |
+
+### PlayerPage Components (`components/PlayerPage/`)
+
+Components rendered during an active game, organized by game phase:
+
+| Component | Phase | Purpose |
+|-----------|-------|---------|
+| `LobbyPhasePanel.tsx` | Lobby | Waiting room UI: ready toggle, player list |
+| `RevealPhasePanel.tsx` | Reveal | Phase container during role reveal |
+| `RoleRevealPanel.tsx` | Reveal | Displays the player's own role card |
+| `MayhemPhasePanel.tsx` | Mayhem | Phase container for mayhem actions |
+| `MayhemPanel.tsx` | Mayhem | Legacy mayhem UI (role-based powers) |
+| `PowerActionPanel.tsx` | Mayhem | Character power submission UI (target selection + submit) |
+| `CharacterPowerDisplay.tsx` | Mayhem | Shows character info and accumulated learns |
+| `VotingPanel.tsx` | Voting | Vote submission and player targeting UI |
+| `ResultsPanel.tsx` | Results | Round outcome display |
+| `PlayersPanel.tsx` | All | Sidebar list of all players with status indicators |
+| `RoomCodeDisplay.tsx` | All | Displays the current room code |
+| `JoinRoom.tsx` | Lobby | Join flow for non-host players |
+
+### HostPage Components (`components/HostPage/`)
+
+Components rendered on the host configuration screen.
+
+---
+
+## Custom Hooks (`hooks/`)
+
+### useSocketConnection
+
+**File:** `hooks/useSocketConnection.ts`
+
+Sets up all server-to-client socket event listeners for the current session. Called once in the app root. Registers handlers for `room:state`, `room:closed`, `error:*`, `power:result`, and other server-emitted events.
+
+```typescript
+export function useSocketConnection(): void
+```
+
+**Usage:**
+
+```typescript
+// In App.tsx or top-level component:
+useSocketConnection();
+// Socket listeners are registered; cleanup happens automatically on unmount
+```
+
+**Internally:**
+- Reads `setRoom`, `resetSession`, etc. from `useAppStore`
+- Calls `socket.connect()` if not already connected
+- Sets up `socket.on(...)` listeners and returns cleanup via `useEffect`
+
+---
+
+### useNow
+
+**File:** `hooks/useNow.ts`
+
+Returns a live `Date.now()` timestamp that updates on an interval. Useful for rendering countdown timers from `phase.endsAt`.
+
+```typescript
+export function useNow(intervalMs?: number): number
+// intervalMs defaults to 250ms
+```
+
+**Usage:**
+
+```typescript
+import { useNow } from "../hooks/useNow";
+
+function CountdownTimer({ endsAt }: { endsAt: number }) {
+  const now = useNow();                       // updates every 250ms
+  const remaining = Math.max(0, endsAt - now);
+  return <span>{Math.ceil(remaining / 1000)}s</span>;
+}
+```
+
+---
+
+### usePlayerSocketHandlers
+
+**File:** `hooks/usePlayerSocketHandlers.ts`
+
+Handles player-specific socket events (e.g., `power:result`). Used within the `PlayerPage` to isolate per-player event logic from general connection setup.
+
+---
+
+## State Management (Zustand)
+
+### useAppStore
+
+**File:** `state/useAppStore.ts`
+
+The single global Zustand store for session state. Keeps track of who the current user is and what room they're in.
+
+```typescript
+type AppState = {
+  role: "host" | "player" | "admin" | null;
+  roomCode: string;
+  playerName: string;
+
+  setRole: (role: Role) => void;
+  setRoomCode: (roomCode: string) => void;
+  setPlayerName: (playerName: string) => void;
+
+  resetSession: () => void;
+};
+```
+
+**Key fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `role` | `"host" \| "player" \| "admin" \| null` | Current user's role in the session |
+| `roomCode` | `string` | The room code the user is in |
+| `playerName` | `string` | The user's chosen display name |
+
+**Important:** `RoomState` (from the server) is **not** stored in Zustand. It is kept as local component state in `PlayerPage` / `HostPage` and passed as props. This keeps the server's `room:state` updates co-located with the components that use them.
+
+**Usage:**
+
+```typescript
+const { role, setRole, roomCode, setRoomCode, playerName, resetSession } = useAppStore();
+
+// Navigate to host screen:
+setRole("host");
+setRoomCode(receivedCode);
+
+// Clean up on disconnect:
+resetSession();
+```
+
+---
+
+## Type Definitions (`types/`)
+
+### room.ts — Core Room Types
+
+```typescript
+// Game identity
+type GameKey = "infiltration" | "odd_one_out";
+
+// Phase states
+type InfiltrationGamePhase = "lobby" | "reveal" | "mayhem" | "voting" | "results";
+type OddOneOutGamePhase    = "lobby" | "question" | "debate" | "vote" | "results";
+
+// Player object (mirrors server Player type)
+type Player = {
+  socketId: string;
+  name: string;
+  ready: boolean;
+  connectedAt: number;
+  lastSeenAt: number;
+  role?: InfiltrationRole;
+  submission?: Submission;
+  roleAcknowledged?: boolean;
+  mayhemAcknowledged?: boolean;
+  usedPower?: boolean;
+  powerUsed?: boolean;
+  character?: Character;
+  learnsThisGame?: LearnRecord[];
+  roleRevealed?: boolean;
+  protected?: boolean;
+  actedThisRound?: boolean;
+};
+
+// Complete room snapshot (received via room:state)
+type RoomState = {
+  roomCode: string;
+  hostSocketId: string | null;
+  players: Player[];
+  locked: boolean;
+  pending: PendingJoin[];
+  game: GameState;
+  settings: RoomSettings;
+  updatedAt: number;
+};
+```
+
+See `apps/web/src/types/room.ts` for the full definitions.
+
+### characterCreation.ts — Character Design Types
+
+Types used only in the admin character creation UI:
+
+```typescript
+interface CharacterInCreation {
+  name: string;
+  description: string;
+  team: "villager" | "infiltrator" | null;
+  powerSlots: PowerSlot[];
+}
+
+interface PowerSlot {
+  type: string | null;
+  item: string | null;
+  where: string | null;
+  powerIndex: number | null;
+  toggles: Record<string, boolean>;
+  amount: string;
+  timing: "SAME_PHASE" | "NEXT_PHASE" | null;
+}
+```
+
+### socket.ts — Socket Event Types
+
+Typed wrappers for Socket.io client/server events. Use these when emitting or listening for events to ensure payload correctness.
+
+---
+
+## Feature Module Patterns
+
+### Adding a New Feature Module
+
+Feature modules should live under `features/<featureName>/` or `components/<PageName>/` for page-scoped components.
+
+**Pattern:**
+
+```
+features/newGame/
+├── NewGamePhase.tsx     # Phase container component
+├── NewGameAction.tsx    # User action component
+└── index.ts             # Re-export public surface
+```
+
+**Key conventions:**
+
+- Phase components receive `roomState: RoomState` and `mySocketId: string` as props
+- Components emit socket events directly via `socket.emit(...)` from `lib/socket.ts`
+- Use `useNow()` for live countdown rendering
+- Use `useAppStore()` only for session-level state (role, name, roomCode); get game state from props
+
+### Accessing Current Player
+
+```typescript
+const myPlayer = roomState.players.find(p => p.socketId === mySocketId);
+const isHost = roomState.hostSocketId === mySocketId;
+```
+
+### Emitting Power Submission
+
+```typescript
+import { socket } from "../../lib/socket";
+
+socket.emit("game:submitPower", {
+  roomCode: roomState.roomCode,
+  powerName: "Role Peek",
+  targetPlayers: ["socket-id-1", "socket-id-2"],
+});
+```
 
 ### Emitting Socket Events
 

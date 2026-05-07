@@ -792,6 +792,50 @@ socket.emit("error:bad_request", { message: "Already submitted vote" });
 
 ---
 
+### game:submitPower (→)
+
+**Player submits a character power during mayhem phase**
+
+This event is used when a player has a character with a Learn (or other) power and wishes to use it on one or more targets during the mayhem phase. Powers are once-per-game.
+
+**Client sends:**
+
+```typescript
+socket.emit("game:submitPower", {
+  roomCode: "ABCD",
+  powerName: "Role Peek",          // Display name of the power being used
+  targetPlayers?: string[],         // Socket IDs of targeted players (when where === "Player")
+  targetCenter?: number[],          // Center positions [1, 2, 3] (when where === "Center")
+});
+```
+
+**Validation:**
+
+- Game must be in `"mayhem"` phase
+- Player must have a character assigned (`player.character` exists)
+- Player must not have already used a power this game (`player.powerUsed !== true`)
+- At least one target must be provided
+
+**Server actions:**
+
+1. Validate room, phase, player, and character
+2. Call `executeCharacterPower()` to resolve the power
+3. Append results to `player.learnsThisGame`
+4. Set `player.powerUsed = true`
+5. Emit private `power:result` to the acting player only
+6. Emit updated `room:state` to all players
+
+**Errors:**
+
+```typescript
+socket.emit("error:bad_request", { message: "Wrong game phase" });
+socket.emit("error:bad_request", { message: "Already used power this game" });
+socket.emit("error:bad_request", { message: "No character assigned" });
+socket.emit("error:bad_request", { message: "No powers available" });
+```
+
+---
+
 ## Server Broadcast Events
 
 ### room:state (←)
@@ -869,6 +913,64 @@ socket.emit("room:state", {
 - After vote submission
 - After power usage
 - After any setting change
+
+---
+
+### power:result (←, private)
+
+**Server sends power execution results to the acting player only**
+
+This event is emitted exclusively to the player who submitted `game:submitPower`. Other players do not receive it.
+
+```typescript
+socket.emit("power:result", {
+  powerName: "Role Peek",   // Name of the power that was used
+  learns: [
+    {
+      powerName: "Role Peek",
+      targetPlayer: "socket-id-123",     // Present when targeting a player
+      targetPlayerName: "Alice",          // Display name of the targeted player
+      learned: "hacker",                  // The role that was discovered
+      learnedAt: 1699999999000,           // Unix timestamp
+      item: "Role",
+      where: "Player"
+    },
+    {
+      powerName: "Vault Peek",
+      targetCenter: 2,                    // Present when targeting a center position (1, 2, or 3)
+      learned: "engineer",
+      learnedAt: 1699999999001,
+      item: "Role",
+      where: "Center"
+    }
+  ]
+});
+```
+
+**When emitted:**
+
+- Immediately after `game:submitPower` is processed successfully
+- Only the acting player (`io.to(actor.socketId)`) receives this event
+
+**Backward compatibility:**
+
+The older `game:usePower` handler may emit a simplified `power:result` format. Check for both shapes:
+
+```typescript
+socket.on("power:result", (payload) => {
+  if (payload.learns && payload.learns.length > 0) {
+    // New format: array of LearnRecord objects
+    const learnTexts = payload.learns.map(
+      (learn) =>
+        `${learn.targetPlayerName ?? `Center ${learn.targetCenter}`} is ${learn.learned}`
+    );
+  } else {
+    // Legacy format: flat fields
+    if (typeof payload.learned === "string") { /* ... */ }
+    if (typeof payload.note === "string") { /* ... */ }
+  }
+});
+```
 
 ---
 
@@ -999,6 +1101,88 @@ type RoleType =
 type PowerType = "spy" | "engineer" | "hacker" | "thief";
 ```
 
+### Character Power Types
+
+```typescript
+interface PowerSlot {
+  powerIndex: number | null; // Index into INFILTRATION_POWERS array (null = no power)
+  type?: string;             // Power category: "Learn", "Reveal", "Action", etc.
+  item?: string;             // Power sub-type: "Role", "Team", etc.
+  where?: string;            // Target location: "Player" or "Center"
+  quantity?: number;         // Number of targets (e.g., 1, 2, 3)
+}
+
+interface Character {
+  name: string;                          // Display name
+  description: string;                   // Flavor text
+  team?: "villager" | "infiltrator";     // Team alignment (undefined if power-determined)
+  powers: PowerSlot[];                   // Array of power slots
+}
+
+interface LearnRecord {
+  powerName: string;          // Name of the power that produced this learn
+  targetPlayer?: string;      // Socket ID of the targeted player (if player target)
+  targetPlayerName?: string;  // Display name of the targeted player
+  targetCenter?: number;      // Center position (1, 2, or 3) if center target
+  learned: string;            // The role that was discovered
+  learnedAt: number;          // Unix timestamp
+  item?: string;              // What was learned (e.g., "Role")
+  where?: string;             // Where it was learned from ("Player" or "Center")
+}
+```
+
+### Theme Types
+
+```typescript
+interface GameTheme {
+  id: string;
+  name: string;
+  description: string;
+  teamTerms: {
+    infiltratorSingular: string;
+    infiltratorPlural: string;
+    villagerSingular: string;
+    villagerPlural: string;
+  };
+  phaseText: {
+    revealPrompt: string;
+    mayhemPrompt: string;
+    votingPrompt: string;
+    noInfiltratorOption: string;
+  };
+  phaseNames: {
+    reveal: string;
+    mayhem: string;
+    voting: string;
+  };
+  cardTerms: {
+    centerCardSingular: string;
+    centerCardPlural: string;
+    vaultCardSingular: string;
+    vaultCardPlural: string;
+  };
+  playerTerms: {
+    playerOuted: string;
+    infiltratorWinText: string;
+    villagersWinText: string;
+  };
+  powerTerms?: Record<string, string>;
+  uiLabels?: {
+    selectTeam?: string;
+    characterName?: string;
+    characterDescription?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface StoredTheme extends GameTheme {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
 ---
 
 ## Example Flows
@@ -1020,21 +1204,29 @@ type PowerType = "spy" | "engineer" | "hacker" | "thief";
 
 5. Player 1: socket.emit("game:start", {})
    → Roles assigned, phase="reveal"
-   → All get room:state (with roles)
+   → All get room:state (with roles, centerRoles assigned)
    → 3s timer automatically advances to mayhem
 
-6. Player 2: socket.emit("game:usePower", {power: "spy", targetSocketId: player1})
+6. (Optional) Player 2 with character power:
+   socket.emit("game:submitPower", {
+     roomCode: "ABC123",
+     powerName: "Role Peek",
+     targetPlayers: ["player1-socket-id"]
+   })
+   → Player 2 privately receives: power:result { learns: [{learned: "infiltrator", ...}] }
+
+7. (Legacy) Player 2: socket.emit("game:usePower", {power: "spy", targetSocketId: player1})
    → Records power usage
 
-7. Player 1,2: socket.emit("game:ackMayhem", {acknowledged: true})
+8. Player 1,2: socket.emit("game:ackMayhem", {acknowledged: true})
    → Phase auto-advances to "voting"
 
-8. Player 1,2: socket.emit("game:submit", {vote: "player2id"})
+9. Player 1,2: socket.emit("game:submit", {vote: "player2id"})
    → All votes in: phase="results"
    → Broadcast room:state with results
 
-9. Player 1: socket.emit("game:nextRound", {})
-   → Phase returns to "lobby", ready statuses reset
+10. Player 1: socket.emit("game:nextRound", {})
+    → Phase returns to "lobby", ready statuses reset
 ```
 
 ---
